@@ -21,6 +21,7 @@ import base64
 import urllib.request
 import urllib.parse
 import traceback
+import threading
 from datetime import datetime, timezone, timedelta
 
 # ─── Config ───
@@ -458,9 +459,10 @@ def main():
                         send_msg(chat_id, "⛔ 未授权 / Unauthorized\nChat ID: `" + chat_id + "`")
                         continue
 
-                # Photo → inventory scan
+                # Photo → inventory scan (threaded for parallel processing)
                 if "photo" in msg:
-                    handle_photo(msg)
+                    t = threading.Thread(target=handle_photo, args=(msg,), daemon=True)
+                    t.start()
                 # Text commands
                 elif "text" in msg:
                     handle_command(msg)
