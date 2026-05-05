@@ -1273,6 +1273,61 @@ main {
 .scan-result-cell .val { font-size: 13px; font-weight: 600; }
 .scan-result-cell .val.mono { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
 
+/* IMEI Check */
+.imei-check-panel {
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  background: var(--bg-elev);
+}
+.imei-check-panel.status-clean { border-color: var(--success); background: linear-gradient(180deg, rgba(45,122,79,0.06) 0%, var(--bg-elev) 100%); }
+.imei-check-panel.status-bad { border-color: var(--danger); background: linear-gradient(180deg, rgba(220,53,69,0.06) 0%, var(--bg-elev) 100%); }
+.imei-check-panel.status-loading { border-color: var(--brand); }
+.imei-check-head {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+}
+.imei-check-head .title {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em; font-weight: 700; color: var(--text-muted);
+}
+.imei-check-input-row {
+  display: flex; gap: 8px; margin-bottom: 14px;
+}
+.imei-check-input-row input {
+  flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; background: var(--bg-tinted); color: var(--text); outline: none;
+}
+.imei-check-input-row input:focus { border-color: var(--brand); box-shadow: 0 0 0 2px var(--brand-soft); }
+.imei-check-input-row button {
+  padding: 9px 16px; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+  background: var(--brand); color: white; white-space: nowrap;
+}
+.imei-check-input-row button:hover { filter: brightness(1.1); }
+.imei-check-input-row button:disabled { opacity: 0.5; cursor: not-allowed; }
+.imei-result-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.imei-result-item {
+  background: var(--bg-tinted); border-radius: 8px; padding: 10px 12px;
+}
+.imei-result-item .ir-label {
+  font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; margin-bottom: 3px;
+}
+.imei-result-item .ir-val { font-size: 12.5px; font-weight: 700; }
+.imei-result-item .ir-val.clean { color: var(--success); }
+.imei-result-item .ir-val.bad { color: var(--danger); }
+.imei-result-item .ir-val.warn { color: var(--warn); }
+.imei-result-item .ir-val.neutral { color: var(--text); }
+.imei-check-banner {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; margin-top: 10px;
+  font-size: 12px; font-weight: 700;
+}
+.imei-check-banner.clean { background: var(--success-soft); color: var(--success); }
+.imei-check-banner.bad { background: rgba(220,53,69,0.1); color: var(--danger); }
+.imei-check-banner .banner-icon { font-size: 18px; }
+@keyframes imeiSpin { to { transform: rotate(360deg); } }
+.imei-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--brand); border-radius: 50%; animation: imeiSpin 0.6s linear infinite; vertical-align: middle; }
+
 /* Form */
 .form-row { margin-bottom: 14px; }
 .form-row.split {
@@ -8145,6 +8200,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
       </div>
       <div class="page-actions">
+        <button class="btn" onclick="openIMEIModal()"><span class="zh">🔍 IMEI 查询</span><span class="en">🔍 IMEI Check</span></button>
         <button class="btn"><span class="zh">📋 检测队列</span><span class="en">📋 QC Queue</span><span class="chip-num" style="background:var(--warn);color:white;margin-left:5px;">5</span></button>
         <button class="btn btn-primary"><span class="zh">+ 新回收单</span><span class="en">+ New Trade-In</span></button>
       </div>
@@ -8217,6 +8273,25 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="en">Unlocked</span>
               </div></div>
             </div>
+          </div>
+
+          <!-- IMEI Check Panel -->
+          <div class="imei-check-panel" id="imeiCheckPanel">
+            <div class="imei-check-head">
+              <div class="title">
+                <span class="zh">🔍 IMEI 验机查询</span>
+                <span class="en">🔍 IMEI Device Check</span>
+              </div>
+              <span id="imeiCheckStatus" style="font-size:11px;font-weight:700;"></span>
+            </div>
+            <div class="imei-check-input-row">
+              <input type="text" id="imeiCheckInput" placeholder="输入 IMEI / Enter IMEI" value="357193228901234" maxlength="15" onkeydown="if(event.key==='Enter')runIMEICheck()" />
+              <button onclick="runIMEICheck()" id="imeiCheckBtn">
+                <span class="zh">查询</span>
+                <span class="en">Check</span>
+              </button>
+            </div>
+            <div id="imeiCheckResult" style="display:none;"></div>
           </div>
 
           <!-- Inspection grid -->
@@ -9716,6 +9791,45 @@ The more detail you provide, the easier it is to handle this issue."></textarea>
   </div>
 </div>
 
+<!-- IMEI Check Modal -->
+<div class="modal-overlay" id="imeiModal" onclick="if(event.target===this)closeIMEIModal()">
+  <div class="modal" style="max-width:580px;">
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">
+          <span class="modal-icon">🔍</span>
+          <span class="zh">IMEI 验机查询</span>
+          <span class="en">IMEI Device Verification</span>
+        </div>
+        <div class="modal-subtitle">
+          <span class="zh">输入 IMEI 查询设备激活锁、黑名单、保修状态</span>
+          <span class="en">Check activation lock, blacklist & warranty status</span>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeIMEIModal()">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:18px 22px;">
+      <div class="imei-check-input-row">
+        <input type="text" id="imeiModalInput" placeholder="输入 15 位 IMEI / Enter 15-digit IMEI" maxlength="15" />
+        <button onclick="runIMEIModalCheck()" id="imeiModalBtn">
+          <span class="zh">开始查询</span>
+          <span class="en">Check Now</span>
+        </button>
+      </div>
+      <div id="imeiModalResult"></div>
+      <div id="imeiModalHistory" style="margin-top:14px;">
+        <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;margin-bottom:8px;">
+          <span class="zh">最近查询</span>
+          <span class="en">Recent Checks</span>
+        </div>
+        <div id="imeiHistoryList" style="font-size:12px;color:var(--text-muted);"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -10674,6 +10788,245 @@ function setBrandFilter(brand) {
     });
   }
 })();
+
+// ===== IMEI Check System =====
+const IMEI_API = {
+  baseUrl: 'https://us.gsxunlocking.com/api/uapi',
+  key: 'YS60N7CH8VZXNE4VGSS1',
+  services: {
+    activationLock: 1013,
+    warranty: 1010
+  },
+  timeout: 120000,
+  maxConcurrent: 20
+};
+
+let imeiCheckHistory = JSON.parse(localStorage.getItem('imeiCheckHistory') || '[]');
+
+function buildIMEIUrl(imei, srvId) {
+  return `${IMEI_API.baseUrl}?format=json&key=${IMEI_API.key}&srv=${srvId}&imei=${imei}`;
+}
+
+async function fetchIMEIService(imei, srvId) {
+  const url = buildIMEIUrl(imei, srvId);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), IMEI_API.timeout);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  } catch (e) {
+    clearTimeout(timer);
+    if (e.name === 'AbortError') throw new Error('查询超时 / Request timeout (120s)');
+    throw e;
+  }
+}
+
+function renderIMEIResult(container, data, imei) {
+  if (!data || (data.code !== undefined && data.code !== 0)) {
+    const errMsg = data && data.msg ? data.msg : (data && data.message ? data.message : '查询失败 / Check failed');
+    container.innerHTML = `
+      <div class="imei-check-banner bad">
+        <span class="banner-icon">⚠️</span>
+        <div>
+          <div><span class="zh">查询失败</span><span class="en">Check Failed</span></div>
+          <div style="font-weight:400;font-size:11px;margin-top:2px;opacity:0.8;">${errMsg}</div>
+        </div>
+      </div>`;
+    container.style.display = 'block';
+    const panel = container.closest('.imei-check-panel');
+    if (panel) { panel.classList.remove('status-clean','status-loading'); panel.classList.add('status-bad'); }
+    return;
+  }
+
+  // Parse response fields
+  const fields = data.data || data.result || data;
+  let resultItems = '';
+  let isClean = true;
+
+  // Common fields from activation lock / warranty checks
+  const fieldMap = [
+    { key: ['ActivationLock','activationLock','Activation Lock','activation_lock','Find My iPhone'], labelZh: '激活锁', labelEn: 'Activation Lock', goodVals: ['OFF','off','Off','false','No','Clean'] },
+    { key: ['BlacklistStatus','blacklistStatus','Blacklist','blacklist','blacklist_status'], labelZh: '黑名单', labelEn: 'Blacklist', goodVals: ['Clean','CLEAN','clean','No','OFF','Good'] },
+    { key: ['CarrierLock','carrierLock','SimLock','simlock','carrier_lock','SIMLock Status'], labelZh: '运营商锁', labelEn: 'Carrier Lock', goodVals: ['Unlocked','UNLOCKED','unlocked','Off','No'] },
+    { key: ['FindMyiPhone','findMyIphone','Find My iPhone','FMI','fmi','FMIP'], labelZh: 'Find My', labelEn: 'Find My', goodVals: ['OFF','off','Off','No','Clean'] },
+    { key: ['Warranty','warranty','WarrantyStatus','warranty_status'], labelZh: '保修', labelEn: 'Warranty', goodVals: null },
+    { key: ['Model','model','ModelName','modelName','model_name'], labelZh: '型号', labelEn: 'Model', goodVals: null },
+    { key: ['Storage','storage','Capacity','capacity'], labelZh: '容量', labelEn: 'Storage', goodVals: null },
+    { key: ['Color','color','Colour'], labelZh: '颜色', labelEn: 'Color', goodVals: null },
+    { key: ['PurchaseCountry','purchaseCountry','Country','country','purchase_country'], labelZh: '购买地', labelEn: 'Country', goodVals: null },
+    { key: ['iCloud','icloud','iCloudStatus','icloud_status'], labelZh: 'iCloud', labelEn: 'iCloud', goodVals: ['OFF','off','Off','Clean','No'] }
+  ];
+
+  const foundFields = [];
+  fieldMap.forEach(fm => {
+    let val = null;
+    for (const k of fm.key) {
+      if (fields[k] !== undefined && fields[k] !== null && fields[k] !== '') {
+        val = String(fields[k]);
+        break;
+      }
+    }
+    if (val) {
+      let cls = 'neutral';
+      if (fm.goodVals) {
+        cls = fm.goodVals.some(g => val.toLowerCase().includes(g.toLowerCase())) ? 'clean' : 'bad';
+        if (cls === 'bad') isClean = false;
+      }
+      foundFields.push({ labelZh: fm.labelZh, labelEn: fm.labelEn, val, cls });
+    }
+  });
+
+  // If API returned flat unknown fields, show them too
+  if (foundFields.length === 0 && typeof fields === 'object') {
+    Object.entries(fields).forEach(([k, v]) => {
+      if (v && typeof v !== 'object' && k !== 'code' && k !== 'msg' && k !== 'ID' && k !== 'IMEI') {
+        foundFields.push({ labelZh: k, labelEn: k, val: String(v), cls: 'neutral' });
+      }
+    });
+  }
+
+  foundFields.forEach(f => {
+    resultItems += `<div class="imei-result-item"><div class="ir-label"><span class="zh">${f.labelZh}</span><span class="en">${f.labelEn}</span></div><div class="ir-val ${f.cls}">${f.val}</div></div>`;
+  });
+
+  const bannerCls = isClean ? 'clean' : 'bad';
+  const bannerIcon = isClean ? '✅' : '🚫';
+  const bannerZh = isClean ? '设备安全 · 可正常回收' : '存在风险 · 请谨慎处理';
+  const bannerEn = isClean ? 'Device Clean · Safe to acquire' : 'Risk Detected · Handle with caution';
+
+  container.innerHTML = `
+    <div class="imei-check-banner ${bannerCls}">
+      <span class="banner-icon">${bannerIcon}</span>
+      <div>
+        <div><span class="zh">${bannerZh}</span><span class="en">${bannerEn}</span></div>
+        <div style="font-weight:400;font-size:11px;margin-top:2px;opacity:0.8;">IMEI: ${imei}</div>
+      </div>
+    </div>
+    ${resultItems.length > 0 ? '<div class="imei-result-grid" style="margin-top:10px;">' + resultItems + '</div>' : ''}
+  `;
+  container.style.display = 'block';
+
+  const panel = container.closest('.imei-check-panel');
+  if (panel) {
+    panel.classList.remove('status-loading','status-bad','status-clean');
+    panel.classList.add(isClean ? 'status-clean' : 'status-bad');
+  }
+
+  // Save to history
+  saveIMEIHistory(imei, isClean, foundFields);
+}
+
+function saveIMEIHistory(imei, isClean, fields) {
+  const entry = { imei, isClean, time: new Date().toLocaleString(), fields: fields.slice(0, 4) };
+  imeiCheckHistory = imeiCheckHistory.filter(h => h.imei !== imei);
+  imeiCheckHistory.unshift(entry);
+  if (imeiCheckHistory.length > 20) imeiCheckHistory.pop();
+  localStorage.setItem('imeiCheckHistory', JSON.stringify(imeiCheckHistory));
+}
+
+// Inline check (Trade-In page)
+async function runIMEICheck() {
+  const input = document.getElementById('imeiCheckInput');
+  const btn = document.getElementById('imeiCheckBtn');
+  const result = document.getElementById('imeiCheckResult');
+  const panel = document.getElementById('imeiCheckPanel');
+  const status = document.getElementById('imeiCheckStatus');
+  const imei = input.value.replace(/\D/g, '').trim();
+
+  if (!imei || imei.length < 14) {
+    showToast('请输入有效 IMEI (14-15位) / Enter valid IMEI (14-15 digits)');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="imei-spinner"></span>';
+  panel.classList.add('status-loading');
+  panel.classList.remove('status-clean','status-bad');
+  status.innerHTML = '<span class="imei-spinner"></span> <span class="zh">查询中...</span><span class="en">Checking...</span>';
+  result.style.display = 'none';
+
+  try {
+    const data = await fetchIMEIService(imei, IMEI_API.services.activationLock);
+    renderIMEIResult(result, data, imei);
+    status.innerHTML = '';
+  } catch (e) {
+    result.innerHTML = `<div class="imei-check-banner bad"><span class="banner-icon">⚠️</span><div><span class="zh">查询错误</span><span class="en">Error</span><div style="font-weight:400;font-size:11px;margin-top:2px;">${e.message}</div></div></div>`;
+    result.style.display = 'block';
+    panel.classList.remove('status-loading');
+    panel.classList.add('status-bad');
+    status.innerHTML = '<span style="color:var(--danger);">Error</span>';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="zh">查询</span><span class="en">Check</span>';
+  }
+}
+
+// Modal check
+function openIMEIModal() {
+  document.getElementById('imeiModal').classList.add('show');
+  setTimeout(() => document.getElementById('imeiModalInput').focus(), 100);
+  renderIMEIHistory();
+}
+function closeIMEIModal() {
+  document.getElementById('imeiModal').classList.remove('show');
+}
+
+function renderIMEIHistory() {
+  const list = document.getElementById('imeiHistoryList');
+  if (!list) return;
+  if (imeiCheckHistory.length === 0) {
+    list.innerHTML = '<div style="color:var(--text-faint);font-style:italic;"><span class="zh">暂无查询记录</span><span class="en">No recent checks</span></div>';
+    return;
+  }
+  list.innerHTML = imeiCheckHistory.slice(0, 8).map(h => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:14px;">${h.isClean ? '✅' : '🚫'}</span>
+      <span class="mono" style="font-size:11px;flex:1;">${h.imei}</span>
+      <span style="font-size:10px;color:var(--text-faint);">${h.time}</span>
+      <button class="btn" style="font-size:10px;padding:3px 8px;" onclick="document.getElementById('imeiModalInput').value='${h.imei}';runIMEIModalCheck();">
+        <span class="zh">重查</span><span class="en">Recheck</span>
+      </button>
+    </div>
+  `).join('');
+}
+
+async function runIMEIModalCheck() {
+  const input = document.getElementById('imeiModalInput');
+  const btn = document.getElementById('imeiModalBtn');
+  const result = document.getElementById('imeiModalResult');
+  const imei = input.value.replace(/\D/g, '').trim();
+
+  if (!imei || imei.length < 14) {
+    showToast('请输入有效 IMEI (14-15位) / Enter valid IMEI (14-15 digits)');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="imei-spinner"></span>';
+  result.innerHTML = '<div style="text-align:center;padding:20px;"><span class="imei-spinner" style="width:20px;height:20px;"></span><div style="margin-top:8px;font-size:12px;color:var(--text-muted);"><span class="zh">正在查询，请稍候...</span><span class="en">Checking, please wait...</span></div></div>';
+
+  try {
+    const data = await fetchIMEIService(imei, IMEI_API.services.activationLock);
+    renderIMEIResult(result, data, imei);
+  } catch (e) {
+    result.innerHTML = `<div class="imei-check-banner bad"><span class="banner-icon">⚠️</span><div><span class="zh">查询错误</span><span class="en">Error</span><div style="font-weight:400;font-size:11px;margin-top:2px;">${e.message}</div></div></div>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="zh">开始查询</span><span class="en">Check Now</span>';
+    renderIMEIHistory();
+  }
+}
+
+// Keyboard: Enter to check in modal
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && document.getElementById('imeiModal').classList.contains('show')) {
+    if (document.activeElement === document.getElementById('imeiModalInput')) {
+      runIMEIModalCheck();
+    }
+  }
+});
 
 // Initial render
 renderInventory();
