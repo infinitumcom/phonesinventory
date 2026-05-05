@@ -6985,6 +6985,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <div class="pill-name"><span class="geo-dot" style="background:var(--gold-deep);"></span>Las Vegas</div>
               <div class="pill-counts"><span class="new-c">NEW 22</span><span class="used-c">USED 16</span></div>
             </button>
+            <button class="store-pill hq" onclick="setActiveStore(this)" style="border-style:dashed;">
+              <div class="pill-name"><span class="geo-dot" style="background:var(--text-muted);"></span>🏢 <span class="zh">HQ 总仓</span><span class="en">HQ Warehouse</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 18</span><span class="used-c">USED 10</span></div>
+            </button>
           </div>
 
           <!-- REGION FILTER (US/HK/CN) -->
@@ -10046,6 +10050,39 @@ const phones = [
   { cond:'new', brand:'other', name:'Nothing Phone (2a)', storage:'128GB', imei:'356801234567890', color:'白色', colorEn:'White', colorHex:'#ffffff', store:'arcadia-2', storeName:'Arcadia 2', shelf:'A-06-02', price:349, cost:280, status:'available', region:'hk', purchaseDate:'2026-04-18', supplier:'香港供应商', supplierEn:'HK Supplier', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:16,
     timeline:[
       { time:'2026-04-18 14:00', event:'入库', eventEn:'Received', detail:'香港供应商 · HK$2,100', detailEn:'HK Supplier · HK$2,100' }
+    ]},
+  // ===== HQ WAREHOUSE (总仓待分发) =====
+  { cond:'new', brand:'apple', name:'iPhone 16 Pro Max', storage:'1TB', imei:'352847156890801', color:'沙漠钛金', colorEn:'Desert Titanium', colorHex:'#c2b8a3', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-01-01', price:1599, cost:1440, status:'available', region:'us', purchaseDate:'2026-05-03', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:1,
+    timeline:[
+      { time:'2026-05-03 09:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Apple IRP · $1,440 · 待分发', detailEn:'Apple IRP · $1,440 · Pending distribution' }
+    ]},
+  { cond:'new', brand:'apple', name:'iPhone 16 Pro', storage:'256GB', imei:'352847156890802', color:'原色钛金', colorEn:'Natural Titanium', colorHex:'#1d1d1f', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-01-02', price:1099, cost:990, status:'available', region:'us', purchaseDate:'2026-05-03', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:1,
+    timeline:[
+      { time:'2026-05-03 09:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Apple IRP · $990', detailEn:'Apple IRP · $990' }
+    ]},
+  { cond:'new', brand:'apple', name:'iPhone 16', storage:'128GB', imei:'352847156890803', color:'群青色', colorEn:'Ultramarine', colorHex:'#4a6de5', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-01-03', price:829, cost:740, status:'available', region:'us', purchaseDate:'2026-05-04', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:0,
+    timeline:[
+      { time:'2026-05-04 11:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Apple IRP · $740 · 5台批量', detailEn:'Apple IRP · $740 · 5-unit batch' }
+    ]},
+  { cond:'new', brand:'samsung', name:'Samsung Galaxy S25 Ultra', storage:'512GB', imei:'351092778900810', color:'钛银', colorEn:'Titanium Silverblue', colorHex:'#b8c5d6', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-02-01', price:1419, cost:1280, status:'available', region:'us', purchaseDate:'2026-05-02', supplier:'Samsung 经销商', supplierEn:'Samsung Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:2,
+    timeline:[
+      { time:'2026-05-02 14:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Samsung 经销商 · $1,280', detailEn:'Samsung Dealer · $1,280' }
+    ]},
+  { cond:'new', brand:'samsung', name:'Samsung Galaxy S25+', storage:'256GB', imei:'351092778900811', color:'海蓝色', colorEn:'Navy', colorHex:'#0d1b2a', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-02-02', price:999, cost:880, status:'available', region:'us', purchaseDate:'2026-05-02', supplier:'Samsung 经销商', supplierEn:'Samsung Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:2,
+    timeline:[
+      { time:'2026-05-02 14:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Samsung 经销商 · $880', detailEn:'Samsung Dealer · $880' }
+    ]},
+  { cond:'new', brand:'google', name:'Google Pixel 9 Pro', storage:'128GB', imei:'354103456789820', color:'海棠粉', colorEn:'Peony', colorHex:'#f4c7c3', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-03-01', price:999, cost:880, status:'available', region:'us', purchaseDate:'2026-05-04', supplier:'Google 经销商', supplierEn:'Google Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:0,
+    timeline:[
+      { time:'2026-05-04 16:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Google 经销商 · $880', detailEn:'Google Dealer · $880' }
+    ]},
+  { cond:'used', brand:'apple', name:'iPhone 15 Pro Max', storage:'256GB', imei:'358224109876830', color:'白色钛金', colorEn:'White Titanium', colorHex:'#f5f5f0', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-04-01', price:849, cost:680, status:'available', region:'us', purchaseDate:'2026-05-04', supplier:'客户回收 · 张先生', supplierEn:'Trade-in · Mr. Zhang', condition:'9.5新 · 电池 95%', conditionEn:'9.5/10 · Battery 95%', ageDays:0,
+    timeline:[
+      { time:'2026-05-04 13:00', event:'回收入库', eventEn:'Trade-in at HQ', detail:'回收价 $680 · 待检测分发', detailEn:'$680 · Pending QC & distribution' }
+    ]},
+  { cond:'used', brand:'apple', name:'iPhone 14 Pro', storage:'128GB', imei:'358224109876831', color:'深紫色', colorEn:'Deep Purple', colorHex:'#574f6f', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-04-02', price:549, cost:400, status:'available', region:'us', purchaseDate:'2026-05-03', supplier:'批量回收', supplierEn:'Bulk Trade-in', condition:'9新 · 电池 89%', conditionEn:'9/10 · Battery 89%', ageDays:1,
+    timeline:[
+      { time:'2026-05-03 10:00', event:'批量回收', eventEn:'Bulk trade-in', detail:'5台批量回收 · 均价 $400', detailEn:'5-unit batch · avg $400' }
     ]}
 ];
 
@@ -10249,6 +10286,16 @@ const STORE_DATA = {
     todaySold: 3, todayRev: 2920,
     mtdSold: 24, mtdRank: 8,
     cash: 4180, taxRate: 8.375, taxRateLabel: 'NV 8.375%'
+  },
+  'hq-warehouse': {
+    nameZh: 'HQ 总仓', nameEn: 'HQ Warehouse',
+    addr: 'Central Warehouse · Office',
+    phone: '',
+    mgr: 'Andy Wang',
+    stock: 28, stockNew: 18, stockUsed: 10,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 0, taxRateLabel: 'N/A'
   }
 };
 

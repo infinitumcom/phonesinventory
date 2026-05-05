@@ -25,7 +25,8 @@ from datetime import datetime, timezone, timedelta
 
 # ─── Config ───
 BOT_TOKEN = "8150644814:AAEFF7axPiIOxNMaYTqfandfi7a9jAQ9z_k"
-ADMIN_CHAT_IDS = ["7625761638"]
+ALLOWED_CHAT_IDS = os.environ.get("ALLOWED_CHAT_IDS", "7625761638").split(",")
+# Supports private chats AND group chats — add group chat IDs to .env
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 DEPLOY_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -42,6 +43,7 @@ STORE_LIST = {
     "irv": "Irvine", "irvine": "Irvine",
     "rc": "Rancho Cucamonga", "rancho": "Rancho Cucamonga", "rancho cucamonga": "Rancho Cucamonga",
     "lv": "Las Vegas", "vegas": "Las Vegas", "las vegas": "Las Vegas",
+    "hq": "HQ 总仓", "总仓": "HQ 总仓", "仓库": "HQ 总仓", "warehouse": "HQ 总仓", "office": "HQ 总仓",
 }
 
 # ─── Database ───
@@ -448,10 +450,13 @@ def main():
 
                 chat_id = str(msg["chat"]["id"])
 
-                # Only allow admin users
-                if ADMIN_CHAT_IDS and chat_id not in ADMIN_CHAT_IDS:
-                    send_msg(chat_id, "⛔ 未授权 / Unauthorized")
-                    continue
+                # Allow configured private chats and group chats
+                if ALLOWED_CHAT_IDS and chat_id not in ALLOWED_CHAT_IDS:
+                    # In groups, also check if sender is allowed
+                    from_id = str(msg.get("from", {}).get("id", ""))
+                    if from_id not in ALLOWED_CHAT_IDS:
+                        send_msg(chat_id, "⛔ 未授权 / Unauthorized\nChat ID: `" + chat_id + "`")
+                        continue
 
                 # Photo → inventory scan
                 if "photo" in msg:
