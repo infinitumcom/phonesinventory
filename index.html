@@ -11002,6 +11002,55 @@ function setLang(btn, lang) {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeDrawer();
 });
+
+// ===== Live search for inventory =====
+(function() {
+  const input = document.getElementById('invSearchInput');
+  if (!input) return;
+  input.addEventListener('input', function() {
+    const q = this.value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.inv-row');
+    let shown = 0;
+    rows.forEach(row => {
+      if (!q) { row.style.display = ''; shown++; return; }
+      const text = row.textContent.toLowerCase();
+      if (text.includes(q)) { row.style.display = ''; shown++; }
+      else { row.style.display = 'none'; }
+    });
+    const paginationEl = document.getElementById('paginationInfo');
+    if (paginationEl && q) {
+      const lang = document.body.dataset.lang;
+      paginationEl.innerHTML = '<span class="zh">搜索结果: ' + shown + ' 部匹配</span><span class="en">Search results: ' + shown + ' matches</span>';
+    }
+  });
+})();
+
+// ===== Dynamic date/time =====
+(function() {
+  function updateTime() {
+    const now = new Date();
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const timeStr = days[now.getDay()] + ', ' + months[now.getMonth()] + ' ' + now.getDate() + ' · ' +
+      now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    const el = document.querySelector('.staff-hero-meta .mono');
+    if (el) el.textContent = timeStr;
+  }
+  updateTime();
+  setInterval(updateTime, 30000);
+})();
+
+// ===== Keyboard shortcuts =====
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.metaKey || e.ctrlKey) {
+    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); navByName('sale'); }
+    if (e.key === 'r' || e.key === 'R') { e.preventDefault(); navByName('transfer'); }
+    if (e.key === 't' || e.key === 'T') { e.preventDefault(); navByName('tradein'); }
+    if (e.key === 'i' || e.key === 'I') { e.preventDefault(); navByName('inventory'); }
+    if (e.key === 'k' || e.key === 'K') { e.preventDefault(); document.getElementById('invSearchInput')?.focus(); }
+  }
+});
 </script>
 </body>
 </html>
