@@ -8218,6 +8218,33 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       <div class="kpi"><div class="kpi-label"><span class="zh">本月已售</span><span class="en">Sold MTD</span></div><div class="kpi-value">38</div><div class="kpi-meta">$24,160</div></div>
     </div>
 
+    <!-- IMEI Check Section -->
+    <div class="section" style="margin-bottom:14px;">
+      <div class="section-head">
+        <div class="section-title">
+          <span class="zh">🔍 IMEI 验机查询</span>
+          <span class="en">🔍 IMEI Device Check</span>
+          <span class="count">· <span class="zh">收机前必查</span><span class="en">Required before acquisition</span></span>
+        </div>
+      </div>
+      <div style="padding:16px 20px;">
+        <div class="imei-check-panel" id="imeiCheckPanel" style="margin-bottom:0;border:none;padding:0;background:transparent;">
+          <div class="imei-check-input-row" style="margin-bottom:12px;">
+            <input type="text" id="imeiCheckInput" placeholder="输入 15 位 IMEI 号码 / Enter 15-digit IMEI" maxlength="15" onkeydown="if(event.key==='Enter')runIMEICheck()" style="font-size:14px;padding:12px 14px;" />
+            <button onclick="runIMEICheck()" id="imeiCheckBtn" style="padding:12px 22px;font-size:13px;">
+              <span class="zh">立即查询</span>
+              <span class="en">Check Now</span>
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;">
+            <span class="zh">查询内容：激活锁 · 黑名单 · 运营商锁 · Find My iPhone · 保修状态</span>
+            <span class="en">Checks: Activation Lock · Blacklist · Carrier Lock · Find My iPhone · Warranty</span>
+          </div>
+          <div id="imeiCheckResult" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Two-column: Trade-in flow demo + QC queue -->
     <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;">
 
@@ -8273,25 +8300,6 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="en">Unlocked</span>
               </div></div>
             </div>
-          </div>
-
-          <!-- IMEI Check Panel -->
-          <div class="imei-check-panel" id="imeiCheckPanel">
-            <div class="imei-check-head">
-              <div class="title">
-                <span class="zh">🔍 IMEI 验机查询</span>
-                <span class="en">🔍 IMEI Device Check</span>
-              </div>
-              <span id="imeiCheckStatus" style="font-size:11px;font-weight:700;"></span>
-            </div>
-            <div class="imei-check-input-row">
-              <input type="text" id="imeiCheckInput" placeholder="输入 IMEI / Enter IMEI" value="357193228901234" maxlength="15" onkeydown="if(event.key==='Enter')runIMEICheck()" />
-              <button onclick="runIMEICheck()" id="imeiCheckBtn">
-                <span class="zh">查询</span>
-                <span class="en">Check</span>
-              </button>
-            </div>
-            <div id="imeiCheckResult" style="display:none;"></div>
           </div>
 
           <!-- Inspection grid -->
