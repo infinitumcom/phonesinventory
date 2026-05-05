@@ -4664,11 +4664,258 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   .mobile-bnav-item .bnav-label { font-size: 9px; }
 }
 
+/* ===== LOGIN PAGE ===== */
+.login-screen {
+  position: fixed; inset: 0; z-index: 99999;
+  background: linear-gradient(160deg, #0d4f3c 0%, #1a6b52 40%, #0a3d2e 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  transition: opacity 0.4s, transform 0.4s;
+}
+.login-screen.hidden { opacity: 0; pointer-events: none; transform: scale(1.02); }
+.login-card {
+  width: 400px; max-width: 92vw;
+  background: #fff; border-radius: 16px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+.login-header {
+  padding: 36px 32px 24px; text-align: center;
+  background: linear-gradient(180deg, #f8faf9 0%, #fff 100%);
+  border-bottom: 1px solid #eef0ed;
+}
+.login-logo {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: var(--brand); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 800; margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(13,79,60,0.3);
+}
+.login-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.login-subtitle { font-size: 12.5px; color: var(--text-muted); }
+.login-body { padding: 28px 32px 20px; }
+.login-field { margin-bottom: 16px; }
+.login-field label {
+  display: block; font-size: 11.5px; font-weight: 600; color: var(--text-soft);
+  margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.login-field input {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+  border-radius: 9px; font-size: 14px; font-family: inherit;
+  background: var(--bg-tinted); color: var(--text); outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.login-field input:focus {
+  border-color: var(--brand); box-shadow: 0 0 0 3px rgba(13,79,60,0.1);
+}
+.login-field input::placeholder { color: var(--text-faint); }
+.login-field .field-hint {
+  font-size: 10.5px; color: var(--text-faint); margin-top: 4px;
+}
+.login-pin-wrapper {
+  display: flex; gap: 8px; justify-content: center;
+}
+.login-pin-wrapper input {
+  width: 44px; height: 52px; text-align: center;
+  font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+  border: 1.5px solid var(--border); border-radius: 10px;
+  background: var(--bg-tinted); color: var(--text); outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.login-pin-wrapper input:focus {
+  border-color: var(--brand); box-shadow: 0 0 0 3px rgba(13,79,60,0.1);
+}
+.login-options {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; font-size: 12px;
+}
+.login-options label {
+  display: flex; align-items: center; gap: 6px; color: var(--text-soft); cursor: pointer;
+}
+.login-options label input[type="checkbox"] {
+  accent-color: var(--brand); width: 15px; height: 15px;
+}
+.login-options a {
+  color: var(--brand); text-decoration: none; font-weight: 600;
+}
+.login-options a:hover { text-decoration: underline; }
+.login-btn {
+  width: 100%; padding: 13px; border: none; border-radius: 10px;
+  background: var(--brand); color: #fff;
+  font-size: 14.5px; font-weight: 700; cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, transform 0.1s;
+}
+.login-btn:hover { background: var(--brand-hover); }
+.login-btn:active { transform: scale(0.98); }
+.login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.login-footer {
+  padding: 16px 32px 24px; text-align: center;
+}
+.login-footer .divider {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 11px; color: var(--text-faint); margin-bottom: 14px;
+}
+.login-footer .divider::before, .login-footer .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--border);
+}
+.login-device-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; border-radius: 8px;
+  background: var(--bg-tinted); border: 1px solid var(--border);
+  font-size: 11px; color: var(--text-muted);
+}
+.login-device-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+.login-error {
+  padding: 10px 14px; border-radius: 8px;
+  background: rgba(220,53,69,0.08); color: var(--danger);
+  font-size: 12px; font-weight: 600; margin-bottom: 14px;
+  display: none; align-items: center; gap: 8px;
+}
+.login-error.show { display: flex; }
+.login-bg-decor {
+  position: fixed; z-index: -1;
+  opacity: 0.06; font-size: 280px; font-weight: 900; color: #fff;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  pointer-events: none; user-select: none;
+}
+/* Forgot password modal */
+.forgot-overlay {
+  position: fixed; inset: 0; z-index: 100000;
+  background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.forgot-overlay.show { opacity: 1; pointer-events: all; }
+.forgot-card {
+  width: 380px; max-width: 90vw; background: #fff; border-radius: 14px;
+  padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
+.forgot-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+.forgot-card p { font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px; }
+.forgot-card input {
+  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+  border-radius: 9px; font-size: 14px; font-family: inherit;
+  margin-bottom: 14px; outline: none;
+}
+.forgot-card input:focus { border-color: var(--brand); }
+.forgot-card .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+.forgot-card .btn-row button {
+  padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; border: 1px solid var(--border);
+  background: #fff; color: var(--text);
+}
+.forgot-card .btn-row button.primary {
+  background: var(--brand); color: #fff; border-color: var(--brand);
+}
+
 </style>
 </head>
 <body data-lang="zh" data-role="admin" data-inv-mode="new" data-inv-region="all">
 
-<div class="app">
+<!-- ============= LOGIN SCREEN ============= -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-bg-decor">P</div>
+  <div class="login-card">
+    <div class="login-header">
+      <div class="login-logo">P</div>
+      <div class="login-title">PhonesInventory</div>
+      <div class="login-subtitle">
+        <span class="zh">iFixForU 跨店手机库存管理系统</span>
+        <span class="en">iFixForU Multi-Store Inventory System</span>
+      </div>
+    </div>
+    <div class="login-body">
+      <div class="login-error" id="loginError">
+        <span>⚠</span>
+        <span id="loginErrorText">
+          <span class="zh">邮箱或密码错误</span>
+          <span class="en">Incorrect email or PIN</span>
+        </span>
+      </div>
+      <div class="login-field">
+        <label>
+          <span class="zh">工作邮箱</span>
+          <span class="en">Work Email</span>
+        </label>
+        <input type="email" id="loginEmail" placeholder="name@ifixforu.com" autocomplete="email" />
+      </div>
+      <div class="login-field">
+        <label>
+          <span class="zh">6 位数密码</span>
+          <span class="en">6-Digit PIN</span>
+        </label>
+        <div class="login-pin-wrapper" id="pinWrapper">
+          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="0" />
+          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="1" />
+          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="2" />
+          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="3" />
+          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="4" />
+          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="5" />
+        </div>
+        <div class="field-hint" style="text-align:center;margin-top:6px;">
+          <span class="zh">请输入 6 位数字密码</span>
+          <span class="en">Enter your 6-digit numeric PIN</span>
+        </div>
+      </div>
+      <div class="login-options">
+        <label>
+          <input type="checkbox" id="rememberDevice" checked />
+          <span class="zh">记住此设备</span>
+          <span class="en">Remember device</span>
+        </label>
+        <a href="javascript:void(0)" onclick="showForgotPassword()">
+          <span class="zh">忘记密码?</span>
+          <span class="en">Forgot PIN?</span>
+        </a>
+      </div>
+      <button class="login-btn" id="loginBtn" onclick="doLogin()">
+        <span class="zh">登 录</span>
+        <span class="en">Sign In</span>
+      </button>
+    </div>
+    <div class="login-footer">
+      <div class="divider">
+        <span class="zh">安全登录</span>
+        <span class="en">Secure Login</span>
+      </div>
+      <div class="login-device-tag">
+        <span class="dot"></span>
+        <span id="loginDeviceInfo">—</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div class="forgot-overlay" id="forgotOverlay" onclick="if(event.target===this)closeForgotPassword()">
+  <div class="forgot-card">
+    <h3>
+      <span class="zh">🔑 忘记密码</span>
+      <span class="en">🔑 Forgot PIN</span>
+    </h3>
+    <p>
+      <span class="zh">输入你的工作邮箱，我们将发送重置链接。</span>
+      <span class="en">Enter your work email to receive a reset link.</span>
+    </p>
+    <input type="email" id="forgotEmail" placeholder="name@ifixforu.com" />
+    <div id="forgotSuccess" style="display:none;padding:12px;background:var(--success-soft);border-radius:8px;color:var(--success);font-size:12.5px;font-weight:600;margin-bottom:14px;">
+      <span class="zh">✅ 重置链接已发送到你的邮箱，请查收。</span>
+      <span class="en">✅ Reset link sent to your email.</span>
+    </div>
+    <div class="btn-row">
+      <button onclick="closeForgotPassword()">
+        <span class="zh">取消</span>
+        <span class="en">Cancel</span>
+      </button>
+      <button class="primary" onclick="sendResetLink()">
+        <span class="zh">发送重置链接</span>
+        <span class="en">Send Reset Link</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="app" style="display:none;" id="mainApp">
 
   <!-- ============= SIDEBAR ============= -->
   <!-- Sidebar backdrop for mobile -->
@@ -4835,6 +5082,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <path d="M5 6l3 3 3-3"/>
         </svg>
       </div>
+      <button onclick="doLogout()" style="width:100%;padding:8px;margin-top:8px;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-muted);font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.borderColor='var(--danger)';this.style.color='var(--danger)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-muted)'">
+        <span class="zh">退出登录</span>
+        <span class="en">Sign Out</span>
+      </button>
     </div>
   </aside>
 
@@ -11259,6 +11510,206 @@ document.addEventListener('click', e => {
   const text = btn.textContent.trim().substring(0, 30);
   if (text) showToast('📋 Demo · ' + text);
 });
+
+// ===== LOGIN SYSTEM =====
+const LOGIN_ACCOUNTS = {
+  'admin@ifixforu.com':    { pin:'888888', name:'Andy Wang',   role:'admin', store:'all' },
+  'jayden@ifixforu.com':   { pin:'100001', name:'Jayden Sun',  role:'staff', store:'Alhambra' },
+  'steve@ifixforu.com':    { pin:'100002', name:'Steve Shen',  role:'staff', store:'Monterey Park' },
+  'harry@ifixforu.com':    { pin:'100003', name:'Harry Zou',   role:'staff', store:'San Gabriel' },
+  'bill@ifixforu.com':     { pin:'100004', name:'Bill Han',    role:'staff', store:'Rowland Heights' },
+  'will@ifixforu.com':     { pin:'100005', name:'Will Jiang',  role:'staff', store:'Arcadia 1' },
+  'kelvin@ifixforu.com':   { pin:'100006', name:'Kelvin Liu',  role:'staff', store:'Arcadia 2' },
+  'cici@ifixforu.com':     { pin:'100007', name:'Cici',        role:'staff', store:'Irvine' },
+  'feiyang@ifixforu.com':  { pin:'100008', name:'Feiyang Zhao',role:'staff', store:'Rancho Cucamonga' },
+  'jason@ifixforu.com':    { pin:'100009', name:'Jason Zeng',  role:'staff', store:'Las Vegas' },
+  'chester@ifixforu.com':  { pin:'100010', name:'Chester',     role:'staff', store:'Alhambra' },
+};
+
+// Device fingerprint
+function getDeviceInfo() {
+  const ua = navigator.userAgent;
+  let device = 'Unknown Device';
+  if (/iPhone/.test(ua)) device = 'iPhone';
+  else if (/iPad/.test(ua)) device = 'iPad';
+  else if (/Mac/.test(ua)) device = 'Mac';
+  else if (/Android/.test(ua)) device = 'Android';
+  else if (/Windows/.test(ua)) device = 'Windows PC';
+  const el = document.getElementById('loginDeviceInfo');
+  if (el) el.textContent = device + ' · ' + new Date().toLocaleDateString();
+  return device;
+}
+
+// PIN input auto-advance
+(function() {
+  const pins = document.querySelectorAll('.pin-box');
+  pins.forEach((box, i) => {
+    box.addEventListener('input', function() {
+      this.value = this.value.replace(/[^0-9]/g, '');
+      if (this.value && i < pins.length - 1) pins[i + 1].focus();
+      if (i === pins.length - 1 && this.value) {
+        // Auto-submit when last digit entered
+        setTimeout(() => doLogin(), 100);
+      }
+    });
+    box.addEventListener('keydown', function(e) {
+      if (e.key === 'Backspace' && !this.value && i > 0) {
+        pins[i - 1].focus();
+        pins[i - 1].value = '';
+      }
+    });
+    // Allow paste of full PIN
+    box.addEventListener('paste', function(e) {
+      e.preventDefault();
+      const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+      for (let j = 0; j < Math.min(paste.length, 6); j++) {
+        pins[j].value = paste[j];
+      }
+      if (paste.length >= 6) setTimeout(() => doLogin(), 100);
+      else if (paste.length > 0) pins[Math.min(paste.length, 5)].focus();
+    });
+  });
+})();
+
+function getEnteredPin() {
+  return Array.from(document.querySelectorAll('.pin-box')).map(b => b.value).join('');
+}
+
+function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const pin = getEnteredPin();
+  const errorEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  if (!email) {
+    errorEl.querySelector('#loginErrorText').innerHTML =
+      '<span class="zh">请输入工作邮箱</span><span class="en">Please enter your work email</span>';
+    errorEl.classList.add('show');
+    document.getElementById('loginEmail').focus();
+    return;
+  }
+  if (pin.length < 6) {
+    errorEl.querySelector('#loginErrorText').innerHTML =
+      '<span class="zh">请输入完整 6 位密码</span><span class="en">Please enter all 6 digits</span>';
+    errorEl.classList.add('show');
+    return;
+  }
+
+  const account = LOGIN_ACCOUNTS[email];
+  if (!account || account.pin !== pin) {
+    errorEl.querySelector('#loginErrorText').innerHTML =
+      '<span class="zh">邮箱或密码错误，请重试</span><span class="en">Incorrect email or PIN</span>';
+    errorEl.classList.add('show');
+    // Shake animation
+    const card = document.querySelector('.login-card');
+    card.style.animation = 'none'; card.offsetHeight;
+    card.style.animation = 'loginShake 0.4s ease';
+    // Clear PIN
+    document.querySelectorAll('.pin-box').forEach(b => b.value = '');
+    document.querySelector('.pin-box').focus();
+    return;
+  }
+
+  // Success
+  errorEl.classList.remove('show');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="zh">登录中...</span><span class="en">Signing in...</span>';
+
+  // Save session
+  if (document.getElementById('rememberDevice').checked) {
+    localStorage.setItem('pi_session', JSON.stringify({
+      email, name: account.name, role: account.role, store: account.store,
+      device: getDeviceInfo(), ts: Date.now()
+    }));
+  }
+
+  // Apply role
+  if (account.role === 'staff') {
+    const adminBtn = document.querySelector('.role-switch button:first-child');
+    const staffBtn = document.querySelector('.role-switch button:last-child');
+    if (staffBtn) { setRole(staffBtn, 'staff'); }
+  }
+
+  // Transition
+  setTimeout(() => {
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('mainApp').style.display = '';
+    showToast('👋 ' + (document.body.dataset.lang === 'zh'
+      ? '欢迎回来, ' + account.name
+      : 'Welcome back, ' + account.name));
+    btn.disabled = false;
+    btn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
+  }, 600);
+}
+
+// Check saved session
+(function() {
+  getDeviceInfo();
+  const saved = localStorage.getItem('pi_session');
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      // Session valid for 30 days
+      if (Date.now() - s.ts < 30 * 86400000) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainApp').style.display = '';
+        if (s.role === 'staff') {
+          setTimeout(() => {
+            const staffBtn = document.querySelector('.role-switch button:last-child');
+            if (staffBtn) setRole(staffBtn, 'staff');
+          }, 100);
+        }
+        return;
+      }
+    } catch(e) {}
+  }
+  // Show login
+  document.getElementById('loginEmail').focus();
+})();
+
+// Forgot password
+function showForgotPassword() {
+  document.getElementById('forgotOverlay').classList.add('show');
+  document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value;
+  document.getElementById('forgotSuccess').style.display = 'none';
+  setTimeout(() => document.getElementById('forgotEmail').focus(), 100);
+}
+function closeForgotPassword() {
+  document.getElementById('forgotOverlay').classList.remove('show');
+}
+function sendResetLink() {
+  const email = document.getElementById('forgotEmail').value.trim();
+  if (!email || !email.includes('@')) {
+    document.getElementById('forgotEmail').style.borderColor = 'var(--danger)';
+    return;
+  }
+  document.getElementById('forgotEmail').style.borderColor = '';
+  document.getElementById('forgotSuccess').style.display = 'block';
+}
+
+// Logout
+function doLogout() {
+  localStorage.removeItem('pi_session');
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.querySelectorAll('.pin-box').forEach(b => b.value = '');
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginError').classList.remove('show');
+  document.getElementById('loginEmail').focus();
+  showToast('已退出登录 / Logged out');
+}
+
+// Enter key on email field → focus PIN
+document.getElementById('loginEmail').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') document.querySelector('.pin-box').focus();
+});
 </script>
+<style>
+@keyframes loginShake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-8px); }
+  40%,80% { transform: translateX(8px); }
+}
+</style>
 </body>
 </html>
