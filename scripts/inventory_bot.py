@@ -24,7 +24,7 @@ import traceback
 from datetime import datetime, timezone, timedelta
 
 # ─── Config ───
-BOT_TOKEN = "8150644814:AAEFF7axPiIOxNMaYTqfandfi7a9jAQ9z_k"
+BOT_TOKEN = "8682943904:AAHUj5DPOa6wdknmrNut4zJr2dZ1UTDTwLE"
 ALLOWED_CHAT_IDS = os.environ.get("ALLOWED_CHAT_IDS", "7625761638").split(",")
 # Supports private chats AND group chats — add group chat IDs to .env
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
