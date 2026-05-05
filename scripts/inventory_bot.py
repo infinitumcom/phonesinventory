@@ -47,6 +47,76 @@ STORE_LIST = {
     "hq": "HQ 总仓", "总仓": "HQ 总仓", "仓库": "HQ 总仓", "warehouse": "HQ 总仓", "office": "HQ 总仓",
 }
 
+# ─── Session Context (per chat) ───
+# Remembers what the user said, applies to subsequent photos
+chat_context = {}  # chat_id -> { condition, region, store, notes, updated_at }
+
+def parse_context(text):
+    """Parse natural language to extract session context."""
+    ctx = {}
+    t = text.lower().strip()
+
+    # Condition: new / used
+    if any(w in t for w in ["新机", "新手机", "全新", "sealed", "new", "未拆封"]):
+        ctx["condition"] = "new"
+    elif any(w in t for w in ["二手", "旧机", "used", "回收", "trade-in", "翻新"]):
+        ctx["condition"] = "used"
+
+    # Region
+    if any(w in t for w in ["港版", "香港", "hk版", "hk", "hong kong", "双卡"]):
+        ctx["region"] = "hk"
+    elif any(w in t for w in ["国行", "国版", "cn版", "cn", "大陆", "中国", "china"]):
+        ctx["region"] = "cn"
+    elif any(w in t for w in ["美版", "us版", "us", "美国", "american"]):
+        ctx["region"] = "us"
+
+    # Store
+    for key, name in STORE_LIST.items():
+        if key in t:
+            ctx["store"] = name
+            break
+
+    return ctx
+
+
+def get_context_summary(chat_id):
+    """Get human-readable summary of current context."""
+    ctx = chat_context.get(str(chat_id), {})
+    if not ctx:
+        return ""
+    parts = []
+    if ctx.get("condition"):
+        parts.append("🆕 新机" if ctx["condition"] == "new" else "♻️ 二手")
+    if ctx.get("region"):
+        flags = {"us": "🇺🇸 美版", "hk": "🇭🇰 港版", "cn": "🇨🇳 国行"}
+        parts.append(flags.get(ctx["region"], ctx["region"]))
+    if ctx.get("store"):
+        parts.append("📍 " + ctx["store"])
+    return " · ".join(parts)
+
+
+# Apple model number → region mapping
+MODEL_REGION_MAP = {
+    "LL": "us", "LL/A": "us",  # US
+    "ZA": "hk", "ZA/A": "hk", "ZP": "hk", "ZP/A": "hk",  # Hong Kong
+    "CH": "cn", "CH/A": "cn",  # China
+    "JP": "us", "JP/A": "us",  # Japan (treat as intl)
+    "KH": "us", "KH/A": "us",  # Korea
+    "B": "us", "B/A": "us",    # UK/EU
+}
+
+def detect_region_from_model(model_number):
+    """Detect region from Apple model number suffix like MG184LL/A."""
+    if not model_number:
+        return None
+    import re
+    m = re.search(r'[A-Z]\d{3,4}([A-Z]{1,2})/([A-Z])', model_number.upper())
+    if m:
+        suffix = m.group(1) + "/" + m.group(2)
+        return MODEL_REGION_MAP.get(suffix, MODEL_REGION_MAP.get(m.group(1)))
+    return None
+
+
 # ─── Database ───
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -253,10 +323,22 @@ IMPORTANT:
 def handle_photo(msg):
     """Process a photo message — extract phone info via Claude Vision."""
     chat_id = msg["chat"]["id"]
+    cid = str(chat_id)
     from_user = msg.get("from", {})
     username = from_user.get("first_name", "Unknown")
     caption = msg.get("caption", "")
     msg_id = msg["message_id"]
+
+    # If caption has context info, parse it into session
+    if caption:
+        cap_ctx = parse_context(caption)
+        if cap_ctx:
+            ctx = chat_context.get(cid, {})
+            ctx.update(cap_ctx)
+            chat_context[cid] = ctx
+
+    # Get current session context
+    ctx = chat_context.get(cid, {})
 
     # Get largest photo
     photos = msg.get("photo", [])
@@ -265,8 +347,12 @@ def handle_photo(msg):
         return
     file_id = photos[-1]["file_id"]
 
-    # Acknowledge
-    send_msg(chat_id, "📸 收到照片，正在识别中...\n_Analyzing photo..._", reply_to=msg_id)
+    # Acknowledge with context info
+    ctx_summary = get_context_summary(chat_id)
+    ack_text = "📸 收到照片，正在识别中...\n_Analyzing photo..._"
+    if ctx_summary:
+        ack_text += f"\n📋 当前设定: {ctx_summary}"
+    send_msg(chat_id, ack_text, reply_to=msg_id)
 
     # Download
     image_bytes = download_photo(file_id)
@@ -274,20 +360,42 @@ def handle_photo(msg):
         send_msg(chat_id, "❌ 下载照片失败 / Failed to download photo", reply_to=msg_id)
         return
 
+    # Build context hint for Claude Vision
+    context_hint = caption or ""
+    if ctx.get("condition"):
+        context_hint += f"\nUser specified condition: {ctx['condition']}"
+    if ctx.get("region"):
+        context_hint += f"\nUser specified region: {ctx['region']}"
+    if ctx.get("store"):
+        context_hint += f"\nUser specified store: {ctx['store']}"
+
     # Analyze with Claude Vision
-    entry, raw = analyze_photo(image_bytes, caption)
+    entry, raw = analyze_photo(image_bytes, context_hint)
     if not entry:
         send_msg(chat_id, f"❌ 识别失败 / Recognition failed\n\n`{raw[:500]}`", reply_to=msg_id)
         return
 
-    # Parse store from caption
-    store = ""
-    if caption:
+    # Apply session context overrides (user's word takes priority)
+    if ctx.get("condition") and not caption:
+        entry["condition"] = ctx["condition"]
+    if ctx.get("store"):
+        entry["store"] = ctx["store"]
+
+    # Region: user context > caption > model number detection > Claude guess
+    if ctx.get("region"):
+        entry["region"] = ctx["region"]
+    elif not entry.get("region") or entry["region"] == "us":
+        # Try to detect from model number
+        detected = detect_region_from_model(entry.get("model_number", ""))
+        if detected:
+            entry["region"] = detected
+
+    # Parse store from caption if not set by context
+    if not entry.get("store") and caption:
         for key, name in STORE_LIST.items():
             if key in caption.lower():
-                store = name
+                entry["store"] = name
                 break
-    entry["store"] = store or entry.get("store", "")
 
     # Save to DB
     rid = save_entry(entry, raw_ocr=raw, scanned_by=username)
@@ -335,23 +443,22 @@ def handle_command(msg):
     msg_id = msg["message_id"]
 
     if text == "/start":
-        send_msg(chat_id, """👋 *PhoneInventory Bot*
+        send_msg(chat_id, """👋 *PhoneInventory Upload Bot*
 
 📸 发送手机标签/包装盒照片即可自动入库
-可在照片说明中注明: 新机/二手 + 门店名
+
+💬 *自然语言设定（发照片前说一句）:*
+• 「这批是新机」→ 后续全部按新机入库
+• 「港版二手」→ 港版 + 二手
+• 「这些入Alhambra」→ 分配到 Alhambra 店
+• 「美版新机 入HQ」→ 美版 + 新机 + 总仓
 
 *命令:*
+/context — 查看当前设定
+/clear — 清除设定
 /list — 最近入库记录
 /stats — 库存统计
-/report — 发送日报
-/help — 帮助
-
-*门店缩写:*
-ALH=Alhambra · MP=Monterey Park
-SG=San Gabriel · RH=Rowland Heights
-AR1=Arcadia 1 · AR2=Arcadia 2
-IRV=Irvine · RC=Rancho Cucamonga
-LV=Las Vegas""", reply_to=msg_id)
+/help — 帮助""", reply_to=msg_id)
 
     elif text == "/list":
         entries = get_recent_entries(8)
@@ -416,8 +523,29 @@ LV=Las Vegas""", reply_to=msg_id)
 `二手 MP` — 二手机，Monterey Park 店
 `used SG 成本480` — 二手，San Gabriel，成本$480""", reply_to=msg_id)
 
+    elif text == "/clear":
+        chat_context.pop(str(chat_id), None)
+        send_msg(chat_id, "🔄 已清除当前设定 / Context cleared", reply_to=msg_id)
+
+    elif text == "/context":
+        summary = get_context_summary(chat_id)
+        if summary:
+            send_msg(chat_id, f"📋 *当前设定:* {summary}\n\n输入 /clear 可清除", reply_to=msg_id)
+        else:
+            send_msg(chat_id, "📋 当前无设定。\n发送文字设定批次信息，例如:\n「这批是港版新机 入Alhambra」", reply_to=msg_id)
+
     else:
-        send_msg(chat_id, "💡 发送手机照片即可入库，或输入 /help 查看帮助", reply_to=msg_id)
+        # Natural language → try to parse as context
+        ctx = parse_context(text)
+        if ctx:
+            cid = str(chat_id)
+            existing = chat_context.get(cid, {})
+            existing.update(ctx)
+            chat_context[cid] = existing
+            summary = get_context_summary(chat_id)
+            send_msg(chat_id, f"✅ *已设定:* {summary}\n\n后续发送的照片将自动应用此设定。\n发送 /clear 可清除。", reply_to=msg_id)
+        else:
+            send_msg(chat_id, "💡 发送手机照片即可入库\n\n或发送文字设定批次:\n「这批是新机」「港版二手」「入ALH」\n\n/help 查看更多帮助", reply_to=msg_id)
 
 
 # ─── Main Loop ───
