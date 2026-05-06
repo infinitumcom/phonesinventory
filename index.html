@@ -4674,150 +4674,124 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 }
 .login-screen.hidden { opacity: 0; pointer-events: none; transform: scale(1.02); }
 .login-card {
-  width: 400px; max-width: 92vw;
-  background: #fff; border-radius: 16px;
-  box-shadow: 0 25px 60px rgba(0,0,0,0.3);
-  overflow: hidden;
+  width: 380px; max-width: 90vw;
+  background: #fff; border-radius: 20px;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+  padding: 40px 32px 32px;
 }
-.login-header {
-  padding: 36px 32px 24px; text-align: center;
-  background: linear-gradient(180deg, #f8faf9 0%, #fff 100%);
-  border-bottom: 1px solid #eef0ed;
+@media (max-width: 480px) { .login-card { padding: 32px 20px 24px; } }
+.login-card .logo-row {
+  text-align: center; margin-bottom: 28px;
 }
-.login-logo {
-  width: 56px; height: 56px; border-radius: 14px;
+.login-card .logo-mark {
+  width: 52px; height: 52px; border-radius: 14px;
   background: var(--brand); color: #fff;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 26px; font-weight: 800; margin-bottom: 14px;
-  box-shadow: 0 4px 16px rgba(13,79,60,0.3);
+  font-size: 24px; font-weight: 800; margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(13,79,60,0.3);
 }
-.login-title { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 4px; }
-.login-subtitle { font-size: 12.5px; color: var(--text-muted); }
-.login-body { padding: 28px 32px 20px; }
-.login-field { margin-bottom: 16px; }
-.login-field label {
-  display: block; font-size: 11.5px; font-weight: 600; color: var(--text-soft);
-  margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em;
+.login-card .logo-title {
+  font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 4px;
 }
-.login-field input {
-  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
-  border-radius: 9px; font-size: 14px; font-family: inherit;
-  background: var(--bg-tinted); color: var(--text); outline: none;
+.login-card .logo-sub {
+  font-size: 12px; color: #888;
+}
+.login-card .form-group { margin-bottom: 18px; }
+.login-card .form-label {
+  display: block; font-size: 12px; font-weight: 600; color: #555;
+  margin-bottom: 6px;
+}
+.login-card .form-input {
+  width: 100%; padding: 12px 14px; border: 1.5px solid #ddd;
+  border-radius: 10px; font-size: 15px; font-family: inherit;
+  background: #fafafa; color: #1a1a1a; outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
 }
-.login-field input:focus {
+.login-card .form-input:focus {
   border-color: var(--brand); box-shadow: 0 0 0 3px rgba(13,79,60,0.1);
+  background: #fff;
 }
-.login-field input::placeholder { color: var(--text-faint); }
-.login-field .field-hint {
-  font-size: 10.5px; color: var(--text-faint); margin-top: 4px;
+.login-card .form-input::placeholder { color: #bbb; }
+.login-card .pin-input {
+  text-align: center; letter-spacing: 12px; font-size: 24px;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700;
+  padding-left: 26px;
 }
-.login-pin-wrapper {
-  display: flex; gap: 8px; justify-content: center;
-  position: relative; cursor: text;
-}
-.login-pin-wrapper .pin-hidden {
-  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-  opacity: 0; border: none; background: none;
-  font-size: 16px; /* prevent iOS zoom */
-  z-index: 2;
-}
-.pin-dot {
-  width: 44px; height: 52px;
-  display: flex; align-items: center; justify-content: center;
-  border: 1.5px solid var(--border); border-radius: 10px;
-  background: var(--bg-tinted);
-  transition: border-color 0.2s, box-shadow 0.2s;
-  font-size: 28px; color: var(--text);
-}
-.pin-dot.filled::after {
-  content: ''; width: 10px; height: 10px; border-radius: 50%;
-  background: var(--text);
-}
-.pin-dot.active {
-  border-color: var(--brand); box-shadow: 0 0 0 3px rgba(13,79,60,0.1);
-}
-.login-options {
+.login-card .options-row {
   display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 20px; font-size: 12px;
+  margin-bottom: 22px; font-size: 12px;
 }
-.login-options label {
-  display: flex; align-items: center; gap: 6px; color: var(--text-soft); cursor: pointer;
+.login-card .options-row label {
+  display: flex; align-items: center; gap: 6px; color: #666; cursor: pointer;
 }
-.login-options label input[type="checkbox"] {
-  accent-color: var(--brand); width: 15px; height: 15px;
-}
-.login-options a {
+.login-card .options-row label input { accent-color: var(--brand); width: 14px; height: 14px; }
+.login-card .options-row a {
   color: var(--brand); text-decoration: none; font-weight: 600;
 }
-.login-options a:hover { text-decoration: underline; }
-.login-btn {
+.login-card .options-row a:hover { text-decoration: underline; }
+.login-card .submit-btn {
   width: 100%; padding: 13px; border: none; border-radius: 10px;
   background: var(--brand); color: #fff;
-  font-size: 14.5px; font-weight: 700; cursor: pointer;
-  font-family: inherit;
-  transition: background 0.2s, transform 0.1s;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: background 0.15s, transform 0.1s;
 }
-.login-btn:hover { background: var(--brand-hover); }
-.login-btn:active { transform: scale(0.98); }
-.login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.login-footer {
-  padding: 16px 32px 24px; text-align: center;
-}
-.login-footer .divider {
-  display: flex; align-items: center; gap: 12px;
-  font-size: 11px; color: var(--text-faint); margin-bottom: 14px;
-}
-.login-footer .divider::before, .login-footer .divider::after {
-  content: ''; flex: 1; height: 1px; background: var(--border);
-}
-.login-device-tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 12px; border-radius: 8px;
-  background: var(--bg-tinted); border: 1px solid var(--border);
-  font-size: 11px; color: var(--text-muted);
-}
-.login-device-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
-.login-error {
+.login-card .submit-btn:hover { background: #0b6344; }
+.login-card .submit-btn:active { transform: scale(0.98); }
+.login-card .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.login-card .login-error {
   padding: 10px 14px; border-radius: 8px;
-  background: rgba(220,53,69,0.08); color: var(--danger);
-  font-size: 12px; font-weight: 600; margin-bottom: 14px;
+  background: #fef2f2; color: #dc3545;
+  font-size: 12.5px; font-weight: 600; margin-bottom: 16px;
   display: none; align-items: center; gap: 8px;
 }
-.login-error.show { display: flex; }
-.login-bg-decor {
+.login-card .login-error.show { display: flex; }
+.login-card .footer-info {
+  text-align: center; margin-top: 20px; padding-top: 16px;
+  border-top: 1px solid #eee; font-size: 11px; color: #aaa;
+}
+.login-bg-text {
   position: fixed; z-index: -1;
-  opacity: 0.06; font-size: 280px; font-weight: 900; color: #fff;
+  opacity: 0.05; font-size: 260px; font-weight: 900; color: #fff;
   top: 50%; left: 50%; transform: translate(-50%, -50%);
   pointer-events: none; user-select: none;
 }
-/* Forgot password modal */
-.forgot-overlay {
+/* Modal overlay (forgot password / change PIN) */
+.modal-overlay {
   position: fixed; inset: 0; z-index: 100000;
   background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity 0.2s;
 }
-.forgot-overlay.show { opacity: 1; pointer-events: all; }
-.forgot-card {
-  width: 380px; max-width: 90vw; background: #fff; border-radius: 14px;
+.modal-overlay.show { opacity: 1; pointer-events: all; }
+.modal-box {
+  width: 380px; max-width: 90vw; background: #fff; border-radius: 16px;
   padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);
 }
-.forgot-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
-.forgot-card p { font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px; }
-.forgot-card input {
-  width: 100%; padding: 11px 14px; border: 1.5px solid var(--border);
+.modal-box h3 { font-size: 16px; font-weight: 800; margin-bottom: 6px; }
+.modal-box p { font-size: 12.5px; color: #888; margin-bottom: 18px; }
+.modal-box input {
+  width: 100%; padding: 11px 14px; border: 1.5px solid #ddd;
   border-radius: 9px; font-size: 14px; font-family: inherit;
-  margin-bottom: 14px; outline: none;
+  margin-bottom: 12px; outline: none; box-sizing: border-box;
 }
-.forgot-card input:focus { border-color: var(--brand); }
-.forgot-card .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
-.forgot-card .btn-row button {
+.modal-box input:focus { border-color: var(--brand); }
+.modal-box .btn-row { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-box .btn-row button {
   padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
-  cursor: pointer; font-family: inherit; border: 1px solid var(--border);
-  background: #fff; color: var(--text);
+  cursor: pointer; font-family: inherit; border: 1px solid #ddd;
+  background: #fff; color: #333;
 }
-.forgot-card .btn-row button.primary {
+.modal-box .btn-row button.primary {
   background: var(--brand); color: #fff; border-color: var(--brand);
+}
+.modal-box .modal-error {
+  padding: 10px; background: #fef2f2; border-radius: 8px; color: #dc3545;
+  font-size: 12px; font-weight: 600; margin-bottom: 12px; display: none;
+}
+@keyframes loginShake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-8px); }
+  40%,80% { transform: translateX(8px); }
 }
 
 </style>
@@ -4826,137 +4800,85 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
 <!-- ============= LOGIN SCREEN ============= -->
 <div class="login-screen" id="loginScreen">
-  <div class="login-bg-decor">P</div>
+  <div class="login-bg-text">P</div>
   <div class="login-card">
-    <div class="login-header">
-      <div class="login-logo">P</div>
-      <div class="login-title">PhonesInventory</div>
-      <div class="login-subtitle">
+    <div class="logo-row">
+      <div class="logo-mark">P</div>
+      <div class="logo-title">PhonesInventory</div>
+      <div class="logo-sub">
         <span class="zh">iFixForU 跨店手机库存管理系统</span>
         <span class="en">iFixForU Multi-Store Inventory System</span>
       </div>
     </div>
-    <div class="login-body">
-      <div class="login-error" id="loginError">
-        <span>⚠</span>
-        <span id="loginErrorText">
-          <span class="zh">邮箱或密码错误</span>
-          <span class="en">Incorrect email or PIN</span>
-        </span>
-      </div>
-      <div class="login-field">
-        <label>
-          <span class="zh">工作邮箱</span>
-          <span class="en">Work Email</span>
-        </label>
-        <input type="email" id="loginEmail" placeholder="name@ifixforu.com" autocomplete="email" />
-      </div>
-      <div class="login-field">
-        <label>
-          <span class="zh">6 位数密码</span>
-          <span class="en">6-Digit PIN</span>
-        </label>
-        <div class="login-pin-wrapper" id="pinWrapper" onclick="document.getElementById('pinInput').focus()">
-          <input type="tel" id="pinInput" class="pin-hidden" maxlength="6" inputmode="numeric" autocomplete="off" />
-          <div class="pin-dot" data-i="0"></div>
-          <div class="pin-dot" data-i="1"></div>
-          <div class="pin-dot" data-i="2"></div>
-          <div class="pin-dot" data-i="3"></div>
-          <div class="pin-dot" data-i="4"></div>
-          <div class="pin-dot" data-i="5"></div>
-        </div>
-        <div class="field-hint" style="text-align:center;margin-top:6px;">
-          <span class="zh">请输入 6 位数字密码</span>
-          <span class="en">Enter your 6-digit numeric PIN</span>
-        </div>
-      </div>
-      <div class="login-options">
-        <label>
-          <input type="checkbox" id="rememberDevice" checked />
-          <span class="zh">记住此设备</span>
-          <span class="en">Remember device</span>
-        </label>
-        <a href="javascript:void(0)" onclick="showForgotPassword()">
-          <span class="zh">忘记密码?</span>
-          <span class="en">Forgot PIN?</span>
-        </a>
-      </div>
-      <button class="login-btn" id="loginBtn" onclick="doLogin()">
-        <span class="zh">登 录</span>
-        <span class="en">Sign In</span>
-      </button>
+
+    <div class="login-error" id="loginError">
+      <span>⚠</span>
+      <span id="loginErrorText"></span>
     </div>
-    <div class="login-footer">
-      <div class="divider">
-        <span class="zh">安全登录</span>
-        <span class="en">Secure Login</span>
-      </div>
-      <div class="login-device-tag">
-        <span class="dot"></span>
-        <span id="loginDeviceInfo">—</span>
-      </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        <span class="zh">工作邮箱</span><span class="en">Work Email</span>
+      </label>
+      <input type="email" id="loginEmail" class="form-input" placeholder="name@ifixforu.com" autocomplete="email" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
+        <span class="zh">6 位数密码</span><span class="en">6-Digit PIN</span>
+      </label>
+      <input type="password" id="loginPin" class="form-input pin-input" maxlength="6" inputmode="numeric" placeholder="······" autocomplete="off" />
+    </div>
+
+    <div class="options-row">
+      <label>
+        <input type="checkbox" id="rememberDevice" checked />
+        <span class="zh">记住此设备</span><span class="en">Remember device</span>
+      </label>
+      <a href="javascript:void(0)" onclick="showForgotPassword()">
+        <span class="zh">忘记密码?</span><span class="en">Forgot PIN?</span>
+      </a>
+    </div>
+
+    <button class="submit-btn" id="loginBtn" onclick="doLogin()">
+      <span class="zh">登 录</span><span class="en">Sign In</span>
+    </button>
+
+    <div class="footer-info">
+      <span class="zh">安全登录 · iFixForU 内部系统</span>
+      <span class="en">Secure Login · iFixForU Internal</span>
     </div>
   </div>
 </div>
 
 <!-- Change Password Modal (first login) -->
-<div class="forgot-overlay" id="changePinOverlay">
-  <div class="forgot-card">
-    <h3>
-      <span class="zh">🔐 首次登录 · 请修改密码</span>
-      <span class="en">🔐 First Login · Change PIN</span>
-    </h3>
-    <p>
-      <span class="zh">为了账户安全，请设置您的专属 6 位数密码。</span>
-      <span class="en">For security, please set your own 6-digit PIN.</span>
-    </p>
-    <div style="margin-bottom:12px;">
-      <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px;">
-        <span class="zh">新密码 (6 位数)</span><span class="en">New PIN (6 digits)</span>
-      </label>
-      <input type="password" id="newPin1" maxlength="6" pattern="[0-9]*" inputmode="numeric"
-             placeholder="••••••" style="font-size:18px;letter-spacing:8px;text-align:center;" />
+<div class="modal-overlay" id="changePinOverlay">
+  <div class="modal-box">
+    <h3><span class="zh">首次登录 · 请修改密码</span><span class="en">First Login · Change PIN</span></h3>
+    <p><span class="zh">为了账户安全，请设置您的专属 6 位数密码。</span><span class="en">For security, please set your own 6-digit PIN.</span></p>
+    <div class="modal-error" id="changePinError"></div>
+    <input type="password" id="newPin1" maxlength="6" inputmode="numeric" placeholder="New PIN (6 digits)" style="text-align:center;letter-spacing:8px;font-size:18px;" />
+    <input type="password" id="newPin2" maxlength="6" inputmode="numeric" placeholder="Confirm PIN" style="text-align:center;letter-spacing:8px;font-size:18px;" />
+    <div class="btn-row">
+      <button class="primary" style="flex:1;" onclick="submitNewPin()">
+        <span class="zh">确认修改</span><span class="en">Confirm</span>
+      </button>
     </div>
-    <div style="margin-bottom:16px;">
-      <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px;">
-        <span class="zh">确认新密码</span><span class="en">Confirm New PIN</span>
-      </label>
-      <input type="password" id="newPin2" maxlength="6" pattern="[0-9]*" inputmode="numeric"
-             placeholder="••••••" style="font-size:18px;letter-spacing:8px;text-align:center;" />
-    </div>
-    <div id="changePinError" style="display:none;padding:10px;background:var(--danger-soft);border-radius:8px;color:var(--danger);font-size:12px;font-weight:600;margin-bottom:12px;"></div>
-    <button class="primary" style="width:100%;" onclick="submitNewPin()">
-      <span class="zh">确认修改</span>
-      <span class="en">Confirm Change</span>
-    </button>
   </div>
 </div>
 
 <!-- Forgot Password Modal -->
-<div class="forgot-overlay" id="forgotOverlay" onclick="if(event.target===this)closeForgotPassword()">
-  <div class="forgot-card">
-    <h3>
-      <span class="zh">🔑 忘记密码</span>
-      <span class="en">🔑 Forgot PIN</span>
-    </h3>
-    <p>
-      <span class="zh">输入你的工作邮箱，我们将发送重置链接。</span>
-      <span class="en">Enter your work email to receive a reset link.</span>
-    </p>
+<div class="modal-overlay" id="forgotOverlay" onclick="if(event.target===this)closeForgotPassword()">
+  <div class="modal-box">
+    <h3><span class="zh">忘记密码</span><span class="en">Forgot PIN</span></h3>
+    <p><span class="zh">输入你的工作邮箱，我们将发送重置链接。</span><span class="en">Enter your work email to receive a reset link.</span></p>
     <input type="email" id="forgotEmail" placeholder="name@ifixforu.com" />
-    <div id="forgotSuccess" style="display:none;padding:12px;background:var(--success-soft);border-radius:8px;color:var(--success);font-size:12.5px;font-weight:600;margin-bottom:14px;">
-      <span class="zh">✅ 重置链接已发送到你的邮箱，请查收。</span>
-      <span class="en">✅ Reset link sent to your email.</span>
+    <div id="forgotSuccess" style="display:none;padding:12px;background:#f0fdf4;border-radius:8px;color:#16a34a;font-size:12.5px;font-weight:600;margin-bottom:12px;">
+      <span class="zh">✅ 重置链接已发送到你的邮箱。</span><span class="en">✅ Reset link sent.</span>
     </div>
     <div class="btn-row">
-      <button onclick="closeForgotPassword()">
-        <span class="zh">取消</span>
-        <span class="en">Cancel</span>
-      </button>
-      <button class="primary" onclick="sendResetLink()">
-        <span class="zh">发送重置链接</span>
-        <span class="en">Send Reset Link</span>
-      </button>
+      <button onclick="closeForgotPassword()"><span class="zh">取消</span><span class="en">Cancel</span></button>
+      <button class="primary" onclick="sendResetLink()"><span class="zh">发送</span><span class="en">Send</span></button>
     </div>
   </div>
 </div>
@@ -10951,91 +10873,69 @@ const LOGIN_ACCOUNTS = {
   'chester@ifixforu.com':  { pin:'888888', name:'Chester',     role:'staff', store:'Alhambra' },
 };
 
-// Device fingerprint
-function getDeviceInfo() {
-  const ua = navigator.userAgent;
-  let device = 'Unknown Device';
-  if (/iPhone/.test(ua)) device = 'iPhone';
-  else if (/iPad/.test(ua)) device = 'iPad';
-  else if (/Mac/.test(ua)) device = 'Mac';
-  else if (/Android/.test(ua)) device = 'Android';
-  else if (/Windows/.test(ua)) device = 'Windows PC';
-  const el = document.getElementById('loginDeviceInfo');
-  if (el) el.textContent = device + ' · ' + new Date().toLocaleDateString();
-  return device;
-}
-
-// PIN input — single hidden input + visual dots
+// Restore changed PINs
 (function() {
-  const input = document.getElementById('pinInput');
-  const dots = document.querySelectorAll('.pin-dot');
-  function updateDots() {
-    const val = input.value.replace(/\D/g, '').slice(0, 6);
-    input.value = val;
-    dots.forEach((dot, i) => {
-      dot.classList.toggle('filled', i < val.length);
-      dot.classList.toggle('active', i === val.length);
-    });
-    if (val.length === 6) setTimeout(() => doLogin(), 150);
+  const saved = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+  for (const [e, p] of Object.entries(saved)) {
+    if (LOGIN_ACCOUNTS[e]) LOGIN_ACCOUNTS[e].pin = p;
   }
-  input.addEventListener('input', updateDots);
-  input.addEventListener('keyup', updateDots);
-  input.addEventListener('focus', function() { updateDots(); });
-  input.addEventListener('blur', function() { dots.forEach(d => d.classList.remove('active')); });
 })();
 
-function getEnteredPin() {
-  return document.getElementById('pinInput').value.replace(/\D/g, '').slice(0, 6);
-}
-function clearPin() {
-  document.getElementById('pinInput').value = '';
-  document.querySelectorAll('.pin-dot').forEach(d => { d.classList.remove('filled','active'); });
+// PIN field: only allow digits, auto-submit on 6
+document.getElementById('loginPin').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g, '').slice(0, 6);
+  if (this.value.length === 6) setTimeout(() => doLogin(), 100);
+});
+
+// Enter on email → focus PIN
+document.getElementById('loginEmail').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('loginPin').focus(); }
+});
+
+// Enter on PIN → submit
+document.getElementById('loginPin').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
+});
+
+function showError(msg) {
+  const el = document.getElementById('loginError');
+  document.getElementById('loginErrorText').innerHTML = msg;
+  el.classList.add('show');
 }
 
 function doLogin() {
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-  const pin = getEnteredPin();
+  const pin = document.getElementById('loginPin').value.replace(/\D/g, '');
   const errorEl = document.getElementById('loginError');
-  const btn = document.getElementById('loginBtn');
 
   if (!email) {
-    errorEl.querySelector('#loginErrorText').innerHTML =
-      '<span class="zh">请输入工作邮箱</span><span class="en">Please enter your work email</span>';
-    errorEl.classList.add('show');
+    showError('<span class="zh">请输入工作邮箱</span><span class="en">Please enter your email</span>');
     document.getElementById('loginEmail').focus();
     return;
   }
   if (pin.length < 6) {
-    errorEl.querySelector('#loginErrorText').innerHTML =
-      '<span class="zh">请输入完整 6 位密码</span><span class="en">Please enter all 6 digits</span>';
-    errorEl.classList.add('show');
+    showError('<span class="zh">请输入 6 位密码</span><span class="en">Enter 6-digit PIN</span>');
+    document.getElementById('loginPin').focus();
     return;
   }
 
   const account = LOGIN_ACCOUNTS[email];
   if (!account || account.pin !== pin) {
-    errorEl.querySelector('#loginErrorText').innerHTML =
-      '<span class="zh">邮箱或密码错误，请重试</span><span class="en">Incorrect email or PIN</span>';
-    errorEl.classList.add('show');
-    // Shake animation
+    showError('<span class="zh">邮箱或密码错误</span><span class="en">Incorrect email or PIN</span>');
     const card = document.querySelector('.login-card');
     card.style.animation = 'none'; card.offsetHeight;
     card.style.animation = 'loginShake 0.4s ease';
-    // Clear PIN
-    clearPin();
-    document.getElementById('pinInput').focus();
+    document.getElementById('loginPin').value = '';
+    document.getElementById('loginPin').focus();
     return;
   }
 
-  // Success — check if first login (needs password change)
   errorEl.classList.remove('show');
 
-  // Check if user has changed their PIN (stored in localStorage)
-  const changedPins = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-  if (!changedPins[email]) {
-    // First login — force password change
-    window._pendingLoginEmail = email;
-    window._pendingLoginAccount = account;
+  // First login → force change PIN
+  const changed = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+  if (!changed[email]) {
+    window._pendLogin = { email, account };
     document.getElementById('changePinOverlay').classList.add('show');
     document.getElementById('newPin1').value = '';
     document.getElementById('newPin2').value = '';
@@ -11050,179 +10950,110 @@ function doLogin() {
 function completeLogin(email, account) {
   const btn = document.getElementById('loginBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="zh">登录中...</span><span class="en">Signing in...</span>';
+  btn.textContent = '...';
 
-  // Save session
   if (document.getElementById('rememberDevice').checked) {
     localStorage.setItem('pi_session', JSON.stringify({
-      email, name: account.name, role: account.role, store: account.store,
-      device: getDeviceInfo(), ts: Date.now()
+      email, name: account.name, role: account.role, store: account.store, ts: Date.now()
     }));
   }
 
-  // Apply role
   if (account.role === 'staff') {
-    const adminBtn = document.querySelector('.role-switch button:first-child');
     const staffBtn = document.querySelector('.role-switch button:last-child');
-    if (staffBtn) { setRole(staffBtn, 'staff'); }
+    if (staffBtn) setRole(staffBtn, 'staff');
   }
 
-  // Transition
   setTimeout(() => {
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('mainApp').style.display = '';
-    showToast('👋 ' + (document.body.dataset.lang === 'zh'
-      ? '欢迎回来, ' + account.name
-      : 'Welcome back, ' + account.name));
+    showToast('👋 ' + (document.body.dataset.lang === 'zh' ? '欢迎回来, ' : 'Welcome, ') + account.name);
     btn.disabled = false;
     btn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
     initDynamicUI(account);
-  }, 600);
+  }, 500);
 }
 
 function submitNewPin() {
   const p1 = document.getElementById('newPin1').value.replace(/\D/g, '');
   const p2 = document.getElementById('newPin2').value.replace(/\D/g, '');
-  const errEl = document.getElementById('changePinError');
+  const err = document.getElementById('changePinError');
 
-  if (p1.length < 6) {
-    errEl.innerHTML = '<span class="zh">请输入 6 位数密码</span><span class="en">PIN must be 6 digits</span>';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (p1 === '888888') {
-    errEl.innerHTML = '<span class="zh">新密码不能与初始密码相同</span><span class="en">New PIN cannot be the same as default</span>';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (p1 !== p2) {
-    errEl.innerHTML = '<span class="zh">两次输入的密码不一致</span><span class="en">PINs do not match</span>';
-    errEl.style.display = 'block';
-    return;
-  }
+  if (p1.length < 6) { err.textContent = 'PIN must be 6 digits'; err.style.display = 'block'; return; }
+  if (p1 === '888888') { err.textContent = 'Cannot use default PIN'; err.style.display = 'block'; return; }
+  if (p1 !== p2) { err.textContent = 'PINs do not match'; err.style.display = 'block'; return; }
 
-  const email = window._pendingLoginEmail;
-  const account = window._pendingLoginAccount;
-
-  // Update PIN in memory and mark as changed
+  const { email, account } = window._pendLogin;
   account.pin = p1;
-  const changedPins = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-  changedPins[email] = p1;
-  localStorage.setItem('pi_changed_pins', JSON.stringify(changedPins));
+  const changed = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+  changed[email] = p1;
+  localStorage.setItem('pi_changed_pins', JSON.stringify(changed));
 
-  // Close modal and complete login
   document.getElementById('changePinOverlay').classList.remove('show');
-  showToast(document.body.dataset.lang === 'zh' ? '✅ 密码修改成功' : '✅ PIN changed successfully');
+  showToast('✅ PIN changed');
   completeLogin(email, account);
 }
 
-// Dynamic UI: date, greeting
 function initDynamicUI(account) {
-  const now = new Date();
-  const h = now.getHours();
-  const greetZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';
-  const greetEn = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-  const dateStr = now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+  const h = new Date().getHours();
+  const gZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';
+  const gEn = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  const dateStr = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
 
-  // Hero date
-  const hereDateEl = document.getElementById('hereDateStr');
-  if (hereDateEl) hereDateEl.textContent = dateStr;
-
-  // My Account greeting
-  const maGreetZh = document.getElementById('maGreetZh');
-  const maGreetEn = document.getElementById('maGreetEn');
-  if (maGreetZh && account) maGreetZh.textContent = greetZh + ',' + account.name;
-  if (maGreetEn && account) maGreetEn.textContent = greetEn + ', ' + account.name;
-
-  // My Account store meta
-  const maMeta = document.getElementById('maStoreMeta');
-  if (maMeta && account) {
-    const roleZh = account.role === 'admin' ? '管理员' : '店员';
-    const roleEn = account.role === 'admin' ? 'Admin' : 'Staff';
-    maMeta.innerHTML = '📍 ' + account.store + ' · <span class="zh">' + roleZh + '</span><span class="en">' + roleEn + '</span>';
+  const el = id => document.getElementById(id);
+  if (el('hereDateStr')) el('hereDateStr').textContent = dateStr;
+  if (el('maGreetZh') && account) el('maGreetZh').textContent = gZh + ',' + account.name;
+  if (el('maGreetEn') && account) el('maGreetEn').textContent = gEn + ', ' + account.name;
+  if (el('maStoreMeta') && account) {
+    const rZh = account.role === 'admin' ? '管理员' : '店员';
+    const rEn = account.role === 'admin' ? 'Admin' : 'Staff';
+    el('maStoreMeta').innerHTML = '📍 ' + account.store + ' · <span class="zh">' + rZh + '</span><span class="en">' + rEn + '</span>';
   }
 }
 
-// Restore changed PINs from localStorage
+// Auto-login from saved session
 (function() {
-  const changedPins = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-  for (const [email, pin] of Object.entries(changedPins)) {
-    if (LOGIN_ACCOUNTS[email]) LOGIN_ACCOUNTS[email].pin = pin;
-  }
-})();
-
-// Check saved session
-(function() {
-  getDeviceInfo();
   const saved = localStorage.getItem('pi_session');
   if (saved) {
     try {
       const s = JSON.parse(saved);
-      // Session valid for 30 days
       if (Date.now() - s.ts < 30 * 86400000) {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainApp').style.display = '';
         if (s.role === 'staff') {
-          setTimeout(() => {
-            const staffBtn = document.querySelector('.role-switch button:last-child');
-            if (staffBtn) setRole(staffBtn, 'staff');
-          }, 100);
+          setTimeout(() => { const b = document.querySelector('.role-switch button:last-child'); if (b) setRole(b, 'staff'); }, 100);
         }
-        // Init dynamic UI with session data
         setTimeout(() => initDynamicUI({ name: s.name, role: s.role, store: s.store }), 200);
         return;
       }
     } catch(e) {}
   }
-  // Show login
   document.getElementById('loginEmail').focus();
-  // Still init date for hero
   setTimeout(() => initDynamicUI(null), 200);
 })();
 
-// Forgot password
 function showForgotPassword() {
   document.getElementById('forgotOverlay').classList.add('show');
   document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value;
   document.getElementById('forgotSuccess').style.display = 'none';
-  setTimeout(() => document.getElementById('forgotEmail').focus(), 100);
 }
-function closeForgotPassword() {
-  document.getElementById('forgotOverlay').classList.remove('show');
-}
+function closeForgotPassword() { document.getElementById('forgotOverlay').classList.remove('show'); }
 function sendResetLink() {
-  const email = document.getElementById('forgotEmail').value.trim();
-  if (!email || !email.includes('@')) {
-    document.getElementById('forgotEmail').style.borderColor = 'var(--danger)';
-    return;
-  }
+  const e = document.getElementById('forgotEmail').value.trim();
+  if (!e || !e.includes('@')) { document.getElementById('forgotEmail').style.borderColor = '#dc3545'; return; }
   document.getElementById('forgotEmail').style.borderColor = '';
   document.getElementById('forgotSuccess').style.display = 'block';
 }
 
-// Logout
 function doLogout() {
   localStorage.removeItem('pi_session');
   document.getElementById('mainApp').style.display = 'none';
   document.getElementById('loginScreen').classList.remove('hidden');
-  clearPin();
+  document.getElementById('loginPin').value = '';
   document.getElementById('loginEmail').value = '';
   document.getElementById('loginError').classList.remove('show');
   document.getElementById('loginEmail').focus();
-  showToast('已退出登录 / Logged out');
+  showToast('已退出 / Logged out');
 }
-
-// Enter key on email field → focus PIN
-document.getElementById('loginEmail').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('pinInput').focus();
-});
 </script>
-<style>
-@keyframes loginShake {
-  0%,100% { transform: translateX(0); }
-  20%,60% { transform: translateX(-8px); }
-  40%,80% { transform: translateX(8px); }
-}
-</style>
 </body>
 </html>
