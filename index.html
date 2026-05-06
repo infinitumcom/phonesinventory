@@ -4994,20 +4994,26 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     }, 400);
   }
 
-  // Auto-login from saved session
+  // Auto-login from saved session (must wait for DOM since mainApp is after this script)
   try {
     var sess = localStorage.getItem('pi_session');
     if (sess) {
       var s = JSON.parse(sess);
       if (Date.now() - s.ts < 30 * 86400000) {
+        // Hide login immediately (element exists above this script)
         document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('mainApp').style.display = '';
-        var sessionAcct = { name: s.name, role: s.role, store: s.store };
-        window._currentAccount = sessionAcct;
-        setTimeout(function() {
-          try { if (window.setRole) window.setRole(null, s.role, sessionAcct); } catch(e){}
-          try { if (window.initDynamicUI) window.initDynamicUI(sessionAcct); } catch(e){}
-        }, 200);
+        // Show mainApp after DOM is ready (element is below this script)
+        window._autoLoginSession = s;
+        document.addEventListener('DOMContentLoaded', function() {
+          var app = document.getElementById('mainApp');
+          if (app) app.style.display = '';
+          var sa = { name: s.name, role: s.role, store: s.store };
+          window._currentAccount = sa;
+          setTimeout(function() {
+            try { if (window.setRole) window.setRole(null, s.role, sa); } catch(e){}
+            try { if (window.initDynamicUI) window.initDynamicUI(sa); } catch(e){}
+          }, 100);
+        });
       }
     }
   } catch(e){}
