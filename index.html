@@ -4968,10 +4968,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       loginBtn.disabled = false;
       loginBtn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
 
-      // Set role if staff
-      if (acct.role === 'staff') {
-        try { var sb = document.querySelector('.role-switch button:last-child'); if (sb && window.setRole) window.setRole(sb, 'staff'); } catch(e){}
-      }
+      // Set role and user info based on login account
+      window._currentAccount = acct;
+      try { if (window.setRole) window.setRole(null, acct.role, acct); } catch(e){}
       // Init dynamic UI
       try { if (window.initDynamicUI) window.initDynamicUI(acct); } catch(e){}
       // Toast
@@ -5003,10 +5002,12 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       if (Date.now() - s.ts < 30 * 86400000) {
         document.getElementById('loginScreen').classList.add('hidden');
         document.getElementById('mainApp').style.display = '';
-        if (s.role === 'staff') {
-          setTimeout(function() { try { var b = document.querySelector('.role-switch button:last-child'); if (b && window.setRole) window.setRole(b, 'staff'); } catch(e){} }, 100);
-        }
-        setTimeout(function() { try { if (window.initDynamicUI) window.initDynamicUI({ name: s.name, role: s.role, store: s.store }); } catch(e){} }, 200);
+        var sessionAcct = { name: s.name, role: s.role, store: s.store };
+        window._currentAccount = sessionAcct;
+        setTimeout(function() {
+          try { if (window.setRole) window.setRole(null, s.role, sessionAcct); } catch(e){}
+          try { if (window.initDynamicUI) window.initDynamicUI(sessionAcct); } catch(e){}
+        }, 200);
       }
     }
   } catch(e){}
@@ -5239,17 +5240,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
   <!-- ============= MAIN ============= -->
   <main>
-    <!-- DEMO MODE BANNER -->
-    <div class="demo-banner">
-      <span>🎭</span>
-      <span class="zh">演示模式 · 当前角色:</span>
-      <span class="en">Demo mode · Current role:</span>
-      <strong id="roleLabelZh" class="zh">管理员 (Andy)</strong>
-      <strong id="roleLabelEn" class="en">Admin (Andy)</strong>
-      <span style="opacity:0.6;">·</span>
-      <span class="zh">点击右上角切换查看员工视图</span>
-      <span class="en">Switch role at top-right to see staff view</span>
-    </div>
+    <!-- Role labels (hidden, used by JS) -->
+    <span id="roleLabelZh" style="display:none;"></span>
+    <span id="roleLabelEn" style="display:none;"></span>
     <div class="topbar">
       <!-- Mobile menu toggle (hamburger) - only shown on phones -->
       <button class="mobile-menu-toggle" onclick="toggleMobileSidebar()" aria-label="Open menu">
@@ -5265,16 +5258,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       </div>
       <div class="topbar-spacer"></div>
       <div class="topbar-actions">
-        <div class="role-switch">
-          <button class="active admin-mode" onclick="setRole(this, 'admin')">
-            <span>👑</span>
-            <span class="zh">管理员</span><span class="en">Admin</span>
-          </button>
-          <button onclick="setRole(this, 'staff')">
-            <span>👤</span>
-            <span class="zh">员工</span><span class="en">Staff</span>
-          </button>
-        </div>
+        <!-- Role is set automatically based on login account -->
         <div class="lang-toggle">
           <button class="active" onclick="setLang(this,'zh')">中文</button>
           <button onclick="setLang(this,'en')">EN</button>
@@ -10864,63 +10848,46 @@ document.addEventListener('keydown', function(e) {
 renderInventory();
 
 
-// ===== Role switching (demo) =====
-function setRole(btn, role) {
+// ===== Role setup (based on login) =====
+function setRole(btnOrNull, role, userAccount) {
   document.body.dataset.role = role;
-  btn.parentElement.querySelectorAll('button').forEach(b => {
-    b.classList.remove('active', 'admin-mode');
-  });
-  btn.classList.add('active');
-  if (role === 'admin') btn.classList.add('admin-mode');
 
-  // Update demo banner label
-  const labels = {
-    admin: { zh: '管理员 (Andy)', en: 'Admin (Andy)' },
-    staff: { zh: '员工端', en: 'Staff View' }
-  };
-  document.getElementById('roleLabelZh').innerText = labels[role].zh;
-  document.getElementById('roleLabelEn').innerText = labels[role].en;
+  // Get user info from login session or defaults
+  var acct = userAccount || window._currentAccount || {};
+  var name = acct.name || (role === 'admin' ? 'Admin' : 'Staff');
+  var store = acct.store || '';
+  var initials = name.split(' ').map(function(w){ return w[0]; }).join('').substring(0,2).toUpperCase();
+
+  // Update role labels (hidden)
+  var rlZh = document.getElementById('roleLabelZh');
+  var rlEn = document.getElementById('roleLabelEn');
+  if (rlZh) rlZh.innerText = role === 'admin' ? '管理员' : '员工';
+  if (rlEn) rlEn.innerText = role === 'admin' ? 'Admin' : 'Staff';
 
   // Update sidebar user card
-  const userInfo = {
-    admin: { avatar: 'AW', name: 'Andy Wang', metaZh: '总部 · Owner', metaEn: 'HQ · Owner' },
-    staff: { avatar: '--', name: 'Staff', metaZh: '门店员工', metaEn: 'Store Staff' }
-  };
-  document.getElementById('userAvatar').innerText = userInfo[role].avatar;
-  document.getElementById('userName').innerText = userInfo[role].name;
-  document.getElementById('userMeta').innerHTML =
-    '<span class="zh">' + userInfo[role].metaZh + '</span>' +
-    '<span class="en">' + userInfo[role].metaEn + '</span>';
+  var avatarEl = document.getElementById('userAvatar');
+  var nameEl = document.getElementById('userName');
+  var metaEl = document.getElementById('userMeta');
+  if (avatarEl) avatarEl.innerText = initials;
+  if (nameEl) nameEl.innerText = name;
+  if (metaEl) {
+    var metaZh = role === 'admin' ? '总部 · 管理员' : store + ' · 员工';
+    var metaEn = role === 'admin' ? 'HQ · Admin' : store + ' · Staff';
+    metaEl.innerHTML = '<span class="zh">' + metaZh + '</span><span class="en">' + metaEn + '</span>';
+  }
 
   // Update inventory hero card greeting (time-aware)
-  const h = new Date().getHours();
-  const greetZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';
-  const greetEn = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-  const heroNames = {
-    admin: { zh: greetZh+',Andy', en: greetEn+', Andy', storeZh: '所有门店 · 10 店总览', storeEn: 'All Stores · 10 locations' },
-    staff: { zh: greetZh, en: greetEn, storeZh: '', storeEn: '' }
-  };
-  document.getElementById('heroGreetZh').innerText = heroNames[role].zh;
-  document.getElementById('heroGreetEn').innerText = heroNames[role].en;
-  document.getElementById('heroStore').innerText = heroNames[role].storeZh;
-  document.getElementById('heroStoreEn').innerText = heroNames[role].storeEn;
-
-  // If switching to staff, navigate to inventory (staff's most-used page)
-  // If switching to admin, navigate to dashboard
-  setTimeout(() => {
-    const targetPage = role === 'admin' ? 'dashboard' : 'myaccount';
-    const visibleNavItems = Array.from(document.querySelectorAll('.nav-item')).filter(n => {
-      const style = window.getComputedStyle(n);
-      return style.display !== 'none';
-    });
-    const targetNav = Array.from(document.querySelectorAll('.nav-item')).find(n => {
-      const onclick = n.getAttribute('onclick') || '';
-      return onclick.includes("'" + targetPage + "'");
-    });
-    if (targetNav) navTo(targetNav, targetPage);
-  }, 50);
-
-  showToast(role === 'admin' ? '已切换到管理员视图 / Admin view' : '已切换到员工视图 / Staff view');
+  var h = new Date().getHours();
+  var greetZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';
+  var greetEn = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  var heroGZh = document.getElementById('heroGreetZh');
+  var heroGEn = document.getElementById('heroGreetEn');
+  var heroS = document.getElementById('heroStore');
+  var heroSE = document.getElementById('heroStoreEn');
+  if (heroGZh) heroGZh.innerText = greetZh + ',' + name;
+  if (heroGEn) heroGEn.innerText = greetEn + ', ' + name;
+  if (heroS) heroS.innerText = role === 'admin' ? '所有门店 · 10 店总览' : store;
+  if (heroSE) heroSE.innerText = role === 'admin' ? 'All Stores · 10 locations' : store;
 }
 
 function navTo(el, target) {
@@ -11021,22 +10988,6 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ===== Demo-only button feedback =====
-document.addEventListener('click', e => {
-  const btn = e.target.closest('.btn, .iconbtn');
-  if (!btn) return;
-  if (btn.getAttribute('onclick')) return;
-  if (btn.closest('.role-switch') || btn.closest('.lang-toggle')) return;
-  if (btn.closest('.filters') || btn.closest('.store-pill')) return;
-  if (btn.closest('.pay-methods-grid')) return;
-  if (btn.closest('.inv-mode-tabs') || btn.closest('.region-filter-row')) return;
-  if (btn.closest('.detail-tabs')) return;
-  if (btn.closest('#reportModal')) return;
-  if (btn.classList.contains('mobile-menu-toggle')) return;
-  // Show demo toast for unhandled buttons
-  const text = btn.textContent.trim().substring(0, 30);
-  if (text) showToast('📋 Demo · ' + text);
-});
 
 // LOGIN_ACCOUNTS already defined in the standalone login script above
 // initDynamicUI defined there too, but add alias in case main script calls it
