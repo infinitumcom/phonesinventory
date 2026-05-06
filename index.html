@@ -4987,7 +4987,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           </svg>
         </div>
         <span class="nav-text"><span class="zh">手机库存</span><span class="en">Inventory</span></span>
-        <span class="nav-badge">387</span>
+        <span class="nav-badge" id="navBadgeInventory">387</span>
       </div>
       <div class="nav-item admin-only" onclick="navTo(this, 'stockin')">
         <div class="nav-icon-wrap icon-blue">
@@ -6682,7 +6682,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                       <span class="zh">备注 / 采购备注</span>
                       <span class="en">Notes</span>
                     </label>
-                    <input type="text" class="form-input" placeholder="例如:5 月份订单第二批 · 净 30 天结算">
+                    <input type="text" class="form-input" placeholder="e.g. May batch #2 · Net 30 / 5月第二批 · 净30天">
                   </div>
                 </div>
               </div>
@@ -7017,8 +7017,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="en" id="heroGreetEn">Good afternoon, Andy</span>
             </div>
             <div class="staff-hero-meta">
-              <span id="heroStore" class="zh">所有门店 · 9 店总览</span>
-              <span id="heroStoreEn" class="en">All Stores · 9 stores overview</span>
+              <span id="heroStore" class="zh">所有门店 · 10 店总览</span>
+              <span id="heroStoreEn" class="en">All Stores · 10 locations</span>
               <span style="opacity:0.5;">|</span>
               <span class="mono" style="font-size:11px;">Wed, May 4 · 14:32</span>
             </div>
@@ -7164,7 +7164,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                 <circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/>
               </svg>
-              <input type="text" class="search-input" id="invSearchInput" placeholder="搜索:型号 / IMEI / 颜色 / 销售员">
+              <input type="text" class="search-input" id="invSearchInput" placeholder="搜索 Search: 型号 Model / IMEI / 颜色 Color">
             </div>
             <div class="filters inv-mode-filters">
               <button class="chip active mode-color"><span class="zh">全部</span><span class="en">All</span><span class="chip-num" id="modeFilterAll">220</span></button>
@@ -7191,54 +7191,54 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
           <!-- Store selector with NEW/USED counts per store -->
           <div class="stores-row">
-            <button class="store-pill active" onclick="setActiveStore(this)">
+            <button class="store-pill active" data-store="all" onclick="setActiveStore(this)">
               <div class="pill-name">
                 🏠 <span class="zh">所有门店</span><span class="en">All Stores</span>
               </div>
               <div class="pill-counts">
-                <span class="new-c">NEW <span id="allNewC">220</span></span>
-                <span class="used-c">USED <span id="allUsedC">167</span></span>
+                <span class="new-c">NEW <span id="allNewC">0</span></span>
+                <span class="used-c">USED <span id="allUsedC">0</span></span>
               </div>
             </button>
-            <button class="store-pill ca" onclick="setActiveStore(this)">
+            <button class="store-pill ca" data-store="alhambra" onclick="setActiveStore(this)">
               <div class="pill-name"><span class="geo-dot"></span>Alhambra</div>
-              <div class="pill-counts"><span class="new-c">NEW 30</span><span class="used-c">USED 22</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" onclick="setActiveStore(this)">
+            <button class="store-pill ca" data-store="monterey-park" onclick="setActiveStore(this)">
               <div class="pill-name"><span class="geo-dot"></span>Monterey Park</div>
-              <div class="pill-counts"><span class="new-c">NEW 27</span><span class="used-c">USED 21</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" onclick="setActiveStore(this)">
+            <button class="store-pill ca" data-store="san-gabriel" onclick="setActiveStore(this)">
               <div class="pill-name"><span class="geo-dot"></span>San Gabriel</div>
-              <div class="pill-counts"><span class="new-c">NEW 22</span><span class="used-c">USED 19</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" onclick="setActiveStore(this)">
+            <button class="store-pill ca" data-store="rowland-heights" onclick="setActiveStore(this)">
               <div class="pill-name"><span class="geo-dot"></span>Rowland Hts</div>
-              <div class="pill-counts"><span class="new-c">NEW 21</span><span class="used-c">USED 18</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" onclick="setActiveStore(this)">
+            <button class="store-pill ca" data-store="arcadia-1" onclick="setActiveStore(this)">
               <div class="pill-name"><span class="geo-dot"></span>Arcadia 1</div>
-              <div class="pill-counts"><span class="new-c">NEW 26</span><span class="used-c">USED 18</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" onclick="setActiveStore(this)">
+            <button class="store-pill ca" data-store="arcadia-2" onclick="setActiveStore(this)">
               <div class="pill-name"><span class="geo-dot"></span>Arcadia 2</div>
-              <div class="pill-counts"><span class="new-c">NEW 26</span><span class="used-c">USED 20</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" onclick="setActiveStore(this)">
+            <button class="store-pill ca" data-store="irvine" onclick="setActiveStore(this)">
               <div class="pill-name"><span class="geo-dot"></span>Irvine</div>
-              <div class="pill-counts"><span class="new-c">NEW 21</span><span class="used-c">USED 16</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill nv" onclick="setActiveStore(this)">
+            <button class="store-pill nv" data-store="rancho-cucamonga" onclick="setActiveStore(this)">
               <div class="pill-name"><span class="geo-dot" style="background:var(--gold-deep);"></span>Rancho Cucamonga</div>
-              <div class="pill-counts"><span class="new-c">NEW 25</span><span class="used-c">USED 17</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill nv" onclick="setActiveStore(this)">
+            <button class="store-pill nv" data-store="las-vegas" onclick="setActiveStore(this)">
               <div class="pill-name"><span class="geo-dot" style="background:var(--gold-deep);"></span>Las Vegas</div>
-              <div class="pill-counts"><span class="new-c">NEW 22</span><span class="used-c">USED 16</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill hq" onclick="setActiveStore(this)" style="border-style:dashed;">
+            <button class="store-pill hq" data-store="hq-warehouse" onclick="setActiveStore(this)" style="border-style:dashed;">
               <div class="pill-name"><span class="geo-dot" style="background:var(--text-muted);"></span>🏢 <span class="zh">HQ 总仓</span><span class="en">HQ Warehouse</span></div>
-              <div class="pill-counts"><span class="new-c">NEW 18</span><span class="used-c">USED 10</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
           </div>
 
@@ -8119,7 +8119,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/>
           </svg>
-          <input type="text" class="search-input" placeholder="搜索:客户名 / 电话 / IMEI / 单号 / 销售员">
+          <input type="text" class="search-input" placeholder="搜索 Search: 客户 Customer / IMEI / 单号 Order#">
         </div>
         <div class="filters">
           <button class="chip active"><span class="zh">本月</span><span class="en">This Month</span></button>
@@ -8484,6 +8484,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       </div>
       <div style="padding:16px 20px;">
         <div class="imei-check-panel" id="imeiCheckPanel" style="margin-bottom:0;border:none;padding:0;background:transparent;">
+          <span id="imeiCheckStatus" style="float:right;font-size:11px;font-weight:700;"></span>
           <div class="imei-check-input-row" style="margin-bottom:12px;">
             <input type="text" id="imeiCheckInput" placeholder="输入 15 位 IMEI 号码 / Enter 15-digit IMEI" maxlength="15" onkeydown="if(event.key==='Enter')runIMEICheck()" style="font-size:14px;padding:12px 14px;" />
             <button onclick="runIMEICheck()" id="imeiCheckBtn" style="padding:12px 22px;font-size:13px;">
@@ -8926,7 +8927,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/>
           </svg>
-          <input type="text" class="search-input" placeholder="搜索:姓名 / 电话 / 邮箱 / IMEI">
+          <input type="text" class="search-input" placeholder="搜索 Search: 姓名 Name / 电话 Phone / Email">
         </div>
         <div class="filters">
           <button class="chip active"><span class="zh">全部</span><span class="en">All</span><span class="chip-num">2,847</span></button>
@@ -10555,7 +10556,7 @@ function openStoreDetail(storeKey) {
   if (!data) return;
 
   // Populate hero
-  document.getElementById('sdStoreName').innerText = data.nameZh;
+  document.getElementById('sdStoreName').innerText = document.body.dataset.lang === 'en' ? data.nameEn : data.nameZh;
   document.getElementById('sdStoreAddr').innerText = '📍 ' + data.addr;
   document.getElementById('sdStorePhone').innerText = data.phone;
   document.getElementById('sdStoreMgr').innerText = data.mgr;
@@ -10935,6 +10936,10 @@ function updateFilterCounts() {
   const isNew = INV_FILTERS.mode === 'new';
   const modePhones = phones.filter(p => p && p.cond === INV_FILTERS.mode);
 
+  // Update sidebar nav badge
+  const navBadge = document.getElementById('navBadgeInventory');
+  if (navBadge) navBadge.textContent = phones.filter(p => p).length;
+
   // Update tab counts
   const tabNew = document.getElementById('tabCountNew');
   const tabUsed = document.getElementById('tabCountUsed');
@@ -10943,14 +10948,18 @@ function updateFilterCounts() {
 
   // Update store pills counts
   document.querySelectorAll('.store-pill').forEach(pill => {
-    const newC = pill.querySelector('.new-c span');
-    const usedC = pill.querySelector('.used-c span');
-    const pillName = pill.querySelector('.pill-name');
-    if (!pillName) return;
-    const isAll = pillName.textContent.includes('所有') || pillName.textContent.includes('All');
-    if (isAll) {
-      if (newC) newC.textContent = allNew.length;
-      if (usedC) usedC.textContent = allUsed.length;
+    const storeKey = pill.dataset.store;
+    const newC = pill.querySelector('.new-c');
+    const usedC = pill.querySelector('.used-c');
+    if (!storeKey) return;
+    if (storeKey === 'all') {
+      if (newC) newC.innerHTML = 'NEW ' + allNew.length;
+      if (usedC) usedC.innerHTML = 'USED ' + allUsed.length;
+    } else {
+      const sNew = phones.filter(p => p && p.cond === 'new' && p.store === storeKey).length;
+      const sUsed = phones.filter(p => p && p.cond === 'used' && p.store === storeKey).length;
+      if (newC) newC.innerHTML = 'NEW ' + sNew;
+      if (usedC) usedC.innerHTML = 'USED ' + sUsed;
     }
   });
 
@@ -11018,16 +11027,7 @@ function setRegionFilter(btn, region) {
 function setActiveStore(pill) {
   document.querySelectorAll('.store-pill').forEach(p => p.classList.remove('active'));
   pill.classList.add('active');
-  const pillName = pill.querySelector('.pill-name');
-  const text = pillName ? pillName.textContent.trim() : '';
-  if (text.includes('所有') || text.includes('All')) {
-    INV_FILTERS.store = 'all';
-  } else {
-    // Match store key from pill text
-    const storeKeys = Object.keys(STORE_DATA);
-    const matched = storeKeys.find(k => text.toLowerCase().includes(STORE_DATA[k].nameEn.toLowerCase().split(' ')[0].toLowerCase()));
-    INV_FILTERS.store = matched || 'all';
-  }
+  INV_FILTERS.store = pill.dataset.store || 'all';
   renderInventory();
 }
 
@@ -11078,7 +11078,7 @@ function setBrandFilter(brand) {
 
 // Status filter chips (仅在售 / 滞销)
 (function() {
-  var statusFilters = document.querySelectorAll('.search-bar .filters:last-child .chip');
+  var statusFilters = document.querySelectorAll('#page-inventory .search-bar .filters:last-child .chip');
   if (statusFilters.length >= 2) {
     statusFilters[0].addEventListener('click', function() {
       INV_FILTERS.status = INV_FILTERS.status === 'available' ? 'all' : 'available';
@@ -11366,10 +11366,13 @@ function setRole(btn, role) {
     '<span class="zh">' + userInfo[role].metaZh + '</span>' +
     '<span class="en">' + userInfo[role].metaEn + '</span>';
 
-  // Update inventory hero card greeting
+  // Update inventory hero card greeting (time-aware)
+  const h = new Date().getHours();
+  const greetZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';
+  const greetEn = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   const heroNames = {
-    admin: { zh: '下午好,Andy', en: 'Good afternoon, Andy', storeZh: '所有门店 · 9 店总览', storeEn: 'All Stores · 9 stores' },
-    staff: { zh: '下午好,Chester', en: 'Good afternoon, Chester', storeZh: 'Alhambra 门店 · 326 W Valley Blvd', storeEn: 'Alhambra · 326 W Valley Blvd' }
+    admin: { zh: greetZh+',Andy', en: greetEn+', Andy', storeZh: '所有门店 · 10 店总览', storeEn: 'All Stores · 10 locations' },
+    staff: { zh: greetZh+',Chester', en: greetEn+', Chester', storeZh: 'Alhambra 门店 · 326 W Valley Blvd', storeEn: 'Alhambra · 326 W Valley Blvd' }
   };
   document.getElementById('heroGreetZh').innerText = heroNames[role].zh;
   document.getElementById('heroGreetEn').innerText = heroNames[role].en;
@@ -11437,13 +11440,10 @@ document.addEventListener('click', e => {
 document.addEventListener('click', e => {
   const chip = e.target.closest('.chip');
   if (chip && chip.parentElement.classList.contains('filters')) {
+    // Skip inventory brand filters (handled by setBrandFilter)
+    if (chip.closest('.inv-mode-filters')) return;
     chip.parentElement.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
-  }
-  const pill = e.target.closest('.store-pill');
-  if (pill) {
-    pill.parentElement.querySelectorAll('.store-pill').forEach(p => p.classList.remove('active'));
-    pill.classList.add('active');
   }
 });
 
@@ -11485,9 +11485,10 @@ document.addEventListener('keydown', e => {
 // ===== Keyboard shortcuts =====
 document.addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  if (e.metaKey || e.ctrlKey) {
-    if (e.key === 'n' || e.key === 'N') { e.preventDefault(); navByName('sale'); }
-    if (e.key === 'r' || e.key === 'R') { e.preventDefault(); navByName('transfer'); }
+  // Use Alt+key shortcuts to avoid conflicting with browser Ctrl+N/R/T
+  if (e.altKey) {
+    if (e.key === 's' || e.key === 'S') { e.preventDefault(); navByName('sale'); }
+    if (e.key === 'x' || e.key === 'X') { e.preventDefault(); navByName('transfer'); }
     if (e.key === 't' || e.key === 'T') { e.preventDefault(); navByName('tradein'); }
     if (e.key === 'i' || e.key === 'I') { e.preventDefault(); navByName('inventory'); }
     if (e.key === 'k' || e.key === 'K') { e.preventDefault(); document.getElementById('invSearchInput')?.focus(); }
