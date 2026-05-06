@@ -4756,14 +4756,14 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   top: 50%; left: 50%; transform: translate(-50%, -50%);
   pointer-events: none; user-select: none;
 }
-/* Modal overlay (forgot password / change PIN) */
-.modal-overlay {
+/* Login modal overlay (forgot password / change PIN) — scoped to avoid conflict with app modals */
+.login-modal {
   position: fixed; inset: 0; z-index: 100000;
   background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity 0.2s;
 }
-.modal-overlay.show { opacity: 1; pointer-events: all; }
-.modal-box {
+.login-modal.show { opacity: 1; pointer-events: all; }
+.login-modal .modal-box {
   width: 380px; max-width: 90vw; background: #fff; border-radius: 16px;
   padding: 28px; box-shadow: 0 20px 50px rgba(0,0,0,0.2);
 }
@@ -4852,7 +4852,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 </div>
 
 <!-- Change Password Modal (first login) -->
-<div class="modal-overlay" id="changePinOverlay">
+<div class="login-modal" id="changePinOverlay">
   <div class="modal-box">
     <h3><span class="zh">首次登录 · 请修改密码</span><span class="en">First Login · Change PIN</span></h3>
     <p><span class="zh">为了账户安全，请设置您的专属 6 位数密码。</span><span class="en">For security, please set your own 6-digit PIN.</span></p>
@@ -4868,7 +4868,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 </div>
 
 <!-- Forgot Password Modal -->
-<div class="modal-overlay" id="forgotOverlay" onclick="if(event.target===this)closeForgotPassword()">
+<div class="login-modal" id="forgotOverlay" onclick="if(event.target===this)closeForgotPassword()">
   <div class="modal-box">
     <h3><span class="zh">忘记密码</span><span class="en">Forgot PIN</span></h3>
     <p><span class="zh">输入你的工作邮箱，我们将发送重置链接。</span><span class="en">Enter your work email to receive a reset link.</span></p>
@@ -10931,19 +10931,6 @@ function doLogin() {
   }
 
   errorEl.classList.remove('show');
-
-  // First login → force change PIN
-  const changed = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-  if (!changed[email]) {
-    window._pendLogin = { email, account };
-    document.getElementById('changePinOverlay').classList.add('show');
-    document.getElementById('newPin1').value = '';
-    document.getElementById('newPin2').value = '';
-    document.getElementById('changePinError').style.display = 'none';
-    setTimeout(() => document.getElementById('newPin1').focus(), 200);
-    return;
-  }
-
   completeLogin(email, account);
 }
 
@@ -10970,6 +10957,19 @@ function completeLogin(email, account) {
     btn.disabled = false;
     btn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
     initDynamicUI(account);
+
+    // First login → prompt to change PIN (after entering main app)
+    const changed = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+    if (!changed[email]) {
+      window._pendLogin = { email, account };
+      setTimeout(() => {
+        document.getElementById('changePinOverlay').classList.add('show');
+        document.getElementById('newPin1').value = '';
+        document.getElementById('newPin2').value = '';
+        document.getElementById('changePinError').style.display = 'none';
+        document.getElementById('newPin1').focus();
+      }, 600);
+    }
   }, 500);
 }
 
