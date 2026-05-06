@@ -4847,6 +4847,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     <div class="footer-info">
       <span class="zh">安全登录 · iFixForU 内部系统</span>
       <span class="en">Secure Login · iFixForU Internal</span>
+      <div style="font-size:9px;color:#ccc;margin-top:4px;" id="loginVer">v6</div>
     </div>
   </div>
 </div>
@@ -4882,6 +4883,185 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     </div>
   </div>
 </div>
+
+<!-- LOGIN SCRIPT: isolated from main app script -->
+<script>
+(function(){
+  // Login accounts
+  var ACCOUNTS = {
+    'anderson@ifixforu.com': { pin:'888888', name:'Andy Wang',   role:'admin', store:'all' },
+    'jayden@ifixforu.com':   { pin:'888888', name:'Jayden Sun',  role:'staff', store:'Alhambra' },
+    'steve@ifixforu.com':    { pin:'888888', name:'Steve Shen',  role:'staff', store:'Monterey Park' },
+    'harry@ifixforu.com':    { pin:'888888', name:'Harry Zou',   role:'staff', store:'San Gabriel' },
+    'bill@ifixforu.com':     { pin:'888888', name:'Bill Han',    role:'staff', store:'Rowland Heights' },
+    'will@ifixforu.com':     { pin:'888888', name:'Will Jiang',  role:'staff', store:'Arcadia 1' },
+    'kelvin@ifixforu.com':   { pin:'888888', name:'Kelvin Liu',  role:'staff', store:'Arcadia 2' },
+    'cici@ifixforu.com':     { pin:'888888', name:'Cici',        role:'staff', store:'Irvine' },
+    'feiyang@ifixforu.com':  { pin:'888888', name:'Feiyang Zhao',role:'staff', store:'Rancho Cucamonga' },
+    'jason@ifixforu.com':    { pin:'888888', name:'Jason Zeng',  role:'staff', store:'Las Vegas' },
+    'chester@ifixforu.com':  { pin:'888888', name:'Chester',     role:'staff', store:'Alhambra' }
+  };
+  // Restore changed PINs from localStorage
+  try {
+    var saved = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+    for (var email in saved) { if (ACCOUNTS[email]) ACCOUNTS[email].pin = saved[email]; }
+  } catch(e){}
+  // Make accessible globally
+  window.LOGIN_ACCOUNTS = ACCOUNTS;
+
+  var pinField = document.getElementById('loginPin');
+  var emailField = document.getElementById('loginEmail');
+  var loginBtn = document.getElementById('loginBtn');
+  var errorBox = document.getElementById('loginError');
+  var errorText = document.getElementById('loginErrorText');
+
+  // PIN: digits only, auto-submit on 6
+  pinField.addEventListener('input', function() {
+    this.value = this.value.replace(/[^0-9]/g, '').substring(0, 6);
+    if (this.value.length === 6) { setTimeout(tryLogin, 150); }
+  });
+  // Enter key handlers
+  emailField.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); pinField.focus(); } });
+  pinField.addEventListener('keydown', function(e) { if (e.key === 'Enter') { e.preventDefault(); tryLogin(); } });
+  // Button click
+  loginBtn.addEventListener('click', function(e) { e.preventDefault(); tryLogin(); });
+  // Also set global for onclick attribute backup
+  window.doLogin = tryLogin;
+
+  function showErr(msg) {
+    errorText.innerHTML = msg;
+    errorBox.classList.add('show');
+  }
+
+  function tryLogin() {
+    var em = emailField.value.trim().toLowerCase();
+    var pin = pinField.value.replace(/[^0-9]/g, '');
+
+    if (!em) { showErr('请输入工作邮箱 / Enter email'); emailField.focus(); return; }
+    if (pin.length < 6) { showErr('请输入6位密码 (已输入' + pin.length + '位)'); pinField.focus(); return; }
+
+    var acct = ACCOUNTS[em];
+    if (!acct || acct.pin !== pin) {
+      showErr('邮箱或密码错误 / Incorrect email or PIN');
+      pinField.value = ''; pinField.focus();
+      return;
+    }
+
+    // Success - hide login, show app
+    errorBox.classList.remove('show');
+    loginBtn.disabled = true;
+    loginBtn.textContent = '...';
+
+    // Save session
+    try {
+      var rem = document.getElementById('rememberDevice');
+      if (rem && rem.checked) {
+        localStorage.setItem('pi_session', JSON.stringify({
+          email: em, name: acct.name, role: acct.role, store: acct.store, ts: Date.now()
+        }));
+      }
+    } catch(e){}
+
+    setTimeout(function() {
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('mainApp').style.display = '';
+      loginBtn.disabled = false;
+      loginBtn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
+
+      // Set role if staff
+      if (acct.role === 'staff') {
+        try { var sb = document.querySelector('.role-switch button:last-child'); if (sb && window.setRole) window.setRole(sb, 'staff'); } catch(e){}
+      }
+      // Init dynamic UI
+      try { if (window.initDynamicUI) window.initDynamicUI(acct); } catch(e){}
+      // Toast
+      try { if (window.showToast) window.showToast('👋 欢迎, ' + acct.name); } catch(e){}
+
+      // Force change PIN on first login
+      try {
+        var changed = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+        if (!changed[em]) {
+          window._pendLogin = { email: em, account: acct };
+          setTimeout(function() {
+            var overlay = document.getElementById('changePinOverlay');
+            if (overlay) overlay.classList.add('show');
+            var np1 = document.getElementById('newPin1');
+            if (np1) { np1.value = ''; np1.focus(); }
+            var np2 = document.getElementById('newPin2');
+            if (np2) np2.value = '';
+          }, 600);
+        }
+      } catch(e){}
+    }, 400);
+  }
+
+  // Auto-login from saved session
+  try {
+    var sess = localStorage.getItem('pi_session');
+    if (sess) {
+      var s = JSON.parse(sess);
+      if (Date.now() - s.ts < 30 * 86400000) {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.getElementById('mainApp').style.display = '';
+        if (s.role === 'staff') {
+          setTimeout(function() { try { var b = document.querySelector('.role-switch button:last-child'); if (b && window.setRole) window.setRole(b, 'staff'); } catch(e){} }, 100);
+        }
+        setTimeout(function() { try { if (window.initDynamicUI) window.initDynamicUI({ name: s.name, role: s.role, store: s.store }); } catch(e){} }, 200);
+      }
+    }
+  } catch(e){}
+
+  // Forgot password
+  window.showForgotPassword = function() {
+    document.getElementById('forgotOverlay').classList.add('show');
+    document.getElementById('forgotEmail').value = emailField.value;
+    document.getElementById('forgotSuccess').style.display = 'none';
+  };
+  window.closeForgotPassword = function() { document.getElementById('forgotOverlay').classList.remove('show'); };
+  window.sendResetLink = function() {
+    var e = document.getElementById('forgotEmail').value.trim();
+    if (!e || e.indexOf('@') < 0) { document.getElementById('forgotEmail').style.borderColor = '#dc3545'; return; }
+    document.getElementById('forgotEmail').style.borderColor = '';
+    document.getElementById('forgotSuccess').style.display = 'block';
+  };
+
+  // Submit new PIN
+  window.submitNewPin = function() {
+    var p1 = document.getElementById('newPin1').value.replace(/[^0-9]/g, '');
+    var p2 = document.getElementById('newPin2').value.replace(/[^0-9]/g, '');
+    var err = document.getElementById('changePinError');
+    if (p1.length < 6) { err.textContent = 'PIN must be 6 digits'; err.style.display = 'block'; return; }
+    if (p1 === '888888') { err.textContent = 'Cannot use default PIN'; err.style.display = 'block'; return; }
+    if (p1 !== p2) { err.textContent = 'PINs do not match'; err.style.display = 'block'; return; }
+    var pend = window._pendLogin;
+    if (pend) {
+      pend.account.pin = p1;
+      try {
+        var ch = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+        ch[pend.email] = p1;
+        localStorage.setItem('pi_changed_pins', JSON.stringify(ch));
+      } catch(e){}
+    }
+    document.getElementById('changePinOverlay').classList.remove('show');
+    try { if (window.showToast) window.showToast('PIN changed'); } catch(e){}
+  };
+
+  // Logout
+  window.doLogout = function() {
+    localStorage.removeItem('pi_session');
+    document.getElementById('mainApp').style.display = 'none';
+    document.getElementById('loginScreen').classList.remove('hidden');
+    pinField.value = '';
+    emailField.value = '';
+    errorBox.classList.remove('show');
+    emailField.focus();
+    try { if (window.showToast) window.showToast('已退出 / Logged out'); } catch(e){}
+  };
+
+  // Focus email field
+  if (!localStorage.getItem('pi_session')) emailField.focus();
+})();
+</script>
 
 <div class="app" style="display:none;" id="mainApp">
 
@@ -10858,209 +11038,18 @@ document.addEventListener('click', e => {
   if (text) showToast('📋 Demo · ' + text);
 });
 
-// ===== LOGIN SYSTEM =====
-const LOGIN_ACCOUNTS = {
-  'anderson@ifixforu.com': { pin:'888888', name:'Andy Wang',   role:'admin', store:'all' },
-  'jayden@ifixforu.com':   { pin:'888888', name:'Jayden Sun',  role:'staff', store:'Alhambra' },
-  'steve@ifixforu.com':    { pin:'888888', name:'Steve Shen',  role:'staff', store:'Monterey Park' },
-  'harry@ifixforu.com':    { pin:'888888', name:'Harry Zou',   role:'staff', store:'San Gabriel' },
-  'bill@ifixforu.com':     { pin:'888888', name:'Bill Han',    role:'staff', store:'Rowland Heights' },
-  'will@ifixforu.com':     { pin:'888888', name:'Will Jiang',  role:'staff', store:'Arcadia 1' },
-  'kelvin@ifixforu.com':   { pin:'888888', name:'Kelvin Liu',  role:'staff', store:'Arcadia 2' },
-  'cici@ifixforu.com':     { pin:'888888', name:'Cici',        role:'staff', store:'Irvine' },
-  'feiyang@ifixforu.com':  { pin:'888888', name:'Feiyang Zhao',role:'staff', store:'Rancho Cucamonga' },
-  'jason@ifixforu.com':    { pin:'888888', name:'Jason Zeng',  role:'staff', store:'Las Vegas' },
-  'chester@ifixforu.com':  { pin:'888888', name:'Chester',     role:'staff', store:'Alhambra' },
-};
-
-// Restore changed PINs
-(function() {
-  const saved = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-  for (const [e, p] of Object.entries(saved)) {
-    if (LOGIN_ACCOUNTS[e]) LOGIN_ACCOUNTS[e].pin = p;
-  }
-})();
-
-// PIN field: only allow digits, auto-submit on 6
-document.getElementById('loginPin').addEventListener('input', function() {
-  this.value = this.value.replace(/\D/g, '').slice(0, 6);
-  if (this.value.length === 6) setTimeout(function(){ doLogin(); }, 150);
-});
-
-// Enter on email → focus PIN
-document.getElementById('loginEmail').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('loginPin').focus(); }
-});
-
-// Enter on PIN → submit
-document.getElementById('loginPin').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
-});
-
-// Backup: also attach click via JS (in case inline onclick fails)
-document.getElementById('loginBtn').addEventListener('click', function(e) {
-  e.preventDefault(); doLogin();
-});
-
-function showError(msg) {
-  var el = document.getElementById('loginError');
-  document.getElementById('loginErrorText').innerHTML = msg;
-  el.classList.add('show');
-}
-
-function doLogin() {
-  try {
-    var email = document.getElementById('loginEmail').value.trim().toLowerCase();
-    var pin = document.getElementById('loginPin').value.replace(/[^0-9]/g, '');
-    var errorEl = document.getElementById('loginError');
-
-    if (!email) {
-      showError('<span class="zh">请输入工作邮箱</span><span class="en">Please enter your email</span>');
-      document.getElementById('loginEmail').focus();
-      return;
-    }
-    if (pin.length < 6) {
-      showError('<span class="zh">请输入 6 位密码 (已输入' + pin.length + '位)</span><span class="en">Enter 6-digit PIN (' + pin.length + ' entered)</span>');
-      document.getElementById('loginPin').focus();
-      return;
-    }
-
-    var account = LOGIN_ACCOUNTS[email];
-    if (!account || account.pin !== pin) {
-      showError('<span class="zh">邮箱或密码错误</span><span class="en">Incorrect email or PIN</span>');
-      var card = document.querySelector('.login-card');
-      if (card) { card.style.animation = 'none'; card.offsetHeight; card.style.animation = 'loginShake 0.4s ease'; }
-      document.getElementById('loginPin').value = '';
-      document.getElementById('loginPin').focus();
-      return;
-    }
-
-    errorEl.classList.remove('show');
-    completeLogin(email, account);
-  } catch(err) {
-    alert('Login error: ' + err.message);
-  }
-}
-
-function completeLogin(email, account) {
-  const btn = document.getElementById('loginBtn');
-  btn.disabled = true;
-  btn.textContent = '...';
-
-  if (document.getElementById('rememberDevice').checked) {
-    localStorage.setItem('pi_session', JSON.stringify({
-      email, name: account.name, role: account.role, store: account.store, ts: Date.now()
-    }));
-  }
-
-  if (account.role === 'staff') {
-    const staffBtn = document.querySelector('.role-switch button:last-child');
-    if (staffBtn) setRole(staffBtn, 'staff');
-  }
-
-  setTimeout(() => {
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('mainApp').style.display = '';
-    showToast('👋 ' + (document.body.dataset.lang === 'zh' ? '欢迎回来, ' : 'Welcome, ') + account.name);
-    btn.disabled = false;
-    btn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
-    initDynamicUI(account);
-
-    // First login → prompt to change PIN (after entering main app)
-    const changed = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-    if (!changed[email]) {
-      window._pendLogin = { email, account };
-      setTimeout(() => {
-        document.getElementById('changePinOverlay').classList.add('show');
-        document.getElementById('newPin1').value = '';
-        document.getElementById('newPin2').value = '';
-        document.getElementById('changePinError').style.display = 'none';
-        document.getElementById('newPin1').focus();
-      }, 600);
-    }
-  }, 500);
-}
-
-function submitNewPin() {
-  const p1 = document.getElementById('newPin1').value.replace(/\D/g, '');
-  const p2 = document.getElementById('newPin2').value.replace(/\D/g, '');
-  const err = document.getElementById('changePinError');
-
-  if (p1.length < 6) { err.textContent = 'PIN must be 6 digits'; err.style.display = 'block'; return; }
-  if (p1 === '888888') { err.textContent = 'Cannot use default PIN'; err.style.display = 'block'; return; }
-  if (p1 !== p2) { err.textContent = 'PINs do not match'; err.style.display = 'block'; return; }
-
-  const { email, account } = window._pendLogin;
-  account.pin = p1;
-  const changed = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-  changed[email] = p1;
-  localStorage.setItem('pi_changed_pins', JSON.stringify(changed));
-
-  document.getElementById('changePinOverlay').classList.remove('show');
-  showToast('✅ PIN changed');
-  completeLogin(email, account);
-}
-
-function initDynamicUI(account) {
-  const h = new Date().getHours();
-  const gZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';
-  const gEn = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
-  const dateStr = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
-
-  const el = id => document.getElementById(id);
-  if (el('hereDateStr')) el('hereDateStr').textContent = dateStr;
-  if (el('maGreetZh') && account) el('maGreetZh').textContent = gZh + ',' + account.name;
-  if (el('maGreetEn') && account) el('maGreetEn').textContent = gEn + ', ' + account.name;
-  if (el('maStoreMeta') && account) {
-    const rZh = account.role === 'admin' ? '管理员' : '店员';
-    const rEn = account.role === 'admin' ? 'Admin' : 'Staff';
-    el('maStoreMeta').innerHTML = '📍 ' + account.store + ' · <span class="zh">' + rZh + '</span><span class="en">' + rEn + '</span>';
-  }
-}
-
-// Auto-login from saved session
-(function() {
-  const saved = localStorage.getItem('pi_session');
-  if (saved) {
-    try {
-      const s = JSON.parse(saved);
-      if (Date.now() - s.ts < 30 * 86400000) {
-        document.getElementById('loginScreen').classList.add('hidden');
-        document.getElementById('mainApp').style.display = '';
-        if (s.role === 'staff') {
-          setTimeout(() => { const b = document.querySelector('.role-switch button:last-child'); if (b) setRole(b, 'staff'); }, 100);
-        }
-        setTimeout(() => initDynamicUI({ name: s.name, role: s.role, store: s.store }), 200);
-        return;
-      }
-    } catch(e) {}
-  }
-  document.getElementById('loginEmail').focus();
-  setTimeout(() => initDynamicUI(null), 200);
-})();
-
-function showForgotPassword() {
-  document.getElementById('forgotOverlay').classList.add('show');
-  document.getElementById('forgotEmail').value = document.getElementById('loginEmail').value;
-  document.getElementById('forgotSuccess').style.display = 'none';
-}
-function closeForgotPassword() { document.getElementById('forgotOverlay').classList.remove('show'); }
-function sendResetLink() {
-  const e = document.getElementById('forgotEmail').value.trim();
-  if (!e || !e.includes('@')) { document.getElementById('forgotEmail').style.borderColor = '#dc3545'; return; }
-  document.getElementById('forgotEmail').style.borderColor = '';
-  document.getElementById('forgotSuccess').style.display = 'block';
-}
-
-function doLogout() {
-  localStorage.removeItem('pi_session');
-  document.getElementById('mainApp').style.display = 'none';
-  document.getElementById('loginScreen').classList.remove('hidden');
-  document.getElementById('loginPin').value = '';
-  document.getElementById('loginEmail').value = '';
-  document.getElementById('loginError').classList.remove('show');
-  document.getElementById('loginEmail').focus();
-  showToast('已退出 / Logged out');
+// LOGIN_ACCOUNTS already defined in the standalone login script above
+// initDynamicUI defined there too, but add alias in case main script calls it
+if (!window.initDynamicUI) {
+  window.initDynamicUI = function(account) {
+    var h = new Date().getHours();
+    var gZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';
+    var dateStr = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+    var el = function(id) { return document.getElementById(id); };
+    if (el('hereDateStr')) el('hereDateStr').textContent = dateStr;
+    if (el('maGreetZh') && account) el('maGreetZh').textContent = gZh + ',' + account.name;
+    if (el('maGreetEn') && account) el('maGreetEn').textContent = 'Welcome, ' + (account ? account.name : '');
+  };
 }
 </script>
 </body>
