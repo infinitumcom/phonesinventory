@@ -9845,8 +9845,9 @@ The more detail you provide, the easier it is to handle this issue."></textarea>
 <!-- Inventory data (auto-generated from SQLite by export script) -->
 <script src="data/phones.js"></script>
 <script>
-// Fallback to empty if phones.js not yet generated
-if (typeof phones === 'undefined') var phones = [];
+// Fallback: if data/phones.js not loaded, create empty array
+// NOTE: phones.js uses "const phones", so we must NOT use "var phones" here (const/var conflict = SyntaxError)
+try { if (!phones) phones = []; } catch(e) { window.phones = []; }
 
 const statusMap = {
   available: { zh:'在售', en:'Available', cls:'st-avail' },
