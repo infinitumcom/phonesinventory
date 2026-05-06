@@ -4886,6 +4886,39 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   </div>
 </div>
 
+<!-- Change Password Modal (first login) -->
+<div class="forgot-overlay" id="changePinOverlay">
+  <div class="forgot-card">
+    <h3>
+      <span class="zh">🔐 首次登录 · 请修改密码</span>
+      <span class="en">🔐 First Login · Change PIN</span>
+    </h3>
+    <p>
+      <span class="zh">为了账户安全，请设置您的专属 6 位数密码。</span>
+      <span class="en">For security, please set your own 6-digit PIN.</span>
+    </p>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px;">
+        <span class="zh">新密码 (6 位数)</span><span class="en">New PIN (6 digits)</span>
+      </label>
+      <input type="password" id="newPin1" maxlength="6" pattern="[0-9]*" inputmode="numeric"
+             placeholder="••••••" style="font-size:18px;letter-spacing:8px;text-align:center;" />
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:6px;">
+        <span class="zh">确认新密码</span><span class="en">Confirm New PIN</span>
+      </label>
+      <input type="password" id="newPin2" maxlength="6" pattern="[0-9]*" inputmode="numeric"
+             placeholder="••••••" style="font-size:18px;letter-spacing:8px;text-align:center;" />
+    </div>
+    <div id="changePinError" style="display:none;padding:10px;background:var(--danger-soft);border-radius:8px;color:var(--danger);font-size:12px;font-weight:600;margin-bottom:12px;"></div>
+    <button class="primary" style="width:100%;" onclick="submitNewPin()">
+      <span class="zh">确认修改</span>
+      <span class="en">Confirm Change</span>
+    </button>
+  </div>
+</div>
+
 <!-- Forgot Password Modal -->
 <div class="forgot-overlay" id="forgotOverlay" onclick="if(event.target===this)closeForgotPassword()">
   <div class="forgot-card">
@@ -4959,10 +4992,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <span class="zh">◆ 我的积分</span>
           <span class="en">◆ My Points</span>
         </div>
-        <div class="points-card-value">315<span class="ptu">P</span></div>
+        <div class="points-card-value">0<span class="ptu">P</span></div>
         <div class="points-card-meta">
-          <span class="zh">≈ $315 可兑换</span>
-          <span class="en">≈ $315 redeemable</span>
+          <span class="zh">≈ $0 可兑换</span>
+          <span class="en">≈ $0 redeemable</span>
         </div>
       </div>
       <div class="nav-item staff-only" onclick="navTo(this, 'myaccount')">
@@ -4987,7 +5020,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           </svg>
         </div>
         <span class="nav-text"><span class="zh">手机库存</span><span class="en">Inventory</span></span>
-        <span class="nav-badge" id="navBadgeInventory">387</span>
+        <span class="nav-badge" id="navBadgeInventory">0</span>
       </div>
       <div class="nav-item admin-only" onclick="navTo(this, 'stockin')">
         <div class="nav-icon-wrap icon-blue">
@@ -5186,29 +5219,29 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <div class="user-stat-meta">
               <span>HQ · <span class="zh">总部</span><span class="en">Owner</span></span>
               <span style="opacity:0.5;">|</span>
-              <span class="mono">Wed, May 4, 2026</span>
+              <span class="mono" id="hereDateStr"></span>
             </div>
             <div class="user-stat-row">
               <div class="user-stat-cell">
                 <div class="label"><span class="zh">今日销售</span><span class="en">Today Sales</span></div>
-                <div class="val">28</div>
+                <div class="val">0</div>
                 <div class="sub">
                   <span class="zh">9 店共 ·</span><span class="en">9 stores ·</span>
-                  $24,891
+                  $0
                 </div>
               </div>
               <div class="user-stat-cell">
                 <div class="label"><span class="zh">本月营收</span><span class="en">MTD Revenue</span></div>
-                <div class="val"><span class="ccy">$</span>143K</div>
+                <div class="val"><span class="ccy">$</span>0</div>
                 <div class="sub">
-                  ↑ 23%
+                  --
                 </div>
               </div>
               <div class="user-stat-cell">
                 <div class="label"><span class="zh">毛利率</span><span class="en">Margin</span></div>
-                <div class="val">28.4%</div>
+                <div class="val">0%</div>
                 <div class="sub">
-                  ↑ 1.2%
+                  --
                 </div>
               </div>
             </div>
@@ -5268,50 +5301,14 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="urgent-dot"></span>
                 <span class="zh">需要关注</span>
                 <span class="en">Needs attention</span>
-                <span style="font-size:10.5px;color:var(--text-muted);font-weight:500;font-family:'JetBrains Mono',monospace;">7</span>
+                <span style="font-size:10.5px;color:var(--text-muted);font-weight:500;font-family:'JetBrains Mono',monospace;">0</span>
               </div>
               <button class="btn btn-sm btn-ghost"><span class="zh">查看全部</span><span class="en">View all</span></button>
             </div>
             <div class="todos-list">
-              <div class="todo-item">
-                <div class="todo-icon danger">!</div>
-                <div class="todo-text">
-                  <div class="main"><span class="zh">3 个调拨申请待审批</span><span class="en">3 transfers awaiting approval</span></div>
-                  <div class="sub"><span class="zh">最早 6 小时前</span><span class="en">Oldest 6h ago</span></div>
-                </div>
-                <div class="todo-time">URGENT</div>
-              </div>
-              <div class="todo-item">
-                <div class="todo-icon warn">⚠</div>
-                <div class="todo-text">
-                  <div class="main"><span class="zh">5 部二手机待检测上架</span><span class="en">5 trade-ins pending QC</span></div>
-                  <div class="sub">San Gabriel · Irvine</div>
-                </div>
-                <div class="todo-time">2h</div>
-              </div>
-              <div class="todo-item">
-                <div class="todo-icon warn">📉</div>
-                <div class="todo-text">
-                  <div class="main"><span class="zh">12 部手机库龄超 60 天</span><span class="en">12 phones aged 60+ days</span></div>
-                  <div class="sub"><span class="zh">总价值 $8,200</span><span class="en">Value $8,200</span></div>
-                </div>
-                <div class="todo-time">REVIEW</div>
-              </div>
-              <div class="todo-item">
-                <div class="todo-icon info">📦</div>
-                <div class="todo-text">
-                  <div class="main"><span class="zh">iPhone 16 Pro Max 256G 库存仅 4 台</span><span class="en">iPhone 16 PM 256G low stock (4)</span></div>
-                  <div class="sub"><span class="zh">建议补货</span><span class="en">Restock recommended</span></div>
-                </div>
-                <div class="todo-time">3h</div>
-              </div>
-              <div class="todo-item">
-                <div class="todo-icon brand">$</div>
-                <div class="todo-text">
-                  <div class="main"><span class="zh">4 月份提成 $4,820 待发放</span><span class="en">April commissions $4,820 pending</span></div>
-                  <div class="sub"><span class="zh">38 名员工</span><span class="en">38 staff</span></div>
-                </div>
-                <div class="todo-time">DUE</div>
+              <div style="padding:24px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
+                <span class="zh">暂无待办事项</span>
+                <span class="en">No items need attention</span>
               </div>
             </div>
           </div>
@@ -5325,45 +5322,45 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="zh">全网在售</span>
               <span class="en">Available</span>
             </div>
-            <div class="kpi-value">387</div>
+            <div class="kpi-value" id="kpiAvailable">0</div>
             <div class="kpi-meta">
-              <span class="zh">220 NEW · 167 USED</span>
-              <span class="en">220 NEW · 167 USED</span>
+              <span class="zh">0 NEW · 0 USED</span>
+              <span class="en">0 NEW · 0 USED</span>
             </div>
           </div>
           <div class="kpi">
             <div class="kpi-label">
               <span class="zh">9 店现金合计</span><span class="en">Total Cash on Hand</span>
             </div>
-            <div class="kpi-value"><span class="ccy">$</span>44.0K</div>
+            <div class="kpi-value"><span class="ccy">$</span>0</div>
             <div class="kpi-meta">
-              <span class="zh">建议 3 店今日存款</span>
-              <span class="en">3 stores to deposit today</span>
+              <span class="zh">暂无数据</span>
+              <span class="en">No data yet</span>
             </div>
           </div>
           <div class="kpi">
             <div class="kpi-label">
               <span class="zh">本月已售</span><span class="en">Sold MTD</span>
             </div>
-            <div class="kpi-value">128</div>
-            <div class="kpi-meta up">↑ 23% MoM</div>
+            <div class="kpi-value">0</div>
+            <div class="kpi-meta">--</div>
           </div>
           <div class="kpi">
             <div class="kpi-label">
               <span class="zh">本月营收</span><span class="en">Revenue MTD</span>
             </div>
-            <div class="kpi-value"><span class="ccy">$</span>143K</div>
+            <div class="kpi-value"><span class="ccy">$</span>0</div>
             <div class="kpi-meta">
               <span class="zh">客单价</span><span class="en">AOV</span>
-              <span class="mono">$1,124</span>
+              <span class="mono">$0</span>
             </div>
           </div>
           <div class="kpi">
             <div class="kpi-label">
               <span class="zh">本月毛利</span><span class="en">Profit MTD</span>
             </div>
-            <div class="kpi-value"><span class="ccy">$</span>40.6K</div>
-            <div class="kpi-meta up">28.4% margin</div>
+            <div class="kpi-value"><span class="ccy">$</span>0</div>
+            <div class="kpi-meta">-- margin</div>
           </div>
         </div>
 
@@ -5389,9 +5386,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                   <span class="zh">库存总成本</span>
                   <span class="en">Inventory Cost</span>
                 </div>
-                <div class="fin-card-value"><span class="ccy">$</span>642,015</div>
+                <div class="fin-card-value"><span class="ccy">$</span>0</div>
                 <div class="fin-card-meta">
-                  <span class="key"><span class="zh">387 部 · 9 店总和</span><span class="en">387 phones · 9 stores</span></span>
+                  <span class="key"><span class="zh">0 部 · 9 店总和</span><span class="en">0 phones · 9 stores</span></span>
                   <span class="v"><span class="zh">进货价</span><span class="en">cost</span></span>
                 </div>
               </div>
@@ -5402,7 +5399,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                   <span class="zh">预计销售收入</span>
                   <span class="en">Projected Revenue</span>
                 </div>
-                <div class="fin-card-value"><span class="ccy">$</span>717,200</div>
+                <div class="fin-card-value"><span class="ccy">$</span>0</div>
                 <div class="fin-card-meta">
                   <span class="key"><span class="zh">按建议零售价合计</span><span class="en">at MSRP</span></span>
                   <span class="v"><span class="zh">挂牌价</span><span class="en">listed</span></span>
@@ -5415,10 +5412,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                   <span class="zh">预计销售利润</span>
                   <span class="en">Projected Profit</span>
                 </div>
-                <div class="fin-card-value"><span class="ccy">$</span>75,185</div>
+                <div class="fin-card-value"><span class="ccy">$</span>0</div>
                 <div class="fin-card-meta">
                   <span class="key"><span class="zh">毛利率</span><span class="en">Margin</span></span>
-                  <span class="v" style="color:var(--success);">11.7%</span>
+                  <span class="v" style="color:var(--success);">0%</span>
                 </div>
               </div>
 
@@ -5430,10 +5427,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div class="label">
                   <span class="zh">新机库存</span><span class="en">NEW Inventory</span>
                 </div>
-                <div class="v new-color">220 <span style="font-size:13px;color:var(--text-muted);font-weight:500;">部</span></div>
+                <div class="v new-color">0 <span style="font-size:13px;color:var(--text-muted);font-weight:500;">部</span></div>
                 <div class="sub">
-                  <span class="zh">成本 $467K · 收入预期 $487K · 利润 $20K</span>
-                  <span class="en">Cost $467K · Revenue $487K · Profit $20K</span>
+                  <span class="zh">成本 $0 · 收入预期 $0 · 利润 $0</span>
+                  <span class="en">Cost $0 · Revenue $0 · Profit $0</span>
                 </div>
               </div>
 
@@ -5441,10 +5438,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div class="label">
                   <span class="zh">二手机库存</span><span class="en">USED Inventory</span>
                 </div>
-                <div class="v used-color">167 <span style="font-size:13px;color:var(--text-muted);font-weight:500;">部</span></div>
+                <div class="v used-color">0 <span style="font-size:13px;color:var(--text-muted);font-weight:500;">部</span></div>
                 <div class="sub">
-                  <span class="zh">成本 $175K · 收入预期 $230K · 利润 $55K</span>
-                  <span class="en">Cost $175K · Revenue $230K · Profit $55K</span>
+                  <span class="zh">成本 $0 · 收入预期 $0 · 利润 $0</span>
+                  <span class="en">Cost $0 · Revenue $0 · Profit $0</span>
                 </div>
               </div>
 
@@ -5453,10 +5450,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                   <span class="zh">平均周转</span><span class="en">Avg Turnover</span>
                 </div>
                 <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;color:var(--text);">
-                  18 <span style="font-size:13px;color:var(--text-muted);font-weight:500;"><span class="zh">天</span><span class="en">days</span></span>
+                  0 <span style="font-size:13px;color:var(--text-muted);font-weight:500;"><span class="zh">天</span><span class="en">days</span></span>
                 </div>
-                <div style="font-size:11px;color:var(--success);margin-top:2px;font-weight:600;">
-                  ↑ <span class="zh">比上月快 3 天</span><span class="en">3d faster vs LM</span>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-weight:600;">
+                  <span class="zh">暂无数据</span><span class="en">No data</span>
                 </div>
               </div>
             </div>
@@ -5466,13 +5463,13 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <div class="region-dist-icon">🌐</div>
               <div class="region-dist-info">
                 <div class="label">
-                  <span class="zh">版本分布 · 9 店合计 387 部</span>
-                  <span class="en">Region Distribution · 387 phones across 9 stores</span>
+                  <span class="zh">版本分布 · 9 店合计 0 部</span>
+                  <span class="en">Region Distribution · 0 phones across 9 stores</span>
                 </div>
                 <div class="region-dist-bar">
-                  <div class="seg-us" style="width:70.8%;display:flex;align-items:center;justify-content:center;color:white;font-size:10.5px;font-weight:700;">274 (71%)</div>
-                  <div class="seg-hk" style="width:17.6%;display:flex;align-items:center;justify-content:center;color:white;font-size:10.5px;font-weight:700;">68 (18%)</div>
-                  <div class="seg-cn" style="width:11.6%;display:flex;align-items:center;justify-content:center;color:white;font-size:10.5px;font-weight:700;">45 (11%)</div>
+                  <div class="seg-us" style="width:33.3%;display:flex;align-items:center;justify-content:center;color:white;font-size:10.5px;font-weight:700;">0</div>
+                  <div class="seg-hk" style="width:33.3%;display:flex;align-items:center;justify-content:center;color:white;font-size:10.5px;font-weight:700;">0</div>
+                  <div class="seg-cn" style="width:33.4%;display:flex;align-items:center;justify-content:center;color:white;font-size:10.5px;font-weight:700;">0</div>
                 </div>
                 <div class="region-dist-legend">
                   <div class="lg-item">
@@ -5740,71 +5737,12 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="status st-avail" style="font-size:10px;"><span class="dot"></span><span class="zh">实时</span><span class="en">Live</span></span>
               </div>
             </div>
-            <div class="activity-list">
-
-              <div class="activity-item">
-                <div class="activity-time">14:32</div>
-                <div class="activity-icon" style="background:var(--success-soft);color:var(--success);">$</div>
-                <div class="activity-content">
-                  <div><span class="who">Chester</span> <span class="zh">在 Alhambra 售出</span><span class="en">sold at Alhambra</span> · iPhone 16 · 128GB <span class="mono" style="color:var(--brand);font-weight:700;">$799</span></div>
-                  <div class="where"><span class="zh">客户 Lin Wei · 刷卡 Visa ····8821 · 积分</span><span class="en">Customer Lin Wei · Visa ····8821 · Points</span> +20</div>
-                </div>
+            <div class="activity-list" id="activityList">
+              <div style="padding:32px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
+                <div style="font-size:28px;margin-bottom:8px;">📋</div>
+                <span class="zh">暂无活动记录</span>
+                <span class="en">No activity yet</span>
               </div>
-
-              <div class="activity-item">
-                <div class="activity-time">14:28</div>
-                <div class="activity-icon" style="background:var(--info-soft);color:var(--info);">⇄</div>
-                <div class="activity-content">
-                  <div><span class="who">Grace</span> <span class="zh">在 Alhambra 申请调拨</span><span class="en">requested transfer at Alhambra</span> · Samsung S25 Ultra 512GB</div>
-                  <div class="where"><span class="zh">从 Arcadia 1 · 客户付定金 $200 · 单号 TR-2026-0042</span><span class="en">From Arcadia 1 · Deposit $200 · TR-2026-0042</span></div>
-                </div>
-              </div>
-
-              <div class="activity-item">
-                <div class="activity-time">14:15</div>
-                <div class="activity-icon" style="background:var(--purple-soft);color:var(--purple);">♻</div>
-                <div class="activity-content">
-                  <div><span class="who">Steve</span> <span class="zh">在 San Gabriel 收购二手机</span><span class="en">acquired trade-in at San Gabriel</span> · iPhone 13 128GB</div>
-                  <div class="where"><span class="zh">原主张女士 · 回收价 $280 · 待检测</span><span class="en">Owner Ms. Zhang · $280 · Pending QC</span></div>
-                </div>
-              </div>
-
-              <div class="activity-item">
-                <div class="activity-time">14:08</div>
-                <div class="activity-icon" style="background:var(--success-soft);color:var(--success);">$</div>
-                <div class="activity-content">
-                  <div><span class="who">Jayden</span> <span class="zh">在 Alhambra 售出</span><span class="en">sold at Alhambra</span> · iPhone 15 Pro · 256GB <span class="mono" style="color:var(--brand);font-weight:700;">$949</span></div>
-                  <div class="where"><span class="zh">客户 Maria Gonzalez · 现金 · 积分</span><span class="en">Customer Maria Gonzalez · Cash · Points</span> +20</div>
-                </div>
-              </div>
-
-              <div class="activity-item">
-                <div class="activity-time">13:51</div>
-                <div class="activity-icon" style="background:var(--info-soft);color:var(--info);">📦</div>
-                <div class="activity-content">
-                  <div><span class="who">Jason</span> <span class="zh">在 Rancho Cucamonga 入库新机</span><span class="en">received new stock at R. Cucamonga</span> · 5 × iPhone 16 Pro Max</div>
-                  <div class="where"><span class="zh">来源 Apple IRP · 总价值 $5,995</span><span class="en">From Apple IRP · Total $5,995</span></div>
-                </div>
-              </div>
-
-              <div class="activity-item">
-                <div class="activity-time">13:45</div>
-                <div class="activity-icon" style="background:var(--success-soft);color:var(--success);">✓</div>
-                <div class="activity-content">
-                  <div><span class="who">Andy</span> <span class="zh">批准了 2 个调拨申请</span><span class="en">approved 2 transfer requests</span></div>
-                  <div class="where"><span class="zh">Arcadia 1 → Alhambra · R. Cucamonga → Arcadia 1</span><span class="en">Arcadia 1 → Alhambra · R. Cucamonga → Arcadia 1</span></div>
-                </div>
-              </div>
-
-              <div class="activity-item">
-                <div class="activity-time">13:30</div>
-                <div class="activity-icon" style="background:var(--success-soft);color:var(--success);">$</div>
-                <div class="activity-content">
-                  <div><span class="who">Harry</span> <span class="zh">在 Arcadia 2 售出</span><span class="en">sold at Arcadia 2</span> · iPhone 14 Pro USED <span class="mono" style="color:var(--brand);font-weight:700;">$799</span></div>
-                  <div class="where"><span class="zh">客户王慧敏 · 现金 · 积分</span><span class="en">Customer Wang Huimin · Cash · Points</span> +15</div>
-                </div>
-              </div>
-
             </div>
           </div>
 
@@ -5815,63 +5753,11 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="en">Top Products MTD</span>
               </div>
             </div>
-            <div style="padding:8px 0;">
-              <div style="padding:11px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border-soft);">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--gold-deep);width:24px;">1</div>
-                <div style="flex:1;">
-                  <div style="font-weight:600;font-size:13px;">iPhone 16 · 128GB</div>
-                  <div style="font-size:11px;color:var(--text-muted);">
-                    <span class="zh">售出 22 台 · 平均 $782</span>
-                    <span class="en">22 sold · Avg $782</span>
-                  </div>
-                </div>
-                <div style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$17.2K</div>
+            <div style="padding:32px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
+                <div style="font-size:28px;margin-bottom:8px;">📊</div>
+                <span class="zh">暂无销售数据</span>
+                <span class="en">No sales data yet</span>
               </div>
-              <div style="padding:11px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border-soft);">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--text-muted);width:24px;">2</div>
-                <div style="flex:1;">
-                  <div style="font-weight:600;font-size:13px;">iPhone 16 Pro Max · 256GB</div>
-                  <div style="font-size:11px;color:var(--text-muted);">
-                    <span class="zh">售出 14 台 · 平均 $1,189</span>
-                    <span class="en">14 sold · Avg $1,189</span>
-                  </div>
-                </div>
-                <div style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$16.6K</div>
-              </div>
-              <div style="padding:11px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border-soft);">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--text-muted);width:24px;">3</div>
-                <div style="flex:1;">
-                  <div style="font-weight:600;font-size:13px;">iPhone 15 Pro · 128GB</div>
-                  <div style="font-size:11px;color:var(--text-muted);">
-                    <span class="zh">售出 12 台 (二手) · 平均 $649</span>
-                    <span class="en">12 sold (used) · Avg $649</span>
-                  </div>
-                </div>
-                <div style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$7.8K</div>
-              </div>
-              <div style="padding:11px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border-soft);">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--text-muted);width:24px;">4</div>
-                <div style="flex:1;">
-                  <div style="font-weight:600;font-size:13px;">Samsung S25 Ultra · 256GB</div>
-                  <div style="font-size:11px;color:var(--text-muted);">
-                    <span class="zh">售出 6 台 · 平均 $1,229</span>
-                    <span class="en">6 sold · Avg $1,229</span>
-                  </div>
-                </div>
-                <div style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$7.4K</div>
-              </div>
-              <div style="padding:11px 18px;display:flex;align-items:center;gap:10px;">
-                <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--text-muted);width:24px;">5</div>
-                <div style="flex:1;">
-                  <div style="font-weight:600;font-size:13px;">iPhone 13 · 128GB</div>
-                  <div style="font-size:11px;color:var(--text-muted);">
-                    <span class="zh">售出 11 台 (二手) · 平均 $389</span>
-                    <span class="en">11 sold (used) · Avg $389</span>
-                  </div>
-                </div>
-                <div style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$4.3K</div>
-              </div>
-            </div>
           </div>
 
         </div>
@@ -5888,20 +5774,20 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
             <div>
               <div class="ma-hero-greet">
-                <span class="zh">下午好,Chester</span>
-                <span class="en">Good afternoon, Chester</span>
+                <span class="zh" id="maGreetZh"></span>
+                <span class="en" id="maGreetEn"></span>
               </div>
               <div class="ma-hero-meta" style="margin-bottom:0;">
-                📍 Alhambra · <span class="zh">店员</span><span class="en">Staff</span> · <span class="zh">入职 8 个月</span><span class="en">8 months tenure</span>
+                <span id="maStoreMeta"></span>
               </div>
             </div>
             <div style="text-align:right;">
               <div class="ma-points-display" style="margin-bottom:2px;justify-content:flex-end;">
-                <span class="ma-points-num">315</span>
+                <span class="ma-points-num">0</span>
                 <span class="ma-points-unit">Points</span>
               </div>
               <div class="ma-points-equiv">
-                ≈ $315 <span class="zh">可兑换 · 月底统一发放</span><span class="en">redeemable · paid out end of month</span>
+                ≈ $0 <span class="zh">可兑换 · 月底统一发放</span><span class="en">redeemable · paid out end of month</span>
               </div>
             </div>
           </div>
@@ -5911,34 +5797,34 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         <div class="ma-stats-row">
           <div class="ma-stat-card">
             <div class="ma-stat-label"><span class="zh">本月销售</span><span class="en">Units Sold MTD</span></div>
-            <div class="ma-stat-value">15</div>
+            <div class="ma-stat-value">0</div>
             <div class="ma-stat-meta">
-              <span class="zh">8 新机 · 7 二手</span>
-              <span class="en">8 new · 7 used</span>
+              <span class="zh">0 新机 · 0 二手</span>
+              <span class="en">0 new · 0 used</span>
             </div>
           </div>
           <div class="ma-stat-card">
             <div class="ma-stat-label"><span class="zh">本月积分</span><span class="en">Points MTD</span></div>
-            <div class="ma-stat-value"><span class="pts-color">265 <span style="font-size:14px;opacity:0.7;font-weight:600;">P</span></span></div>
-            <div class="ma-stat-meta">160 + 105 = 265</div>
+            <div class="ma-stat-value"><span class="pts-color">0 <span style="font-size:14px;opacity:0.7;font-weight:600;">P</span></span></div>
+            <div class="ma-stat-meta">--</div>
           </div>
           <div class="ma-stat-card">
             <div class="ma-stat-label"><span class="zh">月目标</span><span class="en">Monthly Goal</span></div>
-            <div class="ma-stat-value">75%</div>
+            <div class="ma-stat-value">0%</div>
             <div class="ma-stat-meta">
-              <span class="zh">15 / 20 台 · 还需 5 台</span>
-              <span class="en">15 / 20 · 5 to go</span>
+              <span class="zh">0 / 20 台 · 还需 20 台</span>
+              <span class="en">0 / 20 · 20 to go</span>
             </div>
             <div style="height:5px;background:var(--bg-soft);border-radius:3px;overflow:hidden;margin-top:8px;">
-              <div style="width:75%;height:100%;background:linear-gradient(90deg,var(--brand),var(--success));"></div>
+              <div style="width:0%;height:100%;background:linear-gradient(90deg,var(--brand),var(--success));"></div>
             </div>
           </div>
           <div class="ma-stat-card">
             <div class="ma-stat-label"><span class="zh">店内排名</span><span class="en">Store Rank</span></div>
-            <div class="ma-stat-value">#3</div>
+            <div class="ma-stat-value">--</div>
             <div class="ma-stat-meta">
-              <span class="zh">Alhambra · 共 5 人</span>
-              <span class="en">Alhambra · of 5</span>
+              <span class="zh">暂无数据</span>
+              <span class="en">No data yet</span>
             </div>
           </div>
         </div>
@@ -5998,71 +5884,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <div style="text-align:right;">◆ <span class="zh">积分</span><span class="en">Points</span></div>
             </div>
 
-            <div class="points-history-row">
-              <div class="mono" style="font-size:11.5px;color:var(--text-muted);">05-04 14:23</div>
-              <div class="ph-product">
-                iPhone 16
-                <div class="meta">128GB · <span class="zh">白色</span><span class="en">White</span> · NEW</div>
+            <div style="padding:32px 18px;text-align:center;color:var(--text-muted);font-size:13px;grid-column:1/-1;">
+                <span class="zh">暂无积分记录</span>
+                <span class="en">No points history yet</span>
               </div>
-              <div style="text-align:right;font-size:12px;">Lin Wei</div>
-              <div class="ph-amount">$799</div>
-              <div class="ph-points">+20</div>
-            </div>
-
-            <div class="points-history-row">
-              <div class="mono" style="font-size:11.5px;color:var(--text-muted);">05-03 16:42</div>
-              <div class="ph-product">
-                iPhone 13
-                <div class="meta">128GB · <span class="zh">红</span><span class="en">Red</span> · USED</div>
-              </div>
-              <div style="text-align:right;font-size:12px;">陈志强</div>
-              <div class="ph-amount">$389</div>
-              <div class="ph-points">+15</div>
-            </div>
-
-            <div class="points-history-row">
-              <div class="mono" style="font-size:11.5px;color:var(--text-muted);">05-03 11:18</div>
-              <div class="ph-product">
-                iPhone 14 Pro
-                <div class="meta">256GB · <span class="zh">黑</span><span class="en">Black</span> · USED</div>
-              </div>
-              <div style="text-align:right;font-size:12px;">王慧敏</div>
-              <div class="ph-amount">$799</div>
-              <div class="ph-points">+15</div>
-            </div>
-
-            <div class="points-history-row">
-              <div class="mono" style="font-size:11.5px;color:var(--text-muted);">05-02 15:30</div>
-              <div class="ph-product">
-                iPhone 15 Pro
-                <div class="meta">256GB · <span class="zh">钛蓝</span><span class="en">Blue Ti</span> · NEW</div>
-              </div>
-              <div style="text-align:right;font-size:12px;">Maria G.</div>
-              <div class="ph-amount">$949</div>
-              <div class="ph-points">+20</div>
-            </div>
-
-            <div class="points-history-row">
-              <div class="mono" style="font-size:11.5px;color:var(--text-muted);">05-02 10:45</div>
-              <div class="ph-product">
-                Samsung Galaxy A55
-                <div class="meta">128GB · <span class="zh">紫</span><span class="en">Purple</span> · NEW</div>
-              </div>
-              <div style="text-align:right;font-size:12px;">D. Patel</div>
-              <div class="ph-amount">$429</div>
-              <div class="ph-points">+20</div>
-            </div>
-
-            <div class="points-history-row" style="background:var(--bg-tinted);">
-              <div></div>
-              <div style="font-weight:700;color:var(--text);">
-                <span class="zh">本月小计 · 15 笔交易</span>
-                <span class="en">MTD Subtotal · 15 sales</span>
-              </div>
-              <div></div>
-              <div class="ph-amount" style="font-weight:700;">$10,400</div>
-              <div class="ph-points" style="font-size:16px;">+265</div>
-            </div>
           </div>
         </div>
 
@@ -6150,23 +5975,23 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <div class="sd-stats-row">
               <div class="sd-stat">
                 <div class="l"><span class="zh">在售库存</span><span class="en">In Stock</span></div>
-                <div class="v" id="sdStock">52</div>
-                <div class="s">30 NEW · 22 USED</div>
+                <div class="v" id="sdStock">0</div>
+                <div class="s">0 NEW · 0 USED</div>
               </div>
               <div class="sd-stat">
                 <div class="l"><span class="zh">今日销售</span><span class="en">Today Sold</span></div>
-                <div class="v" id="sdTodaySold">5</div>
+                <div class="v" id="sdTodaySold">0</div>
                 <div class="s"><span class="zh">部</span><span class="en">phones</span></div>
               </div>
               <div class="sd-stat">
                 <div class="l"><span class="zh">今日营收</span><span class="en">Today Revenue</span></div>
-                <div class="v" id="sdTodayRev"><span class="ccy">$</span>4,287</div>
+                <div class="v" id="sdTodayRev"><span class="ccy">$</span>0</div>
                 <div class="s"><span class="zh">含税</span><span class="en">incl. tax</span></div>
               </div>
               <div class="sd-stat">
                 <div class="l"><span class="zh">本月销售</span><span class="en">MTD Sold</span></div>
-                <div class="v" id="sdMtdSold">38</div>
-                <div class="s"><span class="zh">部 · 排名 #2</span><span class="en">phones · #2</span></div>
+                <div class="v" id="sdMtdSold">0</div>
+                <div class="s"><span class="zh">部</span><span class="en">phones</span></div>
               </div>
             </div>
           </div>
@@ -6181,14 +6006,14 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="en">Cash on Hand (Reserve)</span>
             </div>
             <div class="cash-reserve-amount">
-              <span class="ccy">$</span><span id="sdCashAmt">8,420</span>
+              <span class="ccy">$</span><span id="sdCashAmt">0</span>
             </div>
             <div class="cash-reserve-meta">
               <span class="zh">最近一次收银对账</span><span class="en">Last reconciled</span>:
-              <span class="mono" style="color:var(--text);font-weight:600;">2026-05-04 09:32</span>
+              <span class="mono" style="color:var(--text);font-weight:600;">--</span>
               <span style="color:var(--text-faint);">·</span>
-              <span class="zh">距今 5 小时</span>
-              <span class="en">5h ago</span>
+              <span class="zh">暂无记录</span>
+              <span class="en">No records</span>
             </div>
           </div>
           <div class="cash-reserve-actions">
@@ -6230,7 +6055,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <div class="section-actions">
               <span style="font-size:12px;color:var(--text-muted);">
                 <span class="zh">总收款</span><span class="en">Total</span>:
-                <strong style="color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;">$4,287</strong>
+                <strong style="color:var(--text);font-family:'JetBrains Mono',monospace;font-size:14px;">$0</strong>
               </span>
             </div>
           </div>
@@ -6239,36 +6064,36 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <div class="pm-breakdown-card cash">
                 <span class="pm-emoji">💵</span>
                 <div class="pm-name"><span class="zh">现金</span><span class="en">Cash</span></div>
-                <div class="pm-amount"><span class="ccy">$</span>1,629</div>
-                <div class="pm-count">38% · 2 <span class="zh">笔</span><span class="en">txns</span></div>
+                <div class="pm-amount"><span class="ccy">$</span>0</div>
+                <div class="pm-count">0%</div>
                 <div class="pm-bar"></div>
               </div>
               <div class="pm-breakdown-card card">
                 <span class="pm-emoji">💳</span>
                 <div class="pm-name"><span class="zh">刷卡</span><span class="en">Card</span></div>
-                <div class="pm-amount"><span class="ccy">$</span>1,372</div>
-                <div class="pm-count">32% · 1 <span class="zh">笔</span><span class="en">txn</span></div>
+                <div class="pm-amount"><span class="ccy">$</span>0</div>
+                <div class="pm-count">0%</div>
                 <div class="pm-bar"></div>
               </div>
               <div class="pm-breakdown-card zelle">
                 <span class="pm-emoji">📱</span>
                 <div class="pm-name">Zelle</div>
-                <div class="pm-amount"><span class="ccy">$</span>600</div>
-                <div class="pm-count">14% · 1 <span class="zh">笔</span><span class="en">txn</span></div>
+                <div class="pm-amount"><span class="ccy">$</span>0</div>
+                <div class="pm-count">0%</div>
                 <div class="pm-bar"></div>
               </div>
               <div class="pm-breakdown-card venmo">
                 <span class="pm-emoji">💸</span>
                 <div class="pm-name">Venmo</div>
-                <div class="pm-amount"><span class="ccy">$</span>343</div>
-                <div class="pm-count">8% · 1 <span class="zh">笔</span><span class="en">txn</span></div>
+                <div class="pm-amount"><span class="ccy">$</span>0</div>
+                <div class="pm-count">0%</div>
                 <div class="pm-bar"></div>
               </div>
               <div class="pm-breakdown-card other">
                 <span class="pm-emoji">🏦</span>
                 <div class="pm-name"><span class="zh">其他</span><span class="en">Other</span></div>
-                <div class="pm-amount"><span class="ccy">$</span>343</div>
-                <div class="pm-count">8% · <span class="zh">转账+微信</span><span class="en">Transfer+WeChat</span></div>
+                <div class="pm-amount"><span class="ccy">$</span>0</div>
+                <div class="pm-count">0%</div>
                 <div class="pm-bar"></div>
               </div>
             </div>
@@ -6277,8 +6102,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <div style="margin-top:14px;padding:11px 14px;background:var(--success-soft);border-left:3px solid var(--success);border-radius:0 7px 7px 0;font-size:12px;color:var(--success);display:flex;align-items:center;gap:10px;">
               <strong>💡</strong>
               <div>
-                <span class="zh"><strong>现金占比 38%</strong>(高于 9 店平均 22%)· 该店现金客户较多 · 建议每日下午对账,两日内存款。</span>
-                <span class="en"><strong>Cash 38%</strong> (above 9-store avg 22%) · High cash client base · Recommend daily reconciliation, deposit within 2 days.</span>
+                <span class="zh">暂无支付数据</span>
+                <span class="en">No payment data yet</span>
               </div>
             </div>
           </div>
@@ -6290,7 +6115,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <div class="section-title">
               <span class="zh">销售详情 · 今日成交</span>
               <span class="en">Sales Detail · Today</span>
-              <span class="count">· 5 <span class="zh">笔</span><span class="en">sales</span></span>
+              <span class="count">· 0 <span class="zh">笔</span><span class="en">sales</span></span>
             </div>
             <div class="section-actions">
               <button class="btn btn-sm btn-ghost"><span class="zh">📥 导出 CSV</span><span class="en">📥 Export</span></button>
@@ -6308,143 +6133,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <div style="text-align:center;"><span class="zh">支付</span><span class="en">Pay</span></div>
             </div>
 
-            <div class="table-row body" style="grid-template-columns:80px 2.2fr 1.2fr 1fr 100px 100px 90px;">
-              <div class="mono" style="font-size:11.5px;color:var(--text-muted);">14:23</div>
-              <div>
-                <div style="font-weight:700;font-size:14px;letter-spacing:-0.01em;line-height:1.2;">
-                  <span class="brand-chip bc-apple">Apple</span> iPhone 16 Pro Max
-                </div>
-                <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">
-                  256GB · <span class="zh">原色钛金</span><span class="en">Natural Ti</span> · NEW · IMEI ····0124
-                </div>
-              </div>
-              <div style="font-size:13px;">
-                Lin Wei
-                <div style="font-size:11px;color:var(--text-muted);">VIP · 4th</div>
-              </div>
-              <div style="font-size:13px;font-weight:600;">
-                Jayden
-                <div style="font-size:11px;color:var(--purple);font-family:'JetBrains Mono',monospace;font-weight:700;">+20 P</div>
-              </div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;">$1,199</div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--success);">$1,322</div>
-              <div style="text-align:center;">
-                <span style="background:var(--info-soft);color:var(--info);font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;">💳 Card</span>
-              </div>
-            </div>
-
-            <div class="table-row body" style="grid-template-columns:80px 2.2fr 1.2fr 1fr 100px 100px 90px;">
-              <div class="mono" style="font-size:11.5px;color:var(--text-muted);">12:08</div>
-              <div>
-                <div style="font-weight:700;font-size:14px;letter-spacing:-0.01em;line-height:1.2;">
-                  <span class="brand-chip bc-apple">Apple</span> iPhone 16
-                </div>
-                <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">
-                  128GB · <span class="zh">海军蓝</span><span class="en">Navy</span> · NEW · IMEI ····7762
-                </div>
-              </div>
-              <div style="font-size:13px;">
-                Maria G.
-                <div style="font-size:11px;color:var(--text-muted);"><span class="zh">新客</span><span class="en">New</span></div>
-              </div>
-              <div style="font-size:13px;font-weight:600;">
-                Chester
-                <div style="font-size:11px;color:var(--purple);font-family:'JetBrains Mono',monospace;font-weight:700;">+20 P</div>
-              </div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;">$799</div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--success);">$881</div>
-              <div style="text-align:center;">
-                <span style="background:var(--success-soft);color:var(--success);font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;">💵 Cash</span>
-              </div>
-            </div>
-
-            <div class="table-row body" style="grid-template-columns:80px 2.2fr 1.2fr 1fr 100px 100px 90px;">
-              <div class="mono" style="font-size:11.5px;color:var(--text-muted);">11:45</div>
-              <div>
-                <div style="font-weight:700;font-size:14px;letter-spacing:-0.01em;line-height:1.2;">
-                  <span class="brand-chip bc-apple">Apple</span> iPhone 15 Pro
-                </div>
-                <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">
-                  128GB · <span class="zh">原色钛金</span><span class="en">Natural Ti</span> · USED · 9.5新 · 92%
-                </div>
-              </div>
-              <div style="font-size:13px;">
-                陈志强
-                <div style="font-size:11px;color:var(--brand);font-weight:700;">REPEAT</div>
-              </div>
-              <div style="font-size:13px;font-weight:600;">
-                Jayden
-                <div style="font-size:11px;color:var(--purple);font-family:'JetBrains Mono',monospace;font-weight:700;">+15 P</div>
-              </div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;">$649</div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-muted);">$649</div>
-              <div style="text-align:center;">
-                <span style="background:var(--success-soft);color:var(--success);font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;">💵 Cash</span>
-              </div>
-            </div>
-
-            <div class="table-row body" style="grid-template-columns:80px 2.2fr 1.2fr 1fr 100px 100px 90px;">
-              <div class="mono" style="font-size:11.5px;color:var(--text-muted);">10:12</div>
-              <div>
-                <div style="font-weight:700;font-size:14px;letter-spacing:-0.01em;line-height:1.2;">
-                  <span class="brand-chip bc-samsung">Samsung</span> Galaxy S25
-                </div>
-                <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">
-                  256GB · <span class="zh">薰衣草紫</span><span class="en">Lavender</span> · NEW · IMEI ····4419
-                </div>
-              </div>
-              <div style="font-size:13px;">
-                D. Patel
-                <div style="font-size:11px;color:var(--text-muted);"><span class="zh">介绍</span><span class="en">Referral</span></div>
-              </div>
-              <div style="font-size:13px;font-weight:600;">
-                Bill
-                <div style="font-size:11px;color:var(--purple);font-family:'JetBrains Mono',monospace;font-weight:700;">+20 P</div>
-              </div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;">$899</div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--success);">$991</div>
-              <div style="text-align:center;">
-                <span style="background:var(--purple-soft);color:var(--purple);font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;">📱 Zelle</span>
-              </div>
-            </div>
-
-            <div class="table-row body" style="grid-template-columns:80px 2.2fr 1.2fr 1fr 100px 100px 90px;">
-              <div class="mono" style="font-size:11.5px;color:var(--text-muted);">09:45</div>
-              <div>
-                <div style="font-weight:700;font-size:14px;letter-spacing:-0.01em;line-height:1.2;">
-                  <span class="brand-chip bc-apple">Apple</span> iPhone 14
-                </div>
-                <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;">
-                  128GB · <span class="zh">紫</span><span class="en">Purple</span> · USED · 9新 · 94%
-                </div>
-              </div>
-              <div style="font-size:13px;">
-                王慧敏
-                <div style="font-size:11px;color:var(--text-muted);"><span class="zh">老客</span><span class="en">Repeat</span></div>
-              </div>
-              <div style="font-size:13px;font-weight:600;">
-                Chester
-                <div style="font-size:11px;color:var(--purple);font-family:'JetBrains Mono',monospace;font-weight:700;">+15 P</div>
-              </div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;">$420</div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text-muted);">$420</div>
-              <div style="text-align:center;">
-                <span style="background:#e6f3ff;color:#008cff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;">💸 Venmo</span>
-              </div>
-            </div>
-
-            <!-- Subtotal -->
-            <div class="table-row body" style="grid-template-columns:80px 2.2fr 1.2fr 1fr 100px 100px 90px;background:var(--bg-tinted);font-weight:700;">
-              <div></div>
-              <div style="color:var(--text);">
-                <span class="zh">今日小计 · 5 笔交易</span>
-                <span class="en">Today Subtotal · 5 sales</span>
-              </div>
-              <div></div>
-              <div></div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:14px;">$3,966</div>
-              <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--success);">$4,287</div>
-              <div style="text-align:center;font-size:11px;color:var(--text-muted);font-weight:600;"><span class="zh">应税 3 笔</span><span class="en">3 taxed</span></div>
+            <div style="padding:32px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
+              <div style="font-size:28px;margin-bottom:8px;">🧾</div>
+              <span class="zh">今日暂无销售记录</span>
+              <span class="en">No sales today</span>
             </div>
 
           </div>
@@ -6461,54 +6153,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               </div>
             </div>
             <div style="padding:14px 18px;">
-              <div style="display:flex;flex-direction:column;gap:10px;">
-                <div style="display:flex;align-items:center;gap:11px;padding:10px;background:var(--bg-tinted);border-radius:8px;">
-                  <div class="avatar" style="background:var(--gold);">JS</div>
-                  <div style="flex:1;">
-                    <div style="font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:6px;">
-                      Jayden Sun
-                      <span style="background:var(--gold);color:white;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;letter-spacing:0.05em;">店长</span>
-                    </div>
-                    <div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">
-                      <span class="zh">今日 2 单 · 2 NEW</span>
-                      <span class="en">Today 2 sales · 2 NEW</span>
-                    </div>
-                  </div>
-                  <div style="text-align:right;">
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--purple);">+35 P</div>
-                    <div style="font-size:10px;color:var(--text-muted);">$1,848</div>
-                  </div>
-                </div>
-
-                <div style="display:flex;align-items:center;gap:11px;padding:10px;background:var(--bg-tinted);border-radius:8px;">
-                  <div class="avatar">CH</div>
-                  <div style="flex:1;">
-                    <div style="font-weight:700;font-size:13.5px;">Chester</div>
-                    <div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">
-                      <span class="zh">今日 2 单 · 1 NEW + 1 USED</span>
-                      <span class="en">Today 2 sales · 1 NEW + 1 USED</span>
-                    </div>
-                  </div>
-                  <div style="text-align:right;">
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--purple);">+35 P</div>
-                    <div style="font-size:10px;color:var(--text-muted);">$1,219</div>
-                  </div>
-                </div>
-
-                <div style="display:flex;align-items:center;gap:11px;padding:10px;background:var(--bg-tinted);border-radius:8px;">
-                  <div class="avatar">BH</div>
-                  <div style="flex:1;">
-                    <div style="font-weight:700;font-size:13.5px;">Bill Han</div>
-                    <div style="font-size:11.5px;color:var(--text-muted);margin-top:1px;">
-                      <span class="zh">今日 1 单 · 1 NEW</span>
-                      <span class="en">Today 1 sale · 1 NEW</span>
-                    </div>
-                  </div>
-                  <div style="text-align:right;">
-                    <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--purple);">+20 P</div>
-                    <div style="font-size:10px;color:var(--text-muted);">$899</div>
-                  </div>
-                </div>
+              <div style="padding:24px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
+                <span class="zh">暂无在岗记录</span>
+                <span class="en">No staff data</span>
               </div>
             </div>
           </div>
@@ -7032,7 +6679,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
             <div class="shero-stat">
               <div class="l"><span class="zh">在售库存</span><span class="en">Available</span></div>
-              <div class="v">387</div>
+              <div class="v" id="invHeroCount">0</div>
               <div class="s">220 NEW · 167 USED</div>
             </div>
             <div class="shero-stat">
@@ -7054,8 +6701,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </h1>
             <div class="page-subtitle">
               <span class="live-dot"></span>
-              <span class="zh">9 家门店 · 实时同步 · 387 部在售手机</span>
-              <span class="en">9 stores · Live · 387 phones available</span>
+              <span class="zh">9 家门店 · 实时同步</span>
+              <span class="en">9 stores · Live sync</span>
             </div>
           </div>
           <div class="page-actions">
@@ -7118,13 +6765,13 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <span class="tab-icon">NEW</span>
             <span class="zh">新机</span>
             <span class="en">New Phones</span>
-            <span class="tab-count" id="tabCountNew">220</span>
+            <span class="tab-count" id="tabCountNew">0</span>
           </button>
           <button class="inv-mode-tab" id="modeTabUsed" onclick="setInvMode('used')">
             <span class="tab-icon" style="background:var(--warn-soft);color:var(--warn);">USED</span>
             <span class="zh">二手机</span>
             <span class="en">Used Phones</span>
-            <span class="tab-count" id="tabCountUsed">167</span>
+            <span class="tab-count" id="tabCountUsed">0</span>
           </button>
         </div>
 
@@ -7137,21 +6784,21 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="en" id="modeTitleEn">New Phone Inventory · All Stores</span>
             </div>
             <div class="mc-sub">
-              <span class="zh" id="modeSubZh">220 部全新未拆封手机 · 9 家门店在售</span>
-              <span class="en" id="modeSubEn">220 sealed new phones · across 9 stores</span>
+              <span class="zh" id="modeSubZh">0 部全新未拆封手机 · 9 家门店在售</span>
+              <span class="en" id="modeSubEn">0 sealed new phones · across 9 stores</span>
             </div>
           </div>
           <div class="mc-stats">
             <div>
-              <div class="mc-stat-val" id="modeStatA">220</div>
+              <div class="mc-stat-val" id="modeStatA">0</div>
               <div class="mc-stat-label"><span class="zh">在售</span><span class="en">Available</span></div>
             </div>
             <div>
-              <div class="mc-stat-val" id="modeStatB" style="color:var(--warn);">5</div>
+              <div class="mc-stat-val" id="modeStatB" style="color:var(--warn);">0</div>
               <div class="mc-stat-label"><span class="zh">待检测</span><span class="en">Pending QC</span></div>
             </div>
             <div>
-              <div class="mc-stat-val" id="modeStatC">86</div>
+              <div class="mc-stat-val" id="modeStatC">0</div>
               <div class="mc-stat-label"><span class="zh">本月已售</span><span class="en">Sold MTD</span></div>
             </div>
           </div>
@@ -7167,18 +6814,18 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <input type="text" class="search-input" id="invSearchInput" placeholder="搜索 Search: 型号 Model / IMEI / 颜色 Color">
             </div>
             <div class="filters inv-mode-filters">
-              <button class="chip active mode-color"><span class="zh">全部</span><span class="en">All</span><span class="chip-num" id="modeFilterAll">220</span></button>
+              <button class="chip active mode-color"><span class="zh">全部</span><span class="en">All</span><span class="chip-num" id="modeFilterAll">0</span></button>
               <button class="chip" id="filterApple">
                 <span class="brand-chip bc-apple" style="margin-right:4px;">Apple</span>
-                <span class="chip-num">156</span>
+                <span class="chip-num">0</span>
               </button>
               <button class="chip" id="filterSamsung">
                 <span class="brand-chip bc-samsung" style="margin-right:4px;">Samsung</span>
-                <span class="chip-num">42</span>
+                <span class="chip-num">0</span>
               </button>
               <button class="chip" id="filterGoogle">
                 <span class="brand-chip bc-google" style="margin-right:4px;">Google</span>
-                <span class="chip-num">22</span>
+                <span class="chip-num">0</span>
               </button>
             </div>
             <div style="border-left:1px solid var(--border);height:24px;"></div>
@@ -7249,7 +6896,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </span>
             <button class="region-filter-pill active" onclick="setRegionFilter(this, 'all')">
               <span class="zh">全部</span><span class="en">All</span>
-              <span class="pill-num">387</span>
+              <span class="pill-num">0</span>
             </button>
             <button class="region-filter-pill" onclick="setRegionFilter(this, 'us')">
               <span class="flag">🇺🇸</span>
@@ -7394,7 +7041,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div class="form-row split">
                   <div>
                     <label class="form-label"><span class="zh">客户姓名</span><span class="en">Customer Name</span> <span class="req">*</span></label>
-                    <input type="text" class="form-input" value="Lin Wei">
+                    <input type="text" class="form-input" value="" placeholder="Customer name">
                   </div>
                   <div>
                     <label class="form-label"><span class="zh">手机号</span><span class="en">Phone</span> <span class="req">*</span></label>
@@ -7928,10 +7575,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
 
         <div class="filters" style="margin-bottom:14px;">
-          <button class="chip active"><span class="zh">待我审批</span><span class="en">Awaiting Me</span><span class="chip-num">3</span></button>
-          <button class="chip"><span class="zh">我发起的</span><span class="en">My Requests</span><span class="chip-num">5</span></button>
-          <button class="chip"><span class="zh">在途中</span><span class="en">In Transit</span><span class="chip-num">4</span></button>
-          <button class="chip"><span class="zh">已完成</span><span class="en">Completed</span><span class="chip-num">28</span></button>
+          <button class="chip active"><span class="zh">待我审批</span><span class="en">Awaiting Me</span><span class="chip-num">0</span></button>
+          <button class="chip"><span class="zh">我发起的</span><span class="en">My Requests</span><span class="chip-num">0</span></button>
+          <button class="chip"><span class="zh">在途中</span><span class="en">In Transit</span><span class="chip-num">0</span></button>
+          <button class="chip"><span class="zh">已完成</span><span class="en">Completed</span><span class="chip-num">0</span></button>
         </div>
 
         <!-- Detailed transfer card with timeline -->
@@ -8098,8 +7745,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
     <!-- KPI -->
     <div class="kpi-grid cols-5">
-      <div class="kpi"><div class="kpi-label"><span class="zh">今日</span><span class="en">Today</span></div><div class="kpi-value">28</div><div class="kpi-meta">$24,891</div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">本周</span><span class="en">This Week</span></div><div class="kpi-value">42</div><div class="kpi-meta">$38,920</div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">今日</span><span class="en">Today</span></div><div class="kpi-value">0</div><div class="kpi-meta">$0</div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">本周</span><span class="en">This Week</span></div><div class="kpi-value">0</div><div class="kpi-meta">$0</div></div>
       <div class="kpi"><div class="kpi-label"><span class="zh">本月</span><span class="en">This Month</span></div><div class="kpi-value">128</div><div class="kpi-meta up">↑ 23% MoM</div></div>
       <div class="kpi"><div class="kpi-label"><span class="zh">客单价</span><span class="en">Avg Order</span></div><div class="kpi-value"><span class="ccy">$</span>1,124</div><div class="kpi-meta up">↑ 8%</div></div>
       <div class="kpi"><div class="kpi-label"><span class="zh">本月退货</span><span class="en">Returns MTD</span></div><div class="kpi-value" style="color:var(--danger);">3</div><div class="kpi-meta down">2.3% rate</div></div>
@@ -8107,10 +7754,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
     <!-- Tabs for sales/returns -->
     <div class="filters" style="margin-bottom:14px;">
-      <button class="chip active"><span class="zh">销售单</span><span class="en">Sales</span><span class="chip-num">128</span></button>
-      <button class="chip"><span class="zh">退货</span><span class="en">Returns</span><span class="chip-num">3</span></button>
-      <button class="chip"><span class="zh">保修维护中</span><span class="en">Under Warranty</span><span class="chip-num">7</span></button>
-      <button class="chip"><span class="zh">需要催收据</span><span class="en">Receipt Pending</span><span class="chip-num">2</span></button>
+      <button class="chip active"><span class="zh">销售单</span><span class="en">Sales</span><span class="chip-num">0</span></button>
+      <button class="chip"><span class="zh">退货</span><span class="en">Returns</span><span class="chip-num">0</span></button>
+      <button class="chip"><span class="zh">保修维护中</span><span class="en">Under Warranty</span><span class="chip-num">0</span></button>
+      <button class="chip"><span class="zh">需要催收据</span><span class="en">Receipt Pending</span><span class="chip-num">0</span></button>
     </div>
 
     <div class="section">
@@ -8456,21 +8103,21 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       </div>
       <div class="page-actions">
         <button class="btn" onclick="openIMEIModal()"><span class="zh">🔍 IMEI 查询</span><span class="en">🔍 IMEI Check</span></button>
-        <button class="btn"><span class="zh">📋 检测队列</span><span class="en">📋 QC Queue</span><span class="chip-num" style="background:var(--warn);color:white;margin-left:5px;">5</span></button>
+        <button class="btn"><span class="zh">📋 检测队列</span><span class="en">📋 QC Queue</span><span class="chip-num" style="background:var(--warn);color:white;margin-left:5px;">0</span></button>
         <button class="btn btn-primary"><span class="zh">+ 新回收单</span><span class="en">+ New Trade-In</span></button>
       </div>
     </div>
 
     <!-- KPIs -->
     <div class="kpi-grid cols-5">
-      <div class="kpi"><div class="kpi-label"><span class="zh">本月回收</span><span class="en">Acquired MTD</span></div><div class="kpi-value">42</div><div class="kpi-meta">$11,830 <span class="zh">支出</span><span class="en">paid out</span></div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">已上架</span><span class="en">Listed</span></div><div class="kpi-value">37</div><div class="kpi-meta">$26,450 <span class="zh">挂牌价</span><span class="en">listed</span></div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">本月回收</span><span class="en">Acquired MTD</span></div><div class="kpi-value">0</div><div class="kpi-meta">$0 <span class="zh">支出</span><span class="en">paid out</span></div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">已上架</span><span class="en">Listed</span></div><div class="kpi-value">0</div><div class="kpi-meta">$0 <span class="zh">挂牌价</span><span class="en">listed</span></div></div>
       <div class="kpi"><div class="kpi-label"><span class="zh">待检测</span><span class="en">Pending QC</span></div><div class="kpi-value" style="color:var(--warn);">5</div><div class="kpi-meta">
         <span class="zh">平均 2 天上架</span>
         <span class="en">Avg 2d to list</span>
       </div></div>
       <div class="kpi"><div class="kpi-label"><span class="zh">平均毛利</span><span class="en">Avg Margin</span></div><div class="kpi-value">38%</div><div class="kpi-meta up">↑ 4% vs <span class="zh">新机</span><span class="en">new</span></div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">本月已售</span><span class="en">Sold MTD</span></div><div class="kpi-value">38</div><div class="kpi-meta">$24,160</div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">本月已售</span><span class="en">Sold MTD</span></div><div class="kpi-value">0</div><div class="kpi-meta">$0</div></div>
     </div>
 
     <!-- IMEI Check Section -->
@@ -8930,10 +8577,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <input type="text" class="search-input" placeholder="搜索 Search: 姓名 Name / 电话 Phone / Email">
         </div>
         <div class="filters">
-          <button class="chip active"><span class="zh">全部</span><span class="en">All</span><span class="chip-num">2,847</span></button>
-          <button class="chip">⭐ VIP <span class="chip-num">186</span></button>
-          <button class="chip"><span class="zh">复购</span><span class="en">Repeat</span><span class="chip-num">654</span></button>
-          <button class="chip"><span class="zh">流失风险</span><span class="en">At Risk</span><span class="chip-num">42</span></button>
+          <button class="chip active"><span class="zh">全部</span><span class="en">All</span><span class="chip-num">0</span></button>
+          <button class="chip">⭐ VIP <span class="chip-num">0</span></button>
+          <button class="chip"><span class="zh">复购</span><span class="en">Repeat</span><span class="chip-num">0</span></button>
+          <button class="chip"><span class="zh">流失风险</span><span class="en">At Risk</span><span class="chip-num">0</span></button>
         </div>
       </div>
 
@@ -9111,9 +8758,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
     <!-- Top KPI -->
     <div class="kpi-grid cols-4">
-      <div class="kpi"><div class="kpi-label"><span class="zh">本月营收</span><span class="en">Revenue MTD</span></div><div class="kpi-value"><span class="ccy">$</span>143.9K</div><div class="kpi-meta up">↑ 23% MoM</div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">本月毛利</span><span class="en">Profit MTD</span></div><div class="kpi-value"><span class="ccy">$</span>40.6K</div><div class="kpi-meta up">28.4% margin</div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">滞销库存</span><span class="en">Aged Stock</span></div><div class="kpi-value" style="color:var(--danger);"><span class="ccy">$</span>8.2K</div><div class="kpi-meta down">12 <span class="zh">部 · 60+ 天</span><span class="en">phones · 60+d</span></div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">本月营收</span><span class="en">Revenue MTD</span></div><div class="kpi-value"><span class="ccy">$</span>0</div><div class="kpi-meta">--</div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">本月毛利</span><span class="en">Profit MTD</span></div><div class="kpi-value"><span class="ccy">$</span>0</div><div class="kpi-meta">--</div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">滞销库存</span><span class="en">Aged Stock</span></div><div class="kpi-value" style="color:var(--danger);"><span class="ccy">$</span>0</div><div class="kpi-meta">0 <span class="zh">部</span><span class="en">phones</span></div></div>
       <div class="kpi"><div class="kpi-label"><span class="zh">库存周转</span><span class="en">Turnover</span></div><div class="kpi-value">38d</div><div class="kpi-meta up"><span class="zh">优于行业平均</span><span class="en">Above industry avg</span></div></div>
     </div>
 
@@ -10097,245 +9744,8 @@ The more detail you provide, the easier it is to handle this issue."></textarea>
 <div class="toast" id="toast"></div>
 
 <script>
-// Mock phone data
+// Phone inventory data (production - populated via upload bot)
 const phones = [
-  // ===== APPLE - NEW =====
-  { cond:'new', brand:'apple', name:'iPhone 16 Pro Max', storage:'256GB', imei:'352847156890124', color:'原色钛金', colorEn:'Natural Titanium', colorHex:'#1d1d1f', store:'alhambra', storeName:'Alhambra', shelf:'A-12-03', price:1199, cost:1080, status:'available', region:'us', purchaseDate:'2026-04-12', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:22,
-    timeline:[
-      { time:'2026-04-12 09:30', event:'入库', eventEn:'Received', detail:'Apple IRP · 进价 $1,080', detailEn:'Apple IRP · Cost $1,080' },
-      { time:'2026-04-15 14:00', event:'上架', eventEn:'Listed', detail:'店员 Jayden · 货柜 A-12-03', detailEn:'Jayden · Shelf A-12-03' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 16 Pro Max', storage:'512GB', imei:'352847156890225', color:'沙漠钛金', colorEn:'Desert Titanium', colorHex:'#c2b8a3', store:'monterey-park', storeName:'Monterey Park', shelf:'A-03-07', price:1399, cost:1260, status:'available', region:'us', purchaseDate:'2026-04-18', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:16,
-    timeline:[
-      { time:'2026-04-18 10:00', event:'入库', eventEn:'Received', detail:'Apple IRP · 进价 $1,260', detailEn:'Apple IRP · Cost $1,260' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 16 Pro Max', storage:'1TB', imei:'352847156890326', color:'白色钛金', colorEn:'White Titanium', colorHex:'#f5f5f0', store:'arcadia-1', storeName:'Arcadia 1', shelf:'A-01-01', price:1599, cost:1440, status:'available', region:'hk', purchaseDate:'2026-04-05', supplier:'香港供应商', supplierEn:'HK Supplier', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:29,
-    timeline:[
-      { time:'2026-04-05 11:00', event:'入库', eventEn:'Received', detail:'香港供应商 · HK$11,200', detailEn:'HK Supplier · HK$11,200' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 16 Pro', storage:'256GB', imei:'353901234567890', color:'黑色钛金', colorEn:'Black Titanium', colorHex:'#3c3c3c', store:'san-gabriel', storeName:'San Gabriel', shelf:'A-05-02', price:999, cost:900, status:'available', region:'us', purchaseDate:'2026-04-22', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:12,
-    timeline:[
-      { time:'2026-04-22 09:00', event:'入库', eventEn:'Received', detail:'Apple IRP · 进价 $900', detailEn:'Apple IRP · Cost $900' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 16 Pro', storage:'512GB', imei:'353901234567991', color:'原色钛金', colorEn:'Natural Titanium', colorHex:'#1d1d1f', store:'rowland-heights', storeName:'Rowland Heights', shelf:'A-02-11', price:1199, cost:1080, status:'reserved', region:'us', purchaseDate:'2026-04-08', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:26,
-    reservedFor:'Lily Chen · +1 626 555 9012', reservedUntil:'2026-05-06 18:00',
-    timeline:[
-      { time:'2026-04-08 10:00', event:'入库', eventEn:'Received', detail:'Apple IRP · 进价 $1,080', detailEn:'Apple IRP · Cost $1,080' },
-      { time:'2026-05-03 14:28', event:'客户预留', eventEn:'Reserved', detail:'Lily Chen · 定金 $200', detailEn:'Lily Chen · Deposit $200' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 16', storage:'128GB', imei:'352901567823901', color:'白色', colorEn:'White', colorHex:'#fcf6e9', store:'rowland-heights', storeName:'Rowland Heights', shelf:'SOLD', price:799, cost:720, status:'sold', region:'us', purchaseDate:'2026-04-10', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新', conditionEn:'Brand New', ageDays:24,
-    soldTo:'Lin Wei · +1 626 555 8821', soldDate:'2026-05-04 14:23', payment:'刷卡 · Visa ····8821', paymentEn:'Visa ····8821',
-    timeline:[
-      { time:'2026-04-10', event:'入库', eventEn:'Received', detail:'Apple IRP', detailEn:'Apple IRP' },
-      { time:'2026-05-04 14:23', event:'已售', eventEn:'Sold', detail:'Chester 售出 · Lin Wei · $799 Visa', detailEn:'Sold by Chester · Lin Wei · $799 Visa' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 16', storage:'256GB', imei:'352901567824002', color:'粉色', colorEn:'Pink', colorHex:'#f4d1d1', store:'irvine', storeName:'Irvine', shelf:'A-04-06', price:899, cost:810, status:'available', region:'us', purchaseDate:'2026-04-25', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:9,
-    timeline:[
-      { time:'2026-04-25 11:30', event:'入库', eventEn:'Received', detail:'Apple IRP · 进价 $810', detailEn:'Apple IRP · Cost $810' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 16', storage:'128GB', imei:'352901567824103', color:'蓝色', colorEn:'Ultramarine', colorHex:'#3f51b5', store:'arcadia-2', storeName:'Arcadia 2', shelf:'A-03-09', price:799, cost:720, status:'available', region:'hk', purchaseDate:'2026-04-14', supplier:'香港供应商', supplierEn:'HK Supplier', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:20,
-    timeline:[
-      { time:'2026-04-14 15:00', event:'入库', eventEn:'Received', detail:'香港供应商 · HK$6,200', detailEn:'HK Supplier · HK$6,200' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 15 Pro', storage:'256GB', imei:'354201987654321', color:'原色钛金', colorEn:'Natural Titanium', colorHex:'#1d1d1f', store:'rancho-cucamonga', storeName:'Rancho Cucamonga', shelf:'A-07-02', price:899, cost:780, status:'available', region:'us', purchaseDate:'2026-03-10', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:55,
-    timeline:[
-      { time:'2026-03-10 09:00', event:'入库', eventEn:'Received', detail:'Apple IRP · 进价 $780', detailEn:'Apple IRP · Cost $780' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 15 Pro', storage:'128GB', imei:'354201987654422', color:'蓝色钛金', colorEn:'Blue Titanium', colorHex:'#4a5c6d', store:'las-vegas', storeName:'Las Vegas', shelf:'A-02-05', price:799, cost:690, status:'available', region:'us', purchaseDate:'2026-02-28', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:65,
-    timeline:[
-      { time:'2026-02-28 10:00', event:'入库', eventEn:'Received', detail:'Apple IRP · 进价 $690', detailEn:'Apple IRP · Cost $690' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 15', storage:'128GB', imei:'354301567890123', color:'绿色', colorEn:'Green', colorHex:'#4a7c59', store:'alhambra', storeName:'Alhambra', shelf:'A-09-04', price:699, cost:620, status:'available', region:'cn', purchaseDate:'2026-03-20', supplier:'国行供应商', supplierEn:'CN Supplier', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:45,
-    timeline:[
-      { time:'2026-03-20 10:00', event:'入库', eventEn:'Received', detail:'国行供应商 · ¥4,500', detailEn:'CN Supplier · ¥4,500' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 15', storage:'256GB', imei:'354301567890224', color:'黑色', colorEn:'Black', colorHex:'#1d1d1f', store:'monterey-park', storeName:'Monterey Park', shelf:'A-06-08', price:799, cost:710, status:'available', region:'us', purchaseDate:'2026-04-02', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:32,
-    timeline:[
-      { time:'2026-04-02 11:00', event:'入库', eventEn:'Received', detail:'Apple IRP · 进价 $710', detailEn:'Apple IRP · Cost $710' }
-    ]},
-  // ===== APPLE - USED =====
-  { cond:'used', brand:'apple', name:'iPhone 15 Pro', storage:'128GB', imei:'358224109876543', color:'原色钛金', colorEn:'Natural Titanium', colorHex:'#574d3f', store:'monterey-park', storeName:'Monterey Park', shelf:'B-04-08', price:649, cost:480, status:'available', region:'us', purchaseDate:'2026-04-28', supplier:'客户回收 · 王先生', supplierEn:'Trade-in · Mr. Wang', condition:'9.5新 · 电池 92%', conditionEn:'9.5/10 · Battery 92%', ageDays:6,
-    timeline:[
-      { time:'2026-04-28 16:20', event:'回收入库', eventEn:'Trade-in', detail:'客户王先生 · 回收价 $480', detailEn:'Mr. Wang · $480' },
-      { time:'2026-04-29 10:15', event:'检测完成', eventEn:'QC passed', detail:'电池 92% · 屏幕完好 · 已解 ID', detailEn:'Battery 92% · Screen perfect · ID unlocked' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 16 Pro Max', storage:'256GB', imei:'358224109876644', color:'沙漠钛金', colorEn:'Desert Titanium', colorHex:'#c2b8a3', store:'san-gabriel', storeName:'San Gabriel', shelf:'B-01-03', price:989, cost:820, status:'available', region:'us', purchaseDate:'2026-04-20', supplier:'客户回收 · 李先生', supplierEn:'Trade-in · Mr. Li', condition:'9.5新 · 电池 96%', conditionEn:'9.5/10 · Battery 96%', ageDays:14,
-    timeline:[
-      { time:'2026-04-20 11:00', event:'回收入库', eventEn:'Trade-in', detail:'客户李先生 · 回收价 $820', detailEn:'Mr. Li · $820' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 14 Pro', storage:'256GB', imei:'357816654321098', color:'深空黑', colorEn:'Space Black', colorHex:'#5a5d5e', store:'arcadia-2', storeName:'Arcadia 2', shelf:'UPS', price:599, cost:450, status:'transit', region:'us', purchaseDate:'2026-03-15', supplier:'客户回收', supplierEn:'Trade-in', condition:'9.5新 · 电池 100%', conditionEn:'9.5/10 · Battery 100%', ageDays:50,
-    timeline:[
-      { time:'2026-03-15', event:'回收入库 Arcadia 2', eventEn:'Trade-in Arcadia 2', detail:'客户回收 · $450', detailEn:'Trade-in · $450' },
-      { time:'2026-05-03 16:00', event:'调拨发出', eventEn:'Shipped', detail:'UPS 隔夜达 → Rancho Cucamonga', detailEn:'UPS Overnight → Rancho Cucamonga' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 14 Pro', storage:'128GB', imei:'357816654321199', color:'金色', colorEn:'Gold', colorHex:'#f5e6ce', store:'irvine', storeName:'Irvine', shelf:'B-03-02', price:549, cost:400, status:'available', region:'us', purchaseDate:'2026-04-10', supplier:'客户回收 · Ms. Kim', supplierEn:'Trade-in · Ms. Kim', condition:'9新 · 电池 89%', conditionEn:'9/10 · Battery 89%', ageDays:24,
-    timeline:[
-      { time:'2026-04-10 15:00', event:'回收入库', eventEn:'Trade-in', detail:'客户 Ms. Kim · $400', detailEn:'Ms. Kim · $400' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 14', storage:'128GB', imei:'357816654321300', color:'午夜色', colorEn:'Midnight', colorHex:'#1d2b36', store:'alhambra', storeName:'Alhambra', shelf:'B-06-01', price:449, cost:320, status:'available', region:'us', purchaseDate:'2026-04-05', supplier:'客户回收 · 赵先生', supplierEn:'Trade-in · Mr. Zhao', condition:'9新 · 电池 90%', conditionEn:'9/10 · Battery 90%', ageDays:29,
-    timeline:[
-      { time:'2026-04-05 14:00', event:'回收入库', eventEn:'Trade-in', detail:'赵先生 · $320', detailEn:'Mr. Zhao · $320' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 13', storage:'128GB', imei:'355489221034567', color:'红色', colorEn:'Red', colorHex:'#a50034', store:'san-gabriel', storeName:'San Gabriel', shelf:'C-02-04', price:389, cost:280, status:'available', region:'us', purchaseDate:'2026-04-22', supplier:'客户回收 · 张女士', supplierEn:'Trade-in · Ms. Zhang', condition:'8新 · 电池 87%', conditionEn:'8/10 · Battery 87%', ageDays:12,
-    timeline:[
-      { time:'2026-04-22 14:00', event:'回收入库', eventEn:'Trade-in', detail:'客户张女士 · $280 现金', detailEn:'Ms. Zhang · $280 cash' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 13', storage:'256GB', imei:'355489221034668', color:'蓝色', colorEn:'Blue', colorHex:'#3e5c76', store:'las-vegas', storeName:'Las Vegas', shelf:'B-02-07', price:429, cost:310, status:'available', region:'us', purchaseDate:'2026-03-01', supplier:'客户回收', supplierEn:'Trade-in', condition:'8.5新 · 电池 85%', conditionEn:'8.5/10 · Battery 85%', ageDays:64,
-    timeline:[
-      { time:'2026-03-01 10:00', event:'回收入库', eventEn:'Trade-in', detail:'客户回收 · $310', detailEn:'Trade-in · $310' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 16 Pro', storage:'256GB', imei:'358224109876745', color:'白色钛金', colorEn:'White Titanium', colorHex:'#f5f5f0', store:'arcadia-1', storeName:'Arcadia 1', shelf:'B-01-05', price:849, cost:700, status:'available', region:'hk', purchaseDate:'2026-04-15', supplier:'香港客户回收', supplierEn:'HK Trade-in', condition:'9.5新 · 电池 94%', conditionEn:'9.5/10 · Battery 94%', ageDays:19,
-    timeline:[
-      { time:'2026-04-15 13:00', event:'回收入库', eventEn:'Trade-in', detail:'香港客户 · HK$5,400', detailEn:'HK customer · HK$5,400' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 15 Pro Max', storage:'512GB', imei:'358224109876846', color:'原色钛金', colorEn:'Natural Titanium', colorHex:'#1d1d1f', store:'rancho-cucamonga', storeName:'Rancho Cucamonga', shelf:'B-02-01', price:899, cost:740, status:'reserved', region:'us', purchaseDate:'2026-04-01', supplier:'客户回收 · Mr. Davis', supplierEn:'Trade-in · Mr. Davis', condition:'9新 · 电池 91%', conditionEn:'9/10 · Battery 91%', ageDays:33,
-    reservedFor:'Andy Liu · +1 909 555 1234', reservedUntil:'2026-05-07 12:00',
-    timeline:[
-      { time:'2026-04-01 10:00', event:'回收入库', eventEn:'Trade-in', detail:'Mr. Davis · $740', detailEn:'Mr. Davis · $740' },
-      { time:'2026-05-04 16:00', event:'客户预留', eventEn:'Reserved', detail:'Andy Liu · 定金 $100', detailEn:'Andy Liu · Deposit $100' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 14 Pro Max', storage:'256GB', imei:'358224109876947', color:'暗紫色', colorEn:'Deep Purple', colorHex:'#594f63', store:'rowland-heights', storeName:'Rowland Heights', shelf:'B-05-03', price:649, cost:490, status:'available', region:'cn', purchaseDate:'2026-03-25', supplier:'国行回收', supplierEn:'CN Trade-in', condition:'9新 · 电池 88%', conditionEn:'9/10 · Battery 88%', ageDays:40,
-    timeline:[
-      { time:'2026-03-25 11:00', event:'回收入库', eventEn:'Trade-in', detail:'国行版本 · ¥3,500', detailEn:'CN version · ¥3,500' }
-    ]},
-  // ===== SAMSUNG - NEW =====
-  { cond:'new', brand:'samsung', name:'Samsung Galaxy S25 Ultra', storage:'512GB', imei:'351092778900234', color:'钛黑', colorEn:'Titanium Black', colorHex:'#3a3a3a', store:'arcadia-1', storeName:'Arcadia 1', shelf:'A-08-15', price:1419, cost:1280, status:'reserved', region:'us', purchaseDate:'2026-04-20', supplier:'Samsung 经销商', supplierEn:'Samsung Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:14,
-    reservedFor:'Kevin Wu · +1 626 555 4567', reservedUntil:'2026-05-06 18:00',
-    timeline:[
-      { time:'2026-04-20 11:00', event:'入库', eventEn:'Received', detail:'Samsung 经销商 · $1,280', detailEn:'Samsung Dealer · $1,280' },
-      { time:'2026-05-04 14:28', event:'客户预留', eventEn:'Reserved', detail:'Kevin Wu · 定金 $200', detailEn:'Kevin Wu · Deposit $200' }
-    ]},
-  { cond:'new', brand:'samsung', name:'Samsung Galaxy S25 Ultra', storage:'256GB', imei:'351092778900335', color:'钛银', colorEn:'Titanium Silverblue', colorHex:'#b8c5d1', store:'monterey-park', storeName:'Monterey Park', shelf:'A-07-03', price:1299, cost:1170, status:'available', region:'us', purchaseDate:'2026-04-25', supplier:'Samsung 经销商', supplierEn:'Samsung Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:9,
-    timeline:[
-      { time:'2026-04-25 10:00', event:'入库', eventEn:'Received', detail:'Samsung 经销商 · $1,170', detailEn:'Samsung Dealer · $1,170' }
-    ]},
-  { cond:'new', brand:'samsung', name:'Samsung Galaxy S25+', storage:'256GB', imei:'351092778900436', color:'冰蓝', colorEn:'Icy Blue', colorHex:'#c5e3f6', store:'san-gabriel', storeName:'San Gabriel', shelf:'A-04-09', price:999, cost:890, status:'available', region:'us', purchaseDate:'2026-04-28', supplier:'Samsung 经销商', supplierEn:'Samsung Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:6,
-    timeline:[
-      { time:'2026-04-28 09:30', event:'入库', eventEn:'Received', detail:'Samsung 经销商 · $890', detailEn:'Samsung Dealer · $890' }
-    ]},
-  { cond:'new', brand:'samsung', name:'Samsung Galaxy S25', storage:'128GB', imei:'351092778900537', color:'薄荷绿', colorEn:'Mint', colorHex:'#b8e6d1', store:'alhambra', storeName:'Alhambra', shelf:'A-10-02', price:799, cost:710, status:'available', region:'us', purchaseDate:'2026-04-30', supplier:'Samsung 经销商', supplierEn:'Samsung Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:4,
-    timeline:[
-      { time:'2026-04-30 11:00', event:'入库', eventEn:'Received', detail:'Samsung 经销商 · $710', detailEn:'Samsung Dealer · $710' }
-    ]},
-  { cond:'new', brand:'samsung', name:'Samsung Galaxy S25', storage:'256GB', imei:'351092778900638', color:'海军蓝', colorEn:'Navy', colorHex:'#1a237e', store:'irvine', storeName:'Irvine', shelf:'A-06-04', price:859, cost:770, status:'available', region:'hk', purchaseDate:'2026-04-10', supplier:'香港供应商', supplierEn:'HK Supplier', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:24,
-    timeline:[
-      { time:'2026-04-10 14:00', event:'入库', eventEn:'Received', detail:'香港供应商 · HK$5,900', detailEn:'HK Supplier · HK$5,900' }
-    ]},
-  { cond:'new', brand:'samsung', name:'Samsung Galaxy S24', storage:'256GB', imei:'351092778900739', color:'琥珀黄', colorEn:'Amber Yellow', colorHex:'#f9a825', store:'las-vegas', storeName:'Las Vegas', shelf:'A-03-08', price:749, cost:640, status:'available', region:'us', purchaseDate:'2026-02-20', supplier:'Samsung 经销商', supplierEn:'Samsung Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:73,
-    timeline:[
-      { time:'2026-02-20 10:00', event:'入库', eventEn:'Received', detail:'Samsung 经销商 · $640', detailEn:'Samsung Dealer · $640' }
-    ]},
-  { cond:'new', brand:'samsung', name:'Samsung Galaxy A55', storage:'128GB', imei:'351092778900840', color:'冰蓝', colorEn:'Awesome Iceblue', colorHex:'#b3d4fc', store:'rancho-cucamonga', storeName:'Rancho Cucamonga', shelf:'A-05-06', price:449, cost:370, status:'available', region:'us', purchaseDate:'2026-04-15', supplier:'Samsung 经销商', supplierEn:'Samsung Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:19,
-    timeline:[
-      { time:'2026-04-15 09:00', event:'入库', eventEn:'Received', detail:'Samsung 经销商 · $370', detailEn:'Samsung Dealer · $370' }
-    ]},
-  // ===== SAMSUNG - USED =====
-  { cond:'used', brand:'samsung', name:'Samsung Galaxy S25 Ultra', storage:'256GB', imei:'351092778901041', color:'钛黑', colorEn:'Titanium Black', colorHex:'#3a3a3a', store:'arcadia-1', storeName:'Arcadia 1', shelf:'B-04-02', price:1049, cost:860, status:'available', region:'us', purchaseDate:'2026-04-18', supplier:'客户回收 · Mr. Park', supplierEn:'Trade-in · Mr. Park', condition:'9.5新 · 电池 95%', conditionEn:'9.5/10 · Battery 95%', ageDays:16,
-    timeline:[
-      { time:'2026-04-18 14:00', event:'回收入库', eventEn:'Trade-in', detail:'Mr. Park · $860', detailEn:'Mr. Park · $860' }
-    ]},
-  { cond:'used', brand:'samsung', name:'Samsung Galaxy S24', storage:'128GB', imei:'351092778901142', color:'玛瑙黑', colorEn:'Onyx Black', colorHex:'#2c2c2c', store:'rowland-heights', storeName:'Rowland Heights', shelf:'B-03-07', price:499, cost:360, status:'available', region:'us', purchaseDate:'2026-03-28', supplier:'客户回收', supplierEn:'Trade-in', condition:'9新 · 电池 90%', conditionEn:'9/10 · Battery 90%', ageDays:37,
-    timeline:[
-      { time:'2026-03-28 16:00', event:'回收入库', eventEn:'Trade-in', detail:'客户回收 · $360', detailEn:'Trade-in · $360' }
-    ]},
-  { cond:'used', brand:'samsung', name:'Samsung Galaxy S25+', storage:'512GB', imei:'351092778901243', color:'冰蓝', colorEn:'Icy Blue', colorHex:'#c5e3f6', store:'irvine', storeName:'Irvine', shelf:'B-02-05', price:749, cost:600, status:'sold', region:'us', purchaseDate:'2026-04-05', supplier:'客户回收 · Ms. Chen', supplierEn:'Trade-in · Ms. Chen', condition:'9.5新 · 电池 93%', conditionEn:'9.5/10 · Battery 93%', ageDays:29,
-    soldTo:'David Wang · +1 949 555 7890', soldDate:'2026-05-03 16:45', payment:'现金', paymentEn:'Cash',
-    timeline:[
-      { time:'2026-04-05 11:00', event:'回收入库', eventEn:'Trade-in', detail:'Ms. Chen · $600', detailEn:'Ms. Chen · $600' },
-      { time:'2026-05-03 16:45', event:'已售', eventEn:'Sold', detail:'David Wang · $749 现金', detailEn:'David Wang · $749 Cash' }
-    ]},
-  { cond:'used', brand:'samsung', name:'Samsung Galaxy A55', storage:'128GB', imei:'351092778901344', color:'紫色', colorEn:'Awesome Lilac', colorHex:'#c5a3cf', store:'monterey-park', storeName:'Monterey Park', shelf:'B-06-03', price:289, cost:190, status:'available', region:'us', purchaseDate:'2026-03-05', supplier:'客户回收', supplierEn:'Trade-in', condition:'8.5新 · 电池 86%', conditionEn:'8.5/10 · Battery 86%', ageDays:60,
-    timeline:[
-      { time:'2026-03-05 10:00', event:'回收入库', eventEn:'Trade-in', detail:'客户回收 · $190', detailEn:'Trade-in · $190' }
-    ]},
-  { cond:'used', brand:'samsung', name:'Samsung Galaxy S24 Ultra', storage:'512GB', imei:'351092778901445', color:'钛灰', colorEn:'Titanium Gray', colorHex:'#8e8e8e', store:'san-gabriel', storeName:'San Gabriel', shelf:'B-03-01', price:849, cost:680, status:'transit', region:'hk', purchaseDate:'2026-03-10', supplier:'香港客户回收', supplierEn:'HK Trade-in', condition:'9新 · 电池 88%', conditionEn:'9/10 · Battery 88%', ageDays:55,
-    timeline:[
-      { time:'2026-03-10 10:00', event:'回收入库', eventEn:'Trade-in', detail:'香港客户 · HK$5,200', detailEn:'HK customer · HK$5,200' },
-      { time:'2026-05-04 09:00', event:'调拨发出', eventEn:'Shipped', detail:'FedEx → Las Vegas', detailEn:'FedEx → Las Vegas' }
-    ]},
-  // ===== GOOGLE - NEW =====
-  { cond:'new', brand:'google', name:'Google Pixel 9 Pro', storage:'256GB', imei:'354103456789012', color:'玫瑰金', colorEn:'Rose Quartz', colorHex:'#e6e1d6', store:'las-vegas', storeName:'Las Vegas', shelf:'A-05-11', price:999, cost:880, status:'available', region:'us', purchaseDate:'2026-04-30', supplier:'Google 经销商', supplierEn:'Google Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:4,
-    timeline:[
-      { time:'2026-04-30 10:00', event:'入库', eventEn:'Received', detail:'Google 经销商 · $880', detailEn:'Google Dealer · $880' }
-    ]},
-  { cond:'new', brand:'google', name:'Google Pixel 9 Pro', storage:'512GB', imei:'354103456789113', color:'黑曜石', colorEn:'Obsidian', colorHex:'#2c2c2c', store:'alhambra', storeName:'Alhambra', shelf:'A-11-07', price:1179, cost:1050, status:'available', region:'us', purchaseDate:'2026-04-20', supplier:'Google 经销商', supplierEn:'Google Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:14,
-    timeline:[
-      { time:'2026-04-20 11:00', event:'入库', eventEn:'Received', detail:'Google 经销商 · $1,050', detailEn:'Google Dealer · $1,050' }
-    ]},
-  { cond:'new', brand:'google', name:'Google Pixel 9', storage:'128GB', imei:'354103456789214', color:'冬青绿', colorEn:'Wintergreen', colorHex:'#a8d5ba', store:'arcadia-2', storeName:'Arcadia 2', shelf:'A-04-03', price:799, cost:700, status:'available', region:'us', purchaseDate:'2026-04-22', supplier:'Google 经销商', supplierEn:'Google Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:12,
-    timeline:[
-      { time:'2026-04-22 09:30', event:'入库', eventEn:'Received', detail:'Google 经销商 · $700', detailEn:'Google Dealer · $700' }
-    ]},
-  { cond:'new', brand:'google', name:'Google Pixel 9', storage:'256GB', imei:'354103456789315', color:'牡丹粉', colorEn:'Peony', colorHex:'#f4c2c2', store:'rowland-heights', storeName:'Rowland Heights', shelf:'A-03-05', price:859, cost:760, status:'sold', region:'us', purchaseDate:'2026-04-15', supplier:'Google 经销商', supplierEn:'Google Dealer', condition:'全新', conditionEn:'Brand New', ageDays:19,
-    soldTo:'Sarah Lin · +1 626 555 3456', soldDate:'2026-05-02 11:30', payment:'Apple Pay', paymentEn:'Apple Pay',
-    timeline:[
-      { time:'2026-04-15 10:00', event:'入库', eventEn:'Received', detail:'Google 经销商 · $760', detailEn:'Google Dealer · $760' },
-      { time:'2026-05-02 11:30', event:'已售', eventEn:'Sold', detail:'Sarah Lin · $859 Apple Pay', detailEn:'Sarah Lin · $859 Apple Pay' }
-    ]},
-  // ===== GOOGLE - USED =====
-  { cond:'used', brand:'google', name:'Google Pixel 8 Pro', storage:'256GB', imei:'354103456789416', color:'海湾蓝', colorEn:'Bay', colorHex:'#5b7c99', store:'monterey-park', storeName:'Monterey Park', shelf:'B-05-04', price:499, cost:370, status:'available', region:'us', purchaseDate:'2026-04-08', supplier:'客户回收', supplierEn:'Trade-in', condition:'9新 · 电池 91%', conditionEn:'9/10 · Battery 91%', ageDays:26,
-    timeline:[
-      { time:'2026-04-08 15:00', event:'回收入库', eventEn:'Trade-in', detail:'客户回收 · $370', detailEn:'Trade-in · $370' }
-    ]},
-  { cond:'used', brand:'google', name:'Google Pixel 8', storage:'128GB', imei:'354103456789517', color:'榛子色', colorEn:'Hazel', colorHex:'#8d6e63', store:'arcadia-1', storeName:'Arcadia 1', shelf:'B-02-09', price:349, cost:240, status:'available', region:'us', purchaseDate:'2026-03-18', supplier:'客户回收 · Mr. Johnson', supplierEn:'Trade-in · Mr. Johnson', condition:'8.5新 · 电池 84%', conditionEn:'8.5/10 · Battery 84%', ageDays:47,
-    timeline:[
-      { time:'2026-03-18 11:00', event:'回收入库', eventEn:'Trade-in', detail:'Mr. Johnson · $240', detailEn:'Mr. Johnson · $240' }
-    ]},
-  { cond:'used', brand:'google', name:'Google Pixel 9 Pro', storage:'256GB', imei:'354103456789618', color:'瓷白', colorEn:'Porcelain', colorHex:'#f5f5f0', store:'san-gabriel', storeName:'San Gabriel', shelf:'B-04-06', price:699, cost:550, status:'available', region:'us', purchaseDate:'2026-04-25', supplier:'客户回收 · Ms. Liu', supplierEn:'Trade-in · Ms. Liu', condition:'9.5新 · 电池 97%', conditionEn:'9.5/10 · Battery 97%', ageDays:9,
-    timeline:[
-      { time:'2026-04-25 14:00', event:'回收入库', eventEn:'Trade-in', detail:'Ms. Liu · $550', detailEn:'Ms. Liu · $550' }
-    ]},
-  { cond:'used', brand:'google', name:'Google Pixel 8 Pro', storage:'512GB', imei:'354103456789719', color:'黑曜石', colorEn:'Obsidian', colorHex:'#2c2c2c', store:'las-vegas', storeName:'Las Vegas', shelf:'B-01-08', price:549, cost:410, status:'transit', region:'us', purchaseDate:'2026-02-15', supplier:'客户回收', supplierEn:'Trade-in', condition:'9新 · 电池 87%', conditionEn:'9/10 · Battery 87%', ageDays:78,
-    timeline:[
-      { time:'2026-02-15 10:00', event:'回收入库', eventEn:'Trade-in', detail:'客户回收 · $410', detailEn:'Trade-in · $410' },
-      { time:'2026-05-04 10:00', event:'调拨发出', eventEn:'Shipped', detail:'USPS → Alhambra', detailEn:'USPS → Alhambra' }
-    ]},
-  // ===== OTHER BRANDS =====
-  { cond:'new', brand:'other', name:'OnePlus 13', storage:'256GB', imei:'356701234567890', color:'黑色', colorEn:'Midnight Ocean', colorHex:'#1a1a2e', store:'alhambra', storeName:'Alhambra', shelf:'A-13-01', price:899, cost:780, status:'available', region:'cn', purchaseDate:'2026-04-28', supplier:'国行供应商', supplierEn:'CN Supplier', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:6,
-    timeline:[
-      { time:'2026-04-28 10:00', event:'入库', eventEn:'Received', detail:'国行供应商 · ¥5,600', detailEn:'CN Supplier · ¥5,600' }
-    ]},
-  { cond:'used', brand:'other', name:'OnePlus 12', storage:'256GB', imei:'356701234567991', color:'翠绿', colorEn:'Flowy Emerald', colorHex:'#2e7d32', store:'rancho-cucamonga', storeName:'Rancho Cucamonga', shelf:'B-04-05', price:449, cost:320, status:'available', region:'cn', purchaseDate:'2026-03-12', supplier:'国行回收', supplierEn:'CN Trade-in', condition:'9新 · 电池 90%', conditionEn:'9/10 · Battery 90%', ageDays:53,
-    timeline:[
-      { time:'2026-03-12 11:00', event:'回收入库', eventEn:'Trade-in', detail:'国行回收 · ¥2,200', detailEn:'CN Trade-in · ¥2,200' }
-    ]},
-  { cond:'new', brand:'other', name:'Nothing Phone (2a)', storage:'128GB', imei:'356801234567890', color:'白色', colorEn:'White', colorHex:'#ffffff', store:'arcadia-2', storeName:'Arcadia 2', shelf:'A-06-02', price:349, cost:280, status:'available', region:'hk', purchaseDate:'2026-04-18', supplier:'香港供应商', supplierEn:'HK Supplier', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:16,
-    timeline:[
-      { time:'2026-04-18 14:00', event:'入库', eventEn:'Received', detail:'香港供应商 · HK$2,100', detailEn:'HK Supplier · HK$2,100' }
-    ]},
-  // ===== HQ WAREHOUSE (总仓待分发) =====
-  { cond:'new', brand:'apple', name:'iPhone 16 Pro Max', storage:'1TB', imei:'352847156890801', color:'沙漠钛金', colorEn:'Desert Titanium', colorHex:'#c2b8a3', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-01-01', price:1599, cost:1440, status:'available', region:'us', purchaseDate:'2026-05-03', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:1,
-    timeline:[
-      { time:'2026-05-03 09:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Apple IRP · $1,440 · 待分发', detailEn:'Apple IRP · $1,440 · Pending distribution' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 16 Pro', storage:'256GB', imei:'352847156890802', color:'原色钛金', colorEn:'Natural Titanium', colorHex:'#1d1d1f', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-01-02', price:1099, cost:990, status:'available', region:'us', purchaseDate:'2026-05-03', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:1,
-    timeline:[
-      { time:'2026-05-03 09:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Apple IRP · $990', detailEn:'Apple IRP · $990' }
-    ]},
-  { cond:'new', brand:'apple', name:'iPhone 16', storage:'128GB', imei:'352847156890803', color:'群青色', colorEn:'Ultramarine', colorHex:'#4a6de5', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-01-03', price:829, cost:740, status:'available', region:'us', purchaseDate:'2026-05-04', supplier:'Apple IRP', supplierEn:'Apple IRP', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:0,
-    timeline:[
-      { time:'2026-05-04 11:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Apple IRP · $740 · 5台批量', detailEn:'Apple IRP · $740 · 5-unit batch' }
-    ]},
-  { cond:'new', brand:'samsung', name:'Samsung Galaxy S25 Ultra', storage:'512GB', imei:'351092778900810', color:'钛银', colorEn:'Titanium Silverblue', colorHex:'#b8c5d6', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-02-01', price:1419, cost:1280, status:'available', region:'us', purchaseDate:'2026-05-02', supplier:'Samsung 经销商', supplierEn:'Samsung Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:2,
-    timeline:[
-      { time:'2026-05-02 14:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Samsung 经销商 · $1,280', detailEn:'Samsung Dealer · $1,280' }
-    ]},
-  { cond:'new', brand:'samsung', name:'Samsung Galaxy S25+', storage:'256GB', imei:'351092778900811', color:'海蓝色', colorEn:'Navy', colorHex:'#0d1b2a', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-02-02', price:999, cost:880, status:'available', region:'us', purchaseDate:'2026-05-02', supplier:'Samsung 经销商', supplierEn:'Samsung Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:2,
-    timeline:[
-      { time:'2026-05-02 14:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Samsung 经销商 · $880', detailEn:'Samsung Dealer · $880' }
-    ]},
-  { cond:'new', brand:'google', name:'Google Pixel 9 Pro', storage:'128GB', imei:'354103456789820', color:'海棠粉', colorEn:'Peony', colorHex:'#f4c7c3', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-03-01', price:999, cost:880, status:'available', region:'us', purchaseDate:'2026-05-04', supplier:'Google 经销商', supplierEn:'Google Dealer', condition:'全新 · 未拆封', conditionEn:'Brand New · Sealed', ageDays:0,
-    timeline:[
-      { time:'2026-05-04 16:00', event:'入库总仓', eventEn:'Received at HQ', detail:'Google 经销商 · $880', detailEn:'Google Dealer · $880' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 15 Pro Max', storage:'256GB', imei:'358224109876830', color:'白色钛金', colorEn:'White Titanium', colorHex:'#f5f5f0', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-04-01', price:849, cost:680, status:'available', region:'us', purchaseDate:'2026-05-04', supplier:'客户回收 · 张先生', supplierEn:'Trade-in · Mr. Zhang', condition:'9.5新 · 电池 95%', conditionEn:'9.5/10 · Battery 95%', ageDays:0,
-    timeline:[
-      { time:'2026-05-04 13:00', event:'回收入库', eventEn:'Trade-in at HQ', detail:'回收价 $680 · 待检测分发', detailEn:'$680 · Pending QC & distribution' }
-    ]},
-  { cond:'used', brand:'apple', name:'iPhone 14 Pro', storage:'128GB', imei:'358224109876831', color:'深紫色', colorEn:'Deep Purple', colorHex:'#574f6f', store:'hq-warehouse', storeName:'HQ 总仓', shelf:'W-04-02', price:549, cost:400, status:'available', region:'us', purchaseDate:'2026-05-03', supplier:'批量回收', supplierEn:'Bulk Trade-in', condition:'9新 · 电池 89%', conditionEn:'9/10 · Battery 89%', ageDays:1,
-    timeline:[
-      { time:'2026-05-03 10:00', event:'批量回收', eventEn:'Bulk trade-in', detail:'5台批量回收 · 均价 $400', detailEn:'5-unit batch · avg $400' }
-    ]}
 ];
 
 const statusMap = {
@@ -10454,97 +9864,97 @@ const STORE_DATA = {
     addr: '326 W Valley Blvd, Alhambra, CA 91803',
     phone: '626-800-2020',
     mgr: 'Jayden Sun',
-    stock: 52, stockNew: 30, stockUsed: 22,
-    todaySold: 5, todayRev: 4287,
-    mtdSold: 38, mtdRank: 2,
-    cash: 8420, taxRate: 10.25, taxRateLabel: 'CA 10.25%'
+    stock: 0, stockNew: 0, stockUsed: 0,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 10.25, taxRateLabel: 'CA 10.25%'
   },
   'monterey-park': {
     nameZh: 'Monterey Park', nameEn: 'Monterey Park',
     addr: '188 E Garvey Ave #F, Monterey Park, CA 91755',
     phone: '626-598-1888',
     mgr: 'Steve Shen',
-    stock: 48, stockNew: 27, stockUsed: 21,
-    todaySold: 4, todayRev: 3624,
-    mtdSold: 35, mtdRank: 3,
-    cash: 5680, taxRate: 9.5, taxRateLabel: 'CA 9.5%'
+    stock: 0, stockNew: 0, stockUsed: 0,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 9.5, taxRateLabel: 'CA 9.5%'
   },
   'san-gabriel': {
     nameZh: 'San Gabriel', nameEn: 'San Gabriel',
     addr: '311 E Valley Blvd #101, San Gabriel, CA 91776',
     phone: '626-800-2030',
     mgr: 'Harry Zou',
-    stock: 41, stockNew: 22, stockUsed: 19,
-    todaySold: 3, todayRev: 2189,
-    mtdSold: 29, mtdRank: 5,
-    cash: 4200, taxRate: 9.5, taxRateLabel: 'CA 9.5%'
+    stock: 0, stockNew: 0, stockUsed: 0,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 9.5, taxRateLabel: 'CA 9.5%'
   },
   'rowland-heights': {
     nameZh: 'Rowland Heights', nameEn: 'Rowland Heights',
     addr: '1330 S Fullerton Rd #201, Rowland Heights, CA 91748',
     phone: '909-789-0999',
     mgr: 'Bill Han',
-    stock: 39, stockNew: 21, stockUsed: 18,
-    todaySold: 2, todayRev: 1480,
-    mtdSold: 26, mtdRank: 6,
-    cash: 3100, taxRate: 9.5, taxRateLabel: 'CA 9.5%'
+    stock: 0, stockNew: 0, stockUsed: 0,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 9.5, taxRateLabel: 'CA 9.5%'
   },
   'arcadia-1': {
     nameZh: 'Arcadia 1 (Huntington)', nameEn: 'Arcadia 1 (Huntington)',
     addr: '101 E Huntington Dr, Arcadia, CA 91006',
     phone: '626-600-8090',
     mgr: 'Will Jiang',
-    stock: 44, stockNew: 26, stockUsed: 18,
-    todaySold: 6, todayRev: 5240,
-    mtdSold: 42, mtdRank: 1,
-    cash: 7320, taxRate: 10.25, taxRateLabel: 'CA 10.25%'
+    stock: 0, stockNew: 0, stockUsed: 0,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 10.25, taxRateLabel: 'CA 10.25%'
   },
   'arcadia-2': {
     nameZh: 'Arcadia 2 (Baldwin)', nameEn: 'Arcadia 2 (Baldwin)',
     addr: '918 S Baldwin Ave, Arcadia, CA 91007',
     phone: '626-777-9188',
     mgr: 'Kelvin Liu',
-    stock: 46, stockNew: 26, stockUsed: 20,
-    todaySold: 4, todayRev: 3780,
-    mtdSold: 36, mtdRank: 4,
-    cash: 5240, taxRate: 10.25, taxRateLabel: 'CA 10.25%'
+    stock: 0, stockNew: 0, stockUsed: 0,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 10.25, taxRateLabel: 'CA 10.25%'
   },
   'irvine': {
     nameZh: 'Irvine (99 Ranch)', nameEn: 'Irvine (99 Ranch)',
     addr: '15333 Culver Dr #800, Unit C, Irvine, CA 92604',
     phone: '949-550-8000',
     mgr: 'Cici',
-    stock: 37, stockNew: 21, stockUsed: 16,
-    todaySold: 2, todayRev: 1690,
-    mtdSold: 22, mtdRank: 9,
-    cash: 2200, taxRate: 7.75, taxRateLabel: 'CA 7.75%'
+    stock: 0, stockNew: 0, stockUsed: 0,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 7.75, taxRateLabel: 'CA 7.75%'
   },
   'rancho-cucamonga': {
     nameZh: 'Rancho Cucamonga (99 Ranch)', nameEn: 'Rancho Cucamonga (99 Ranch)',
     addr: '9775 Baseline Rd #106, Rancho Cucamonga, CA 91730',
     phone: '909-345-1000',
     mgr: 'Feiyang Zhao',
-    stock: 42, stockNew: 25, stockUsed: 17,
-    todaySold: 3, todayRev: 2580,
-    mtdSold: 25, mtdRank: 7,
-    cash: 3680, taxRate: 7.75, taxRateLabel: 'CA 7.75%'
+    stock: 0, stockNew: 0, stockUsed: 0,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 7.75, taxRateLabel: 'CA 7.75%'
   },
   'las-vegas': {
     nameZh: 'Las Vegas', nameEn: 'Las Vegas',
     addr: '4598 Spring Mountain Rd, Las Vegas, NV 89102',
     phone: '702-779-8888',
     mgr: 'Jason Zeng',
-    stock: 38, stockNew: 22, stockUsed: 16,
-    todaySold: 3, todayRev: 2920,
-    mtdSold: 24, mtdRank: 8,
-    cash: 4180, taxRate: 8.375, taxRateLabel: 'NV 8.375%'
+    stock: 0, stockNew: 0, stockUsed: 0,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 8.375, taxRateLabel: 'NV 8.375%'
   },
   'hq-warehouse': {
     nameZh: 'HQ 总仓', nameEn: 'HQ Warehouse',
     addr: 'Central Warehouse · Office',
     phone: '',
     mgr: 'Andy Wang',
-    stock: 28, stockNew: 18, stockUsed: 10,
+    stock: 0, stockNew: 0, stockUsed: 0,
     todaySold: 0, todayRev: 0,
     mtdSold: 0, mtdRank: 0,
     cash: 0, taxRate: 0, taxRateLabel: 'N/A'
@@ -11350,7 +10760,7 @@ function setRole(btn, role) {
   // Update demo banner label
   const labels = {
     admin: { zh: '管理员 (Andy)', en: 'Admin (Andy)' },
-    staff: { zh: '员工 (Chester @ Alhambra)', en: 'Staff (Chester @ Alhambra)' }
+    staff: { zh: '员工端', en: 'Staff View' }
   };
   document.getElementById('roleLabelZh').innerText = labels[role].zh;
   document.getElementById('roleLabelEn').innerText = labels[role].en;
@@ -11358,7 +10768,7 @@ function setRole(btn, role) {
   // Update sidebar user card
   const userInfo = {
     admin: { avatar: 'AW', name: 'Andy Wang', metaZh: '总部 · Owner', metaEn: 'HQ · Owner' },
-    staff: { avatar: 'CH', name: 'Chester', metaZh: 'Alhambra · 店员', metaEn: 'Alhambra · Staff' }
+    staff: { avatar: '--', name: 'Staff', metaZh: '门店员工', metaEn: 'Store Staff' }
   };
   document.getElementById('userAvatar').innerText = userInfo[role].avatar;
   document.getElementById('userName').innerText = userInfo[role].name;
@@ -11372,7 +10782,7 @@ function setRole(btn, role) {
   const greetEn = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   const heroNames = {
     admin: { zh: greetZh+',Andy', en: greetEn+', Andy', storeZh: '所有门店 · 10 店总览', storeEn: 'All Stores · 10 locations' },
-    staff: { zh: greetZh+',Chester', en: greetEn+', Chester', storeZh: 'Alhambra 门店 · 326 W Valley Blvd', storeEn: 'Alhambra · 326 W Valley Blvd' }
+    staff: { zh: greetZh, en: greetEn, storeZh: '', storeEn: '' }
   };
   document.getElementById('heroGreetZh').innerText = heroNames[role].zh;
   document.getElementById('heroGreetEn').innerText = heroNames[role].en;
@@ -11515,16 +10925,16 @@ document.addEventListener('click', e => {
 // ===== LOGIN SYSTEM =====
 const LOGIN_ACCOUNTS = {
   'admin@ifixforu.com':    { pin:'888888', name:'Andy Wang',   role:'admin', store:'all' },
-  'jayden@ifixforu.com':   { pin:'100001', name:'Jayden Sun',  role:'staff', store:'Alhambra' },
-  'steve@ifixforu.com':    { pin:'100002', name:'Steve Shen',  role:'staff', store:'Monterey Park' },
-  'harry@ifixforu.com':    { pin:'100003', name:'Harry Zou',   role:'staff', store:'San Gabriel' },
-  'bill@ifixforu.com':     { pin:'100004', name:'Bill Han',    role:'staff', store:'Rowland Heights' },
-  'will@ifixforu.com':     { pin:'100005', name:'Will Jiang',  role:'staff', store:'Arcadia 1' },
-  'kelvin@ifixforu.com':   { pin:'100006', name:'Kelvin Liu',  role:'staff', store:'Arcadia 2' },
-  'cici@ifixforu.com':     { pin:'100007', name:'Cici',        role:'staff', store:'Irvine' },
-  'feiyang@ifixforu.com':  { pin:'100008', name:'Feiyang Zhao',role:'staff', store:'Rancho Cucamonga' },
-  'jason@ifixforu.com':    { pin:'100009', name:'Jason Zeng',  role:'staff', store:'Las Vegas' },
-  'chester@ifixforu.com':  { pin:'100010', name:'Chester',     role:'staff', store:'Alhambra' },
+  'jayden@ifixforu.com':   { pin:'888888', name:'Jayden Sun',  role:'staff', store:'Alhambra' },
+  'steve@ifixforu.com':    { pin:'888888', name:'Steve Shen',  role:'staff', store:'Monterey Park' },
+  'harry@ifixforu.com':    { pin:'888888', name:'Harry Zou',   role:'staff', store:'San Gabriel' },
+  'bill@ifixforu.com':     { pin:'888888', name:'Bill Han',    role:'staff', store:'Rowland Heights' },
+  'will@ifixforu.com':     { pin:'888888', name:'Will Jiang',  role:'staff', store:'Arcadia 1' },
+  'kelvin@ifixforu.com':   { pin:'888888', name:'Kelvin Liu',  role:'staff', store:'Arcadia 2' },
+  'cici@ifixforu.com':     { pin:'888888', name:'Cici',        role:'staff', store:'Irvine' },
+  'feiyang@ifixforu.com':  { pin:'888888', name:'Feiyang Zhao',role:'staff', store:'Rancho Cucamonga' },
+  'jason@ifixforu.com':    { pin:'888888', name:'Jason Zeng',  role:'staff', store:'Las Vegas' },
+  'chester@ifixforu.com':  { pin:'888888', name:'Chester',     role:'staff', store:'Alhambra' },
 };
 
 // Device fingerprint
@@ -11611,8 +11021,28 @@ function doLogin() {
     return;
   }
 
-  // Success
+  // Success — check if first login (needs password change)
   errorEl.classList.remove('show');
+
+  // Check if user has changed their PIN (stored in localStorage)
+  const changedPins = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+  if (!changedPins[email]) {
+    // First login — force password change
+    window._pendingLoginEmail = email;
+    window._pendingLoginAccount = account;
+    document.getElementById('changePinOverlay').classList.add('show');
+    document.getElementById('newPin1').value = '';
+    document.getElementById('newPin2').value = '';
+    document.getElementById('changePinError').style.display = 'none';
+    setTimeout(() => document.getElementById('newPin1').focus(), 200);
+    return;
+  }
+
+  completeLogin(email, account);
+}
+
+function completeLogin(email, account) {
+  const btn = document.getElementById('loginBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="zh">登录中...</span><span class="en">Signing in...</span>';
 
@@ -11640,8 +11070,80 @@ function doLogin() {
       : 'Welcome back, ' + account.name));
     btn.disabled = false;
     btn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
+    initDynamicUI(account);
   }, 600);
 }
+
+function submitNewPin() {
+  const p1 = document.getElementById('newPin1').value.replace(/\D/g, '');
+  const p2 = document.getElementById('newPin2').value.replace(/\D/g, '');
+  const errEl = document.getElementById('changePinError');
+
+  if (p1.length < 6) {
+    errEl.innerHTML = '<span class="zh">请输入 6 位数密码</span><span class="en">PIN must be 6 digits</span>';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (p1 === '888888') {
+    errEl.innerHTML = '<span class="zh">新密码不能与初始密码相同</span><span class="en">New PIN cannot be the same as default</span>';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (p1 !== p2) {
+    errEl.innerHTML = '<span class="zh">两次输入的密码不一致</span><span class="en">PINs do not match</span>';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const email = window._pendingLoginEmail;
+  const account = window._pendingLoginAccount;
+
+  // Update PIN in memory and mark as changed
+  account.pin = p1;
+  const changedPins = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+  changedPins[email] = p1;
+  localStorage.setItem('pi_changed_pins', JSON.stringify(changedPins));
+
+  // Close modal and complete login
+  document.getElementById('changePinOverlay').classList.remove('show');
+  showToast(document.body.dataset.lang === 'zh' ? '✅ 密码修改成功' : '✅ PIN changed successfully');
+  completeLogin(email, account);
+}
+
+// Dynamic UI: date, greeting
+function initDynamicUI(account) {
+  const now = new Date();
+  const h = now.getHours();
+  const greetZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';
+  const greetEn = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+  const dateStr = now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
+
+  // Hero date
+  const hereDateEl = document.getElementById('hereDateStr');
+  if (hereDateEl) hereDateEl.textContent = dateStr;
+
+  // My Account greeting
+  const maGreetZh = document.getElementById('maGreetZh');
+  const maGreetEn = document.getElementById('maGreetEn');
+  if (maGreetZh && account) maGreetZh.textContent = greetZh + ',' + account.name;
+  if (maGreetEn && account) maGreetEn.textContent = greetEn + ', ' + account.name;
+
+  // My Account store meta
+  const maMeta = document.getElementById('maStoreMeta');
+  if (maMeta && account) {
+    const roleZh = account.role === 'admin' ? '管理员' : '店员';
+    const roleEn = account.role === 'admin' ? 'Admin' : 'Staff';
+    maMeta.innerHTML = '📍 ' + account.store + ' · <span class="zh">' + roleZh + '</span><span class="en">' + roleEn + '</span>';
+  }
+}
+
+// Restore changed PINs from localStorage
+(function() {
+  const changedPins = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+  for (const [email, pin] of Object.entries(changedPins)) {
+    if (LOGIN_ACCOUNTS[email]) LOGIN_ACCOUNTS[email].pin = pin;
+  }
+})();
 
 // Check saved session
 (function() {
@@ -11660,12 +11162,16 @@ function doLogin() {
             if (staffBtn) setRole(staffBtn, 'staff');
           }, 100);
         }
+        // Init dynamic UI with session data
+        setTimeout(() => initDynamicUI({ name: s.name, role: s.role, store: s.store }), 200);
         return;
       }
     } catch(e) {}
   }
   // Show login
   document.getElementById('loginEmail').focus();
+  // Still init date for hero
+  setTimeout(() => initDynamicUI(null), 200);
 })();
 
 // Forgot password
