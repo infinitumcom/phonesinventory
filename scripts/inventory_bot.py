@@ -254,12 +254,7 @@ def analyze_photo(image_bytes, caption=""):
         elif "新" in cl or "new" in cl or "sealed" in cl:
             condition_hint = "This is a NEW / sealed phone."
 
-    prompt = f"""Analyze this phone label/box photo and extract all device information.
-{condition_hint}
-{f"User note: {caption}" if caption else ""}
-
-Return a JSON object with these fields (use empty string if not found):
-{{
+    phone_schema = """{
   "brand": "Apple/Samsung/Google/OnePlus/etc",
   "model": "full model name, e.g. iPhone 16 Pro Max",
   "storage": "e.g. 256GB",
@@ -274,17 +269,28 @@ Return a JSON object with these fields (use empty string if not found):
   "model_number": "e.g. MG184LL/A",
   "eid": "EID if present",
   "notes": "any other relevant info"
-}}
+}"""
+
+    prompt = f"""Analyze this phone label/box photo and extract all device information.
+{condition_hint}
+{f"User note: {caption}" if caption else ""}
+
+If there are MULTIPLE phones/labels in the photo, return a JSON ARRAY of objects.
+If there is only ONE phone, return a single JSON object.
+
+Each phone object should have these fields (use empty string if not found):
+{phone_schema}
 
 IMPORTANT:
 - Read ALL text carefully including tiny print and barcodes with numbers below them
 - The barcode number IS the IMEI
 - For Apple: LL/A = US, ZA/A or ZP/A = HK, CH/A = CN
+- If you see multiple labels/stickers/boxes, each one is a SEPARATE phone — return an array
 - Only return the JSON, no other text"""
 
     body = json.dumps({
         "model": "claude-haiku-4-5-20251001",
-        "max_tokens": 1024,
+        "max_tokens": 4096,
         "messages": [{
             "role": "user",
             "content": [
@@ -315,12 +321,23 @@ IMPORTANT:
                 m = re.search(r"```(?:json)?\s*([\s\S]*?)```", text)
                 if m:
                     json_match = m.group(1)
-            # Try to find JSON object
-            start = json_match.find("{")
-            end = json_match.rfind("}") + 1
-            if start >= 0 and end > start:
-                entry = json.loads(json_match[start:end])
-                return entry, text
+            # Try to find JSON array first, then single object
+            json_match = json_match.strip()
+            arr_start = json_match.find("[")
+            obj_start = json_match.find("{")
+            # If array comes first (or only array), parse as array
+            if arr_start >= 0 and (obj_start < 0 or arr_start < obj_start):
+                arr_end = json_match.rfind("]") + 1
+                if arr_end > arr_start:
+                    entries = json.loads(json_match[arr_start:arr_end])
+                    if isinstance(entries, list) and len(entries) > 0:
+                        return entries, text
+            # Single object
+            if obj_start >= 0:
+                obj_end = json_match.rfind("}") + 1
+                if obj_end > obj_start:
+                    entry = json.loads(json_match[obj_start:obj_end])
+                    return [entry], text  # Always return as list
             return None, text
     except Exception as e:
         return None, f"Claude API error: {e}"
@@ -382,68 +399,93 @@ def handle_photo(msg):
         context_hint += f"\nUser specified store: {ctx['store']}"
 
     # Analyze with Claude Vision
-    entry, raw = analyze_photo(image_bytes, context_hint)
-    if not entry:
+    entries, raw = analyze_photo(image_bytes, context_hint)
+    if not entries:
         send_msg(chat_id, f"❌ 识别失败 / Recognition failed\n\n`{raw[:500]}`", reply_to=msg_id)
         return
 
-    # Apply session context overrides (user's word takes priority)
-    if ctx.get("condition") and not caption:
-        entry["condition"] = ctx["condition"]
-    if ctx.get("store"):
-        entry["store"] = ctx["store"]
+    saved = []
+    skipped = []
 
-    # Region: user context > caption > model number detection > Claude guess
-    if ctx.get("region"):
-        entry["region"] = ctx["region"]
-    elif not entry.get("region") or entry["region"] == "us":
-        # Try to detect from model number
-        detected = detect_region_from_model(entry.get("model_number", ""))
-        if detected:
-            entry["region"] = detected
+    for entry in entries:
+        # Apply session context overrides (user's word takes priority)
+        if ctx.get("condition") and not caption:
+            entry["condition"] = ctx["condition"]
+        if ctx.get("store"):
+            entry["store"] = ctx["store"]
 
-    # Parse store from caption if not set by context
-    if not entry.get("store") and caption:
-        for key, name in STORE_LIST.items():
-            if key in caption.lower():
-                entry["store"] = name
-                break
+        # Region: user context > caption > model number detection > Claude guess
+        if ctx.get("region"):
+            entry["region"] = ctx["region"]
+        elif not entry.get("region") or entry["region"] == "us":
+            detected = detect_region_from_model(entry.get("model_number", ""))
+            if detected:
+                entry["region"] = detected
 
-    # Save to DB
-    rid = save_entry(entry, raw_ocr=raw, scanned_by=username)
+        # Parse store from caption if not set by context
+        if not entry.get("store") and caption:
+            for key, name in sorted(STORE_LIST.items(), key=lambda x: -len(x[0])):
+                if key in caption.lower():
+                    entry["store"] = name
+                    break
+
+        # IMEI duplicate check
+        imei = entry.get("imei", "").strip()
+        if imei and len(imei) >= 14:
+            conn = sqlite3.connect(DB_PATH)
+            dup = conn.execute("SELECT id, model, scanned_at FROM inventory WHERE imei = ?", (imei,)).fetchone()
+            conn.close()
+            if dup:
+                skipped.append({"entry": entry, "dup_id": dup[0], "dup_model": dup[1], "dup_time": dup[2]})
+                continue
+
+        # Save to DB
+        rid = save_entry(entry, raw_ocr=raw, scanned_by=username)
+        saved.append({"entry": entry, "id": rid})
 
     # Format response
-    cond_emoji = "🆕" if entry.get("condition") == "new" else "♻️"
-    cond_label = "新机 NEW" if entry.get("condition") == "new" else "二手 USED"
-    region_flag = {"us": "🇺🇸", "hk": "🇭🇰", "cn": "🇨🇳"}.get(entry.get("region", ""), "🌐")
+    if not saved and not skipped:
+        send_msg(chat_id, "❌ 未能识别到手机信息", reply_to=msg_id)
+        return
 
-    reply = f"""✅ *入库成功 · Stock In #{rid}*
-━━━━━━━━━━━━━━━━━━
+    reply_parts = []
 
+    for item in saved:
+        entry = item["entry"]
+        rid = item["id"]
+        cond_emoji = "🆕" if entry.get("condition") == "new" else "♻️"
+        cond_label = "新机" if entry.get("condition") == "new" else "二手"
+        region_flag = {"us": "🇺🇸", "hk": "🇭🇰", "cn": "🇨🇳", "jp": "🇯🇵", "kr": "🇰🇷"}.get(entry.get("region", ""), "🌐")
+
+        part = f"""✅ *入库成功 #{rid}*
 {cond_emoji} *{entry.get('brand', '?')} {entry.get('model', '?')}*
 ┌ 容量: *{entry.get('storage', '?')}*
 │ 颜色: {entry.get('color', '')} {entry.get('color_en', '')}
 │ IMEI: `{entry.get('imei', '?')}`"""
+        if entry.get("imei2"):
+            part += f"\n│ IMEI2: `{entry['imei2']}`"
+        if entry.get("serial"):
+            part += f"\n│ 序列号: `{entry['serial']}`"
+        if entry.get("battery"):
+            part += f"\n│ 电池: {entry['battery']}"
+        part += f"\n│ {cond_label} · {region_flag} {entry.get('region', 'US').upper()}"
+        part += f"\n└ 📍 {entry.get('store', '待分配')}"
+        reply_parts.append(part)
 
-    if entry.get("imei2"):
-        reply += f"\n│ IMEI2: `{entry['imei2']}`"
-    if entry.get("serial"):
-        reply += f"\n│ 序列号: `{entry['serial']}`"
-    if entry.get("battery"):
-        reply += f"\n│ 电池: {entry['battery']}"
-    if entry.get("model_number"):
-        reply += f"\n│ 型号: {entry['model_number']}"
+    for item in skipped:
+        entry = item["entry"]
+        reply_parts.append(
+            f"⚠️ *重复跳过* — {entry.get('brand', '?')} {entry.get('model', '?')}\n"
+            f"IMEI: `{entry.get('imei', '?')}`\n"
+            f"已在 #{item['dup_id']} 录入 ({item['dup_time']})"
+        )
 
-    reply += f"""
-│ 状态: {cond_label}
-│ 版本: {region_flag} {entry.get('region', 'US').upper()}
-└ 门店: {entry.get('store', '待分配')}
+    summary = f"📋 操作人: {username} · {datetime.now(PST).strftime('%Y-%m-%d %H:%M PST')}"
+    if len(saved) > 1:
+        summary = f"📦 共识别 {len(saved) + len(skipped)} 台，入库 {len(saved)} 台\n" + summary
 
-📋 操作人: {username}
-🕐 {datetime.now(PST).strftime('%Y-%m-%d %H:%M PST')}"""
-
-    if entry.get("notes"):
-        reply += f"\n📝 {entry['notes']}"
+    reply = "\n━━━━━━━━━━━━━━━━━━\n".join(reply_parts)
+    reply += f"\n\n{summary}"
 
     send_msg(chat_id, reply, reply_to=msg_id)
 
