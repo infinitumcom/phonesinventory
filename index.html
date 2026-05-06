@@ -4827,7 +4827,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       <label class="form-label">
         <span class="zh">6 位数密码</span><span class="en">6-Digit PIN</span>
       </label>
-      <input type="password" id="loginPin" class="form-input pin-input" maxlength="6" inputmode="numeric" placeholder="······" autocomplete="off" />
+      <input type="tel" id="loginPin" class="form-input pin-input" maxlength="6" pattern="[0-9]*" placeholder="······" autocomplete="off" style="-webkit-text-security:disc;" />
     </div>
 
     <div class="options-row">
@@ -4857,8 +4857,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     <h3><span class="zh">首次登录 · 请修改密码</span><span class="en">First Login · Change PIN</span></h3>
     <p><span class="zh">为了账户安全，请设置您的专属 6 位数密码。</span><span class="en">For security, please set your own 6-digit PIN.</span></p>
     <div class="modal-error" id="changePinError"></div>
-    <input type="password" id="newPin1" maxlength="6" inputmode="numeric" placeholder="New PIN (6 digits)" style="text-align:center;letter-spacing:8px;font-size:18px;" />
-    <input type="password" id="newPin2" maxlength="6" inputmode="numeric" placeholder="Confirm PIN" style="text-align:center;letter-spacing:8px;font-size:18px;" />
+    <input type="tel" id="newPin1" maxlength="6" pattern="[0-9]*" placeholder="New PIN (6 digits)" style="text-align:center;letter-spacing:8px;font-size:18px;-webkit-text-security:disc;" />
+    <input type="tel" id="newPin2" maxlength="6" pattern="[0-9]*" placeholder="Confirm PIN" style="text-align:center;letter-spacing:8px;font-size:18px;-webkit-text-security:disc;" />
     <div class="btn-row">
       <button class="primary" style="flex:1;" onclick="submitNewPin()">
         <span class="zh">确认修改</span><span class="en">Confirm</span>
@@ -10884,7 +10884,7 @@ const LOGIN_ACCOUNTS = {
 // PIN field: only allow digits, auto-submit on 6
 document.getElementById('loginPin').addEventListener('input', function() {
   this.value = this.value.replace(/\D/g, '').slice(0, 6);
-  if (this.value.length === 6) setTimeout(() => doLogin(), 100);
+  if (this.value.length === 6) setTimeout(function(){ doLogin(); }, 150);
 });
 
 // Enter on email → focus PIN
@@ -10897,41 +10897,49 @@ document.getElementById('loginPin').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') { e.preventDefault(); doLogin(); }
 });
 
+// Backup: also attach click via JS (in case inline onclick fails)
+document.getElementById('loginBtn').addEventListener('click', function(e) {
+  e.preventDefault(); doLogin();
+});
+
 function showError(msg) {
-  const el = document.getElementById('loginError');
+  var el = document.getElementById('loginError');
   document.getElementById('loginErrorText').innerHTML = msg;
   el.classList.add('show');
 }
 
 function doLogin() {
-  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
-  const pin = document.getElementById('loginPin').value.replace(/\D/g, '');
-  const errorEl = document.getElementById('loginError');
+  try {
+    var email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    var pin = document.getElementById('loginPin').value.replace(/[^0-9]/g, '');
+    var errorEl = document.getElementById('loginError');
 
-  if (!email) {
-    showError('<span class="zh">请输入工作邮箱</span><span class="en">Please enter your email</span>');
-    document.getElementById('loginEmail').focus();
-    return;
-  }
-  if (pin.length < 6) {
-    showError('<span class="zh">请输入 6 位密码</span><span class="en">Enter 6-digit PIN</span>');
-    document.getElementById('loginPin').focus();
-    return;
-  }
+    if (!email) {
+      showError('<span class="zh">请输入工作邮箱</span><span class="en">Please enter your email</span>');
+      document.getElementById('loginEmail').focus();
+      return;
+    }
+    if (pin.length < 6) {
+      showError('<span class="zh">请输入 6 位密码 (已输入' + pin.length + '位)</span><span class="en">Enter 6-digit PIN (' + pin.length + ' entered)</span>');
+      document.getElementById('loginPin').focus();
+      return;
+    }
 
-  const account = LOGIN_ACCOUNTS[email];
-  if (!account || account.pin !== pin) {
-    showError('<span class="zh">邮箱或密码错误</span><span class="en">Incorrect email or PIN</span>');
-    const card = document.querySelector('.login-card');
-    card.style.animation = 'none'; card.offsetHeight;
-    card.style.animation = 'loginShake 0.4s ease';
-    document.getElementById('loginPin').value = '';
-    document.getElementById('loginPin').focus();
-    return;
-  }
+    var account = LOGIN_ACCOUNTS[email];
+    if (!account || account.pin !== pin) {
+      showError('<span class="zh">邮箱或密码错误</span><span class="en">Incorrect email or PIN</span>');
+      var card = document.querySelector('.login-card');
+      if (card) { card.style.animation = 'none'; card.offsetHeight; card.style.animation = 'loginShake 0.4s ease'; }
+      document.getElementById('loginPin').value = '';
+      document.getElementById('loginPin').focus();
+      return;
+    }
 
-  errorEl.classList.remove('show');
-  completeLogin(email, account);
+    errorEl.classList.remove('show');
+    completeLogin(email, account);
+  } catch(err) {
+    alert('Login error: ' + err.message);
+  }
 }
 
 function completeLogin(email, account) {
