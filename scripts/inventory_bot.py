@@ -26,8 +26,11 @@ from datetime import datetime, timezone, timedelta
 
 # ─── Config ───
 BOT_TOKEN = "8682943904:AAHUj5DPOa6wdknmrNut4zJr2dZ1UTDTwLE"
-ALLOWED_CHAT_IDS = os.environ.get("ALLOWED_CHAT_IDS", "7625761638").split(",")
-# Supports private chats AND group chats — add group chat IDs to .env
+# Admin user IDs (can use bot anywhere, manage settings)
+ADMIN_IDS = os.environ.get("ADMIN_IDS", "7625761638").split(",")
+# Allowed group chat IDs — anyone in these groups can upload
+# Group IDs are negative numbers, e.g. -1001234567890
+ALLOWED_GROUP_IDS = [g.strip() for g in os.environ.get("ALLOWED_GROUP_IDS", "").split(",") if g.strip()]
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 
 DEPLOY_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -57,21 +60,25 @@ def parse_context(text):
     t = text.lower().strip()
 
     # Condition: new / used
-    if any(w in t for w in ["新机", "新手机", "全新", "sealed", "new", "未拆封"]):
+    if any(w in t for w in ["新机", "新手机", "全新", "sealed", "new", "未拆封", "新的", "brand new", "bnib"]):
         ctx["condition"] = "new"
-    elif any(w in t for w in ["二手", "旧机", "used", "回收", "trade-in", "翻新"]):
+    elif any(w in t for w in ["二手", "旧机", "used", "回收", "trade-in", "翻新", "二手机", "旧的", "pre-owned", "refurbished"]):
         ctx["condition"] = "used"
 
     # Region
-    if any(w in t for w in ["港版", "香港", "hk版", "hk", "hong kong", "双卡"]):
+    if any(w in t for w in ["港版", "香港", "hk版", "hk", "hong kong", "双卡", "港行"]):
         ctx["region"] = "hk"
-    elif any(w in t for w in ["国行", "国版", "cn版", "cn", "大陆", "中国", "china"]):
+    elif any(w in t for w in ["国行", "国版", "cn版", "cn", "大陆", "中国", "china", "国产", "大陆版"]):
         ctx["region"] = "cn"
-    elif any(w in t for w in ["美版", "us版", "us", "美国", "american"]):
+    elif any(w in t for w in ["美版", "us版", "us", "美国", "american", "美行"]):
         ctx["region"] = "us"
+    elif any(w in t for w in ["日版", "jp版", "jp", "日本", "japan"]):
+        ctx["region"] = "jp"
+    elif any(w in t for w in ["韩版", "kr版", "kr", "韩国", "korea"]):
+        ctx["region"] = "kr"
 
-    # Store
-    for key, name in STORE_LIST.items():
+    # Store — match longer keys first to avoid partial matches
+    for key, name in sorted(STORE_LIST.items(), key=lambda x: -len(x[0])):
         if key in t:
             ctx["store"] = name
             break
@@ -325,7 +332,12 @@ def handle_photo(msg):
     chat_id = msg["chat"]["id"]
     cid = str(chat_id)
     from_user = msg.get("from", {})
-    username = from_user.get("first_name", "Unknown")
+    username = from_user.get("first_name", "")
+    if from_user.get("last_name"):
+        username += " " + from_user["last_name"]
+    if not username.strip():
+        username = from_user.get("username", "Unknown")
+    username = username.strip()
     caption = msg.get("caption", "")
     msg_id = msg["message_id"]
 
@@ -436,11 +448,26 @@ def handle_photo(msg):
     send_msg(chat_id, reply, reply_to=msg_id)
 
 
-def handle_command(msg):
-    """Handle bot commands."""
+def handle_command(msg, is_group=False):
+    """Handle bot commands and natural language context."""
     chat_id = msg["chat"]["id"]
     text = msg.get("text", "").strip()
     msg_id = msg["message_id"]
+
+    # In groups, ignore messages that aren't commands or context keywords
+    # This prevents the bot from replying to every chat message
+    if is_group and not text.startswith("/"):
+        # Only try to parse as context, respond only if context was detected
+        ctx = parse_context(text)
+        if ctx:
+            cid = str(chat_id)
+            existing = chat_context.get(cid, {})
+            existing.update(ctx)
+            chat_context[cid] = existing
+            summary = get_context_summary(chat_id)
+            send_msg(chat_id, f"✅ *已设定:* {summary}\n\n后续发送的照片将自动应用此设定。", reply_to=msg_id)
+        # If no context detected, silently ignore (don't spam the group)
+        return
 
     if text == "/start":
         send_msg(chat_id, """👋 *PhoneInventory Upload Bot*
@@ -458,6 +485,7 @@ def handle_command(msg):
 /clear — 清除设定
 /list — 最近入库记录
 /stats — 库存统计
+/addgroup — 授权当前群组 (管理员)
 /help — 帮助""", reply_to=msg_id)
 
     elif text == "/list":
@@ -523,6 +551,33 @@ def handle_command(msg):
 `二手 MP` — 二手机，Monterey Park 店
 `used SG 成本480` — 二手，San Gabriel，成本$480""", reply_to=msg_id)
 
+    elif text == "/addgroup":
+        # Admin-only: authorize current group
+        from_id = str(msg.get("from", {}).get("id", ""))
+        if from_id not in ADMIN_IDS:
+            send_msg(chat_id, "⛔ 仅管理员可执行此命令", reply_to=msg_id)
+            return
+        chat_type = msg["chat"].get("type", "private")
+        if chat_type not in ("group", "supergroup"):
+            send_msg(chat_id, "❌ 此命令只能在群组中使用", reply_to=msg_id)
+            return
+        cid = str(chat_id)
+        if cid not in ALLOWED_GROUP_IDS:
+            ALLOWED_GROUP_IDS.append(cid)
+        group_name = msg["chat"].get("title", "Unknown")
+        send_msg(chat_id, f"✅ *群组已授权*\n\n群名: {group_name}\nGroup ID: `{cid}`\n\n现在群内所有成员都可以发送照片入库。\n\n⚠️ 重启后需重新授权，或将此 ID 加入 ALLOWED\\_GROUP\\_IDS 环境变量：\n`ALLOWED_GROUP_IDS={cid}`", reply_to=msg_id)
+
+    elif text == "/removegroup":
+        # Admin-only: revoke current group
+        from_id = str(msg.get("from", {}).get("id", ""))
+        if from_id not in ADMIN_IDS:
+            send_msg(chat_id, "⛔ 仅管理员可执行此命令", reply_to=msg_id)
+            return
+        cid = str(chat_id)
+        if cid in ALLOWED_GROUP_IDS:
+            ALLOWED_GROUP_IDS.remove(cid)
+        send_msg(chat_id, "🚫 已取消此群授权", reply_to=msg_id)
+
     elif text == "/clear":
         chat_context.pop(str(chat_id), None)
         send_msg(chat_id, "🔄 已清除当前设定 / Context cleared", reply_to=msg_id)
@@ -554,12 +609,18 @@ def main():
     print(f"📂 Deploy dir: {DEPLOY_DIR}")
     print(f"💾 Database: {DB_PATH}")
     print(f"🔑 Anthropic API: {'SET' if ANTHROPIC_API_KEY else '⚠️ NOT SET'}")
+    print(f"👤 Admin IDs: {ADMIN_IDS}")
+    print(f"👥 Allowed groups: {ALLOWED_GROUP_IDS or 'none (add via /addgroup in a group)'}")
 
     init_db()
 
     if not ANTHROPIC_API_KEY:
         print("⚠️  ANTHROPIC_API_KEY not set! Photo recognition will not work.")
         print("   Set it: export ANTHROPIC_API_KEY=sk-ant-...")
+
+    # Note: Bot must have Privacy Mode DISABLED via @BotFather → /setprivacy → Disable
+    # Otherwise bot won't receive photos in groups
+    print("⚠️  确保已在 @BotFather 中关闭 Privacy Mode: /setprivacy → Disable")
 
     offset = 0
     print("✅ Bot is running, polling for messages...")
@@ -578,13 +639,21 @@ def main():
                     continue
 
                 chat_id = str(msg["chat"]["id"])
+                chat_type = msg["chat"].get("type", "private")
+                from_id = str(msg.get("from", {}).get("id", ""))
 
-                # Allow configured private chats and group chats
-                if ALLOWED_CHAT_IDS and chat_id not in ALLOWED_CHAT_IDS:
-                    # In groups, also check if sender is allowed
-                    from_id = str(msg.get("from", {}).get("id", ""))
-                    if from_id not in ALLOWED_CHAT_IDS:
-                        send_msg(chat_id, "⛔ 未授权 / Unauthorized\nChat ID: `" + chat_id + "`")
+                # Access control:
+                # - Private chat: must be admin
+                # - Group/supergroup: group ID must be in ALLOWED_GROUP_IDS, OR sender must be admin
+                if chat_type == "private":
+                    if from_id not in ADMIN_IDS:
+                        send_msg(chat_id, "⛔ 未授权 / Unauthorized\nYour ID: `" + from_id + "`")
+                        continue
+                elif chat_type in ("group", "supergroup"):
+                    if chat_id not in ALLOWED_GROUP_IDS and from_id not in ADMIN_IDS:
+                        # First time seeing this group? Tell admin the group ID so they can whitelist it
+                        group_name = msg["chat"].get("title", "Unknown Group")
+                        send_msg(chat_id, f"⛔ 此群未授权 / Group not authorized\n\n群名: {group_name}\nGroup ID: `{chat_id}`\n\n请管理员将此 ID 加入 ALLOWED\\_GROUP\\_IDS 环境变量")
                         continue
 
                 # Photo → inventory scan (threaded for parallel processing)
@@ -593,7 +662,7 @@ def main():
                     t.start()
                 # Text commands
                 elif "text" in msg:
-                    handle_command(msg)
+                    handle_command(msg, is_group=(chat_type in ("group", "supergroup")))
 
         except KeyboardInterrupt:
             print("\n🛑 Bot stopped.")
