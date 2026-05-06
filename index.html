@@ -4719,8 +4719,16 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   width: 44px; height: 52px; text-align: center;
   font-size: 22px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
   border: 1.5px solid var(--border); border-radius: 10px;
-  background: var(--bg-tinted); color: var(--text); outline: none;
+  background: var(--bg-tinted); color: transparent; outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-text-security: disc; /* iOS/Safari mask */
+  text-shadow: 0 0 0 var(--text); /* hide actual text, show dot via caret */
+  caret-color: var(--brand);
+}
+.login-pin-wrapper input:not(:placeholder-shown) {
+  background-image: radial-gradient(circle, var(--text) 4px, transparent 4px);
+  background-repeat: no-repeat;
+  background-position: center;
 }
 .login-pin-wrapper input:focus {
   border-color: var(--brand); box-shadow: 0 0 0 3px rgba(13,79,60,0.1);
@@ -4845,12 +4853,12 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <span class="en">6-Digit PIN</span>
         </label>
         <div class="login-pin-wrapper" id="pinWrapper">
-          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="0" />
-          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="1" />
-          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="2" />
-          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="3" />
-          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="4" />
-          <input type="password" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="5" />
+          <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="0" autocomplete="off" />
+          <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="1" autocomplete="off" />
+          <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="2" autocomplete="off" />
+          <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="3" autocomplete="off" />
+          <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="4" autocomplete="off" />
+          <input type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" class="pin-box" data-idx="5" autocomplete="off" />
         </div>
         <div class="field-hint" style="text-align:center;margin-top:6px;">
           <span class="zh">请输入 6 位数字密码</span>
@@ -10952,24 +10960,39 @@ function getDeviceInfo() {
   return device;
 }
 
-// PIN input auto-advance
+// PIN input auto-advance (mobile-compatible)
 (function() {
   const pins = document.querySelectorAll('.pin-box');
+  function handleInput(box, i) {
+    box.value = box.value.replace(/[^0-9]/g, '');
+    // If multiple chars entered (some mobile keyboards), take last digit
+    if (box.value.length > 1) box.value = box.value.slice(-1);
+    if (box.value && i < pins.length - 1) {
+      pins[i + 1].focus();
+      pins[i + 1].select();
+    }
+    if (i === pins.length - 1 && box.value) {
+      setTimeout(() => doLogin(), 150);
+    }
+  }
   pins.forEach((box, i) => {
-    box.addEventListener('input', function() {
-      this.value = this.value.replace(/[^0-9]/g, '');
-      if (this.value && i < pins.length - 1) pins[i + 1].focus();
-      if (i === pins.length - 1 && this.value) {
-        // Auto-submit when last digit entered
-        setTimeout(() => doLogin(), 100);
-      }
+    // Use both input and keyup for maximum compatibility
+    box.addEventListener('input', function() { handleInput(this, i); });
+    box.addEventListener('keyup', function(e) {
+      if (e.key >= '0' && e.key <= '9') handleInput(this, i);
     });
     box.addEventListener('keydown', function(e) {
-      if (e.key === 'Backspace' && !this.value && i > 0) {
-        pins[i - 1].focus();
-        pins[i - 1].value = '';
+      if (e.key === 'Backspace') {
+        if (!this.value && i > 0) {
+          pins[i - 1].focus();
+          pins[i - 1].value = '';
+        } else {
+          this.value = '';
+        }
       }
     });
+    // Select on focus for easy overwrite
+    box.addEventListener('focus', function() { this.select(); });
     // Allow paste of full PIN
     box.addEventListener('paste', function(e) {
       e.preventDefault();
@@ -10977,7 +11000,7 @@ function getDeviceInfo() {
       for (let j = 0; j < Math.min(paste.length, 6); j++) {
         pins[j].value = paste[j];
       }
-      if (paste.length >= 6) setTimeout(() => doLogin(), 100);
+      if (paste.length >= 6) setTimeout(() => doLogin(), 150);
       else if (paste.length > 0) pins[Math.min(paste.length, 5)].focus();
     });
   });
