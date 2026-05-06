@@ -9743,10 +9743,11 @@ The more detail you provide, the easier it is to handle this issue."></textarea>
 
 <div class="toast" id="toast"></div>
 
+<!-- Inventory data (auto-generated from SQLite by export script) -->
+<script src="data/phones.js"></script>
 <script>
-// Phone inventory data (production - populated via upload bot)
-const phones = [
-];
+// Fallback to empty if phones.js not yet generated
+if (typeof phones === 'undefined') var phones = [];
 
 const statusMap = {
   available: { zh:'在售', en:'Available', cls:'st-avail' },

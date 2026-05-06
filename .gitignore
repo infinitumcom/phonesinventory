@@ -1,0 +1,13 @@
+# Environment
+.env
+
+# Database (generated on server)
+data/inventory.db
+
+# Generated data (keep phones.js placeholder)
+# data/phones.js is committed as empty placeholder
+
+# OS files
+.DS_Store
+__pycache__/
+*.pyc
