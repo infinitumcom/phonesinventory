@@ -4934,8 +4934,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     <h3><span class="zh">首次登录 · 请修改密码</span><span class="en">First Login · Change PIN</span></h3>
     <p><span class="zh">为了账户安全，请设置您的专属 6 位数密码。</span><span class="en">For security, please set your own 6-digit PIN.</span></p>
     <div class="modal-error" id="changePinError"></div>
-    <input type="tel" id="newPin1" maxlength="6" pattern="[0-9]*" placeholder="New PIN (6 digits)" style="text-align:center;letter-spacing:8px;font-size:18px;-webkit-text-security:disc;" />
-    <input type="tel" id="newPin2" maxlength="6" pattern="[0-9]*" placeholder="Confirm PIN" style="text-align:center;letter-spacing:8px;font-size:18px;-webkit-text-security:disc;" />
+    <input type="tel" id="newPin1" maxlength="6" pattern="[0-9]*" placeholder="新密码 (6位) / New PIN (6 digits)" style="text-align:center;letter-spacing:4px;font-size:18px;-webkit-text-security:disc;" />
+    <input type="tel" id="newPin2" maxlength="6" pattern="[0-9]*" placeholder="确认密码 / Confirm PIN" style="text-align:center;letter-spacing:4px;font-size:18px;-webkit-text-security:disc;" />
     <div class="btn-row">
       <button class="primary" style="flex:1;" onclick="submitNewPin()">
         <span class="zh">确认修改</span><span class="en">Confirm</span>
@@ -5072,7 +5072,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       // Init dynamic UI
       try { if (window.initDynamicUI) window.initDynamicUI(acct); } catch(e){}
       // Toast
-      try { if (window.showToast) window.showToast('👋 欢迎, ' + acct.name); } catch(e){}
+      try { if (window.showToast) window.showToast('👋 欢迎 Welcome, ' + acct.name); } catch(e){}
 
       // Force change PIN on first login
       try {
@@ -5375,7 +5375,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     <span id="roleLabelEn" style="display:none;"></span>
     <div class="topbar">
       <!-- Mobile menu toggle (hamburger) - only shown on phones -->
-      <button class="mobile-menu-toggle" onclick="toggleMobileSidebar()" aria-label="Open menu">
+      <button class="mobile-menu-toggle" onclick="toggleMobileSidebar()" aria-label="菜单 / Menu">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 6h18M3 12h18M3 18h18"/>
         </svg>
@@ -5393,12 +5393,12 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <button class="active" onclick="setLang(this,'zh')">中文</button>
           <button onclick="setLang(this,'en')">EN</button>
         </div>
-        <button class="iconbtn" title="搜索" onclick="navByName('inventory');setTimeout(()=>document.getElementById('invSearchInput')?.focus(),100);">
+        <button class="iconbtn" title="搜索 / Search" onclick="navByName('inventory');setTimeout(()=>document.getElementById('invSearchInput')?.focus(),100);">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/>
           </svg>
         </button>
-        <button class="iconbtn" title="通知" onclick="showToast('暂无新通知 · No new notifications')">
+        <button class="iconbtn" title="通知 / Notifications" onclick="showToast('暂无新通知 / No new notifications')">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M8 2a4 4 0 014 4v3l1 2H3l1-2V6a4 4 0 014-4zM6 13a2 2 0 004 0"/>
           </svg>
@@ -5425,7 +5425,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
           </div>
           <div class="page-actions">
-            <button class="btn">
+            <button class="btn" onclick="showToast('功能开发中 / Coming soon')">
               <span class="zh">📥 导出日报</span>
               <span class="en">📥 Daily Report</span>
             </button>
@@ -5487,7 +5487,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="en">Needs attention</span>
                 <span style="font-size:10.5px;color:var(--text-muted);font-weight:500;font-family:'JetBrains Mono',monospace;">0</span>
               </div>
-              <button class="btn btn-sm btn-ghost"><span class="zh">查看全部</span><span class="en">View all</span></button>
+              <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">查看全部</span><span class="en">View all</span></button>
             </div>
             <div class="todos-list">
               <div style="padding:24px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
@@ -5706,8 +5706,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="count">· <span class="zh">点击查看详情</span><span class="en">Click for detail</span></span>
             </div>
             <div class="section-actions">
-              <button class="btn btn-sm btn-ghost"><span class="zh">按销售额</span><span class="en">By Revenue</span></button>
-              <button class="btn btn-sm btn-ghost"><span class="zh">按库存量</span><span class="en">By Stock</span></button>
+              <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">按销售额</span><span class="en">By Revenue</span></button>
+              <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">按库存量</span><span class="en">By Stock</span></button>
             </div>
           </div>
           <div class="heatmap-grid">
@@ -6023,7 +6023,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="en">Points History</span>
               <span class="count">· <span class="zh">本月</span><span class="en">This Month</span></span>
             </div>
-            <button class="btn btn-sm btn-ghost"><span class="zh">查看全部</span><span class="en">View all</span></button>
+            <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">查看全部</span><span class="en">View all</span></button>
           </div>
 
           <div>
@@ -6168,11 +6168,11 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
           </div>
           <div class="cash-reserve-actions">
-            <button class="btn btn-sm">
+            <button class="btn btn-sm" onclick="showToast('功能开发中 / Coming soon')">
               <span class="zh">📤 上交存款</span>
               <span class="en">📤 Deposit</span>
             </button>
-            <button class="btn btn-sm btn-ghost">
+            <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')">
               <span class="zh">🔍 对账明细</span>
               <span class="en">🔍 Reconcile</span>
             </button>
@@ -6269,7 +6269,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="count">· 0 <span class="zh">笔</span><span class="en">sales</span></span>
             </div>
             <div class="section-actions">
-              <button class="btn btn-sm btn-ghost"><span class="zh">📥 导出 CSV</span><span class="en">📥 Export</span></button>
+              <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">📥 导出 CSV</span><span class="en">📥 Export</span></button>
             </div>
           </div>
 
@@ -6375,7 +6375,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <button class="btn btn-ghost" onclick="navByName('inventory')">
               <span class="zh">取消</span><span class="en">Cancel</span>
             </button>
-            <button class="btn">
+            <button class="btn" onclick="showToast('功能开发中 / Coming soon')">
               <span class="zh">📥 导入 Excel</span>
               <span class="en">📥 Import Excel</span>
             </button>
@@ -6492,10 +6492,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div class="section-title">
                   <span class="zh">第二步 · 扫描每部手机</span>
                   <span class="en">Step 2 · Scan each phone</span>
-                  <span class="count">· <span style="color:var(--success);">已扫入 0 部</span></span>
+                  <span class="count">· <span style="color:var(--success);"><span class="zh">已扫入 0 部</span><span class="en">0 scanned</span></span></span>
                 </div>
                 <div class="section-actions">
-                  <button class="btn btn-sm">
+                  <button class="btn btn-sm" onclick="showToast('功能开发中 / Coming soon')">
                     <span class="zh">🔍 手动选择型号</span>
                     <span class="en">🔍 Manual select</span>
                   </button>
@@ -6522,7 +6522,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                     </div>
                   </div>
                   <div>
-                    <input type="text" class="stockin-manual-input" id="stockinImeiInput" placeholder="或手动输入 IMEI" onkeydown="if(event.key==='Enter')showToast('主入库通道为 Telegram Bot · Stock-in via Telegram Bot')">
+                    <input type="text" class="stockin-manual-input" id="stockinImeiInput" placeholder="或手动输入 IMEI / Enter IMEI manually" onkeydown="if(event.key==='Enter')showToast('主入库通道为 Telegram Bot / Stock-in via Telegram Bot')">
                   </div>
                 </div>
 
@@ -6551,7 +6551,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                     <span class="zh">扫描方式:扫码枪 · 手动输入 · 也可选择"批量同型号"</span>
                     <span class="en">Methods: barcode scanner · manual entry · or "bulk same-model"</span>
                   </div>
-                  <button class="btn btn-sm btn-ghost">
+                  <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')">
                     <span class="zh">🗑 清空清单</span>
                     <span class="en">🗑 Clear all</span>
                   </button>
@@ -6618,7 +6618,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="en">Confirm Stock-In</span>
               </button>
 
-              <button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center;font-size:12px;color:var(--text-muted);">
+              <button class="btn btn-ghost" onclick="showToast('功能开发中 / Coming soon')" style="width:100%;margin-top:6px;justify-content:center;font-size:12px;color:var(--text-muted);">
                 <span class="zh">💾 保存草稿</span>
                 <span class="en">💾 Save draft</span>
               </button>
@@ -6694,7 +6694,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
           </div>
           <div class="page-actions">
-            <button class="btn">
+            <button class="btn" onclick="showToast('功能开发中 / Coming soon')">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11v2h10v-2M8 2v9m-3-3l3 3 3-3"/></svg>
               <span class="zh">导出</span><span class="en">Export</span>
             </button>
@@ -6782,9 +6782,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
             <div style="border-left:1px solid var(--border);height:24px;"></div>
             <div class="filters">
-              <button class="chip"><span class="zh">仅在售</span><span class="en">Available</span></button>
-              <button class="chip"><span class="zh">滞销</span><span class="en">Aged</span></button>
-              <button class="chip">⚙️ <span class="zh">高级</span><span class="en">Advanced</span></button>
+              <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">仅在售</span><span class="en">Available</span></button>
+              <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">滞销</span><span class="en">Aged</span></button>
+              <button class="chip" onclick="showToast('功能开发中 / Coming soon')">⚙️ <span class="zh">高级</span><span class="en">Advanced</span></button>
             </div>
           </div>
 
@@ -6958,7 +6958,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                   <span class="zh">客户信息</span>
                   <span class="en">Customer Info</span>
                 </div>
-                <button class="btn btn-sm btn-ghost">
+                <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')">
                   <span class="zh">🔍 查找老客户</span>
                   <span class="en">🔍 Find existing</span>
                 </button>
@@ -6976,7 +6976,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div class="form-row split">
                   <div>
                     <label class="form-label"><span class="zh">客户姓名</span><span class="en">Customer Name</span> <span class="req">*</span></label>
-                    <input type="text" class="form-input" value="" placeholder="Customer name">
+                    <input type="text" class="form-input" value="" placeholder="客户姓名 / Customer name">
                   </div>
                   <div>
                     <label class="form-label"><span class="zh">手机号</span><span class="en">Phone</span> <span class="req">*</span></label>
@@ -7196,7 +7196,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                     <div class="name">--</div>
                     <div class="meta">--</div>
                   </div>
-                  <button class="btn btn-sm btn-ghost">+ <span class="zh">协作员</span><span class="en">Assist</span></button>
+                  <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')">+ <span class="zh">协作员</span><span class="en">Assist</span></button>
                 </div>
               </div>
 
@@ -7248,7 +7248,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="zh">积分规则</span>
               <span class="en">Points Rules</span>
             </div>
-            <button class="btn btn-sm btn-ghost"><span class="zh">编辑规则</span><span class="en">Edit</span></button>
+            <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">编辑规则</span><span class="en">Edit</span></button>
           </div>
           <div style="padding:14px 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--bg-tinted);border-radius:7px;">
@@ -7335,10 +7335,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
 
         <div class="filters" style="margin-bottom:14px;">
-          <button class="chip active"><span class="zh">待我审批</span><span class="en">Awaiting Me</span><span class="chip-num">0</span></button>
-          <button class="chip"><span class="zh">我发起的</span><span class="en">My Requests</span><span class="chip-num">0</span></button>
-          <button class="chip"><span class="zh">在途中</span><span class="en">In Transit</span><span class="chip-num">0</span></button>
-          <button class="chip"><span class="zh">已完成</span><span class="en">Completed</span><span class="chip-num">0</span></button>
+          <button class="chip active" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">待我审批</span><span class="en">Awaiting Me</span><span class="chip-num">0</span></button>
+          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">我发起的</span><span class="en">My Requests</span><span class="chip-num">0</span></button>
+          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">在途中</span><span class="en">In Transit</span><span class="chip-num">0</span></button>
+          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">已完成</span><span class="en">Completed</span><span class="chip-num">0</span></button>
         </div>
 
         <!-- Transfer list (dynamic) -->
@@ -7396,7 +7396,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       </div>
       <div class="page-actions">
         <button class="btn" onclick="exportSalesCSV()"><span class="zh">📥 月度报表</span><span class="en">📥 Monthly Report</span></button>
-        <button class="btn"><span class="zh">📅 自定义日期</span><span class="en">📅 Date Range</span></button>
+        <button class="btn" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">📅 自定义日期</span><span class="en">📅 Date Range</span></button>
         <button class="btn btn-primary" onclick="navByName('sale')"><span class="zh">+ 新销售单</span><span class="en">+ New Sale</span></button>
       </div>
     </div>
@@ -7412,10 +7412,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
     <!-- Tabs for sales/returns -->
     <div class="filters" style="margin-bottom:14px;">
-      <button class="chip active"><span class="zh">销售单</span><span class="en">Sales</span><span class="chip-num">0</span></button>
-      <button class="chip"><span class="zh">退货</span><span class="en">Returns</span><span class="chip-num">0</span></button>
-      <button class="chip"><span class="zh">保修维护中</span><span class="en">Under Warranty</span><span class="chip-num">0</span></button>
-      <button class="chip"><span class="zh">需要催收据</span><span class="en">Receipt Pending</span><span class="chip-num">0</span></button>
+      <button class="chip active" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">销售单</span><span class="en">Sales</span><span class="chip-num">0</span></button>
+      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">退货</span><span class="en">Returns</span><span class="chip-num">0</span></button>
+      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">保修维护中</span><span class="en">Under Warranty</span><span class="chip-num">0</span></button>
+      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">需要催收据</span><span class="en">Receipt Pending</span><span class="chip-num">0</span></button>
     </div>
 
     <div class="section">
@@ -7427,16 +7427,16 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <input type="text" class="search-input" placeholder="搜索 Search: 客户 Customer / IMEI / 单号 Order#">
         </div>
         <div class="filters">
-          <button class="chip active"><span class="zh">本月</span><span class="en">This Month</span></button>
-          <button class="chip"><span class="zh">本周</span><span class="en">This Week</span></button>
-          <button class="chip"><span class="zh">今日</span><span class="en">Today</span></button>
-          <button class="chip"><span class="zh">自定义</span><span class="en">Custom</span></button>
+          <button class="chip active" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">本月</span><span class="en">This Month</span></button>
+          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">本周</span><span class="en">This Week</span></button>
+          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">今日</span><span class="en">Today</span></button>
+          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">自定义</span><span class="en">Custom</span></button>
         </div>
         <div style="border-left:1px solid var(--border);height:24px;"></div>
         <div class="filters">
-          <button class="chip">📍 <span class="zh">所有店</span><span class="en">All stores</span></button>
-          <button class="chip">💳 <span class="zh">支付方式</span><span class="en">Payment</span></button>
-          <button class="chip">⚙️ <span class="zh">高级</span><span class="en">Advanced</span></button>
+          <button class="chip" onclick="showToast('功能开发中 / Coming soon')">📍 <span class="zh">所有店</span><span class="en">All stores</span></button>
+          <button class="chip" onclick="showToast('功能开发中 / Coming soon')">💳 <span class="zh">支付方式</span><span class="en">Payment</span></button>
+          <button class="chip" onclick="showToast('功能开发中 / Coming soon')">⚙️ <span class="zh">高级</span><span class="en">Advanced</span></button>
         </div>
       </div>
 
@@ -7491,8 +7491,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       </div>
       <div class="page-actions">
         <button class="btn" onclick="openIMEIModal()"><span class="zh">🔍 IMEI 查询</span><span class="en">🔍 IMEI Check</span></button>
-        <button class="btn"><span class="zh">📋 检测队列</span><span class="en">📋 QC Queue</span><span class="chip-num" style="background:var(--warn);color:white;margin-left:5px;">0</span></button>
-        <button class="btn btn-primary"><span class="zh">+ 新回收单</span><span class="en">+ New Trade-In</span></button>
+        <button class="btn" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">📋 检测队列</span><span class="en">📋 QC Queue</span><span class="chip-num" style="background:var(--warn);color:white;margin-left:5px;">0</span></button>
+        <button class="btn btn-primary" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">+ 新回收单</span><span class="en">+ New Trade-In</span></button>
       </div>
     </div>
 
@@ -7596,7 +7596,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <span class="en">QC Queue</span>
             <span class="count">· 0</span>
           </div>
-          <button class="btn btn-sm btn-ghost"><span class="zh">分配技师</span><span class="en">Assign Tech</span></button>
+          <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">分配技师</span><span class="en">Assign Tech</span></button>
         </div>
 
         <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
@@ -7654,7 +7654,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <span class="en">VIP Customers</span>
           <span class="count">· <span class="zh">累计消费 $5K+</span><span class="en">$5K+ lifetime</span></span>
         </div>
-        <button class="btn btn-sm btn-ghost"><span class="zh">查看全部</span><span class="en">View all</span></button>
+        <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">查看全部</span><span class="en">View all</span></button>
       </div>
       <div id="custVipList" style="padding:30px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
         <span class="zh">暂无 VIP 客户数据</span>
@@ -7718,19 +7718,19 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
       </div>
       <div class="page-actions">
-        <button class="btn"><span class="zh">📊 自定义报表</span><span class="en">📊 Custom Report</span></button>
-        <button class="btn"><span class="zh">📥 全部导出</span><span class="en">📥 Export All</span></button>
+        <button class="btn" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">📊 自定义报表</span><span class="en">📊 Custom Report</span></button>
+        <button class="btn" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">📥 全部导出</span><span class="en">📥 Export All</span></button>
       </div>
     </div>
 
     <!-- Tabs -->
     <div class="filters" style="margin-bottom:16px;">
-      <button class="chip active"><span class="zh">营收概览</span><span class="en">Revenue</span></button>
-      <button class="chip"><span class="zh">9 店对比</span><span class="en">Store Comparison</span></button>
-      <button class="chip"><span class="zh">滞销分析</span><span class="en">Aging Analysis</span></button>
-      <button class="chip"><span class="zh">利润分析</span><span class="en">Profit Analysis</span></button>
-      <button class="chip"><span class="zh">员工分析</span><span class="en">Staff Analysis</span></button>
-      <button class="chip"><span class="zh">客户分析</span><span class="en">Customer Analysis</span></button>
+      <button class="chip active" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">营收概览</span><span class="en">Revenue</span></button>
+      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">9 店对比</span><span class="en">Store Comparison</span></button>
+      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">滞销分析</span><span class="en">Aging Analysis</span></button>
+      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">利润分析</span><span class="en">Profit Analysis</span></button>
+      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">员工分析</span><span class="en">Staff Analysis</span></button>
+      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">客户分析</span><span class="en">Customer Analysis</span></button>
     </div>
 
     <!-- Top KPI -->
@@ -7753,10 +7753,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <span class="count">· <span class="zh">最近 30 天</span><span class="en">Last 30 days</span></span>
           </div>
           <div class="filters">
-            <button class="chip btn-sm active">30d</button>
-            <button class="chip btn-sm">7d</button>
-            <button class="chip btn-sm">90d</button>
-            <button class="chip btn-sm">1y</button>
+            <button class="chip btn-sm active" onclick="showToast('功能开发中 / Coming soon')">30d</button>
+            <button class="chip btn-sm" onclick="showToast('功能开发中 / Coming soon')">7d</button>
+            <button class="chip btn-sm" onclick="showToast('功能开发中 / Coming soon')">90d</button>
+            <button class="chip btn-sm" onclick="showToast('功能开发中 / Coming soon')">1y</button>
           </div>
         </div>
         <div id="revChartArea" style="padding:18px 22px 22px;">
@@ -7881,7 +7881,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <span class="en">Aged Stock Analysis</span>
           <span class="count">· <span style="color:var(--danger);">0 <span class="zh">部需关注</span><span class="en">need review</span></span></span>
         </div>
-        <button class="btn btn-sm">⚙️ <span class="zh">配置预警</span><span class="en">Configure alerts</span></button>
+        <button class="btn btn-sm" onclick="showToast('功能开发中 / Coming soon')">⚙️ <span class="zh">配置预警</span><span class="en">Configure alerts</span></button>
       </div>
 
       <div style="padding:18px 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
@@ -9470,7 +9470,7 @@ function fillReceipt(sale) {
 
 // ===== Transfer Functions =====
 function createTransfer(imei, targetStore, reason) {
-  if (!imei) { showToast('请输入 IMEI'); return; }
+  if (!imei) { showToast('请输入 IMEI / Enter IMEI'); return; }
   imei = imei.replace(/\s+/g, '');
   var phone = null;
   for (var i = 0; i < phones.length; i++) {
@@ -9693,7 +9693,7 @@ function openStockRequestModal() {
     });
     document.getElementById('srSubmitBtn').addEventListener('click', submitStockRequest);
   } catch(err) {
-    alert('Stock request modal error: ' + err.message);
+    alert('库存请求弹窗错误 / Stock request error: ' + err.message);
   }
 }
 
@@ -10402,12 +10402,12 @@ function processMonthlyPayout() {
     return;
   }
 
-  var msg = '本月提成汇总:\n';
+  var msg = '本月提成汇总 / Monthly Payout Summary:\n';
   Object.keys(staffMap).forEach(function(name) {
     if (staffMap[name] > 0) msg += name + ': ' + staffMap[name] + 'P ($' + staffMap[name] + ')\n';
   });
-  msg += '\n总计: ' + totalPoints + 'P ($' + totalPoints + ')';
-  msg += '\n\n确认发放？';
+  msg += '\n总计 Total: ' + totalPoints + 'P ($' + totalPoints + ')';
+  msg += '\n\n确认发放？ / Confirm payout?';
 
   if (confirm(msg)) {
     // Record payout
@@ -10426,17 +10426,17 @@ function confirmReturn(saleId) {
   if (sale.status === 'returned') { showToast('该订单已退货 / Already returned'); return; }
 
   var pointsToDeduct = sale.cond === 'new' ? 15 : 10;
-  var msg = '确认退货？\n\n';
-  msg += '订单: ' + sale.id + '\n';
-  msg += '设备: ' + sale.phoneName + '\n';
+  var msg = '确认退货？ / Confirm Return?\n\n';
+  msg += '订单 Order: ' + sale.id + '\n';
+  msg += '设备 Device: ' + sale.phoneName + '\n';
   msg += 'IMEI: ' + sale.imei + '\n';
-  msg += '金额: $' + (sale.total||0).toLocaleString() + '\n';
-  msg += '销售员: ' + sale.seller + '\n\n';
-  msg += '退货将执行:\n';
-  msg += '1. 标记订单为已退货\n';
-  msg += '2. 手机重新上架库存\n';
-  msg += '3. 扣除销售员 ' + pointsToDeduct + ' Points 提成\n\n';
-  msg += '确认退货？';
+  msg += '金额 Amount: $' + (sale.total||0).toLocaleString() + '\n';
+  msg += '销售员 Seller: ' + sale.seller + '\n\n';
+  msg += '退货将执行 Actions:\n';
+  msg += '1. 标记已退货 / Mark as returned\n';
+  msg += '2. 重新上架 / Restock phone\n';
+  msg += '3. 扣除 Deduct ' + pointsToDeduct + ' Points\n\n';
+  msg += '确认？ / Confirm?';
 
   if (confirm(msg)) {
     processReturn(saleId);
@@ -10530,7 +10530,7 @@ function showAgedStockAlert() {
   }).join(', ');
   var more = agedPhones.length > 3 ? ' +' + (agedPhones.length - 3) + ' more' : '';
 
-  showToast('⚠️ 滞销提醒: ' + store + ' 有 ' + agedPhones.length + ' 台库存超过 ' + threshold + ' 天 — ' + names + more, 8000);
+  showToast('⚠️ 滞销提醒 Aged Stock: ' + store + ' — ' + agedPhones.length + ' phones >' + threshold + 'd — ' + names + more, 8000);
 }
 
 function openStoreDetail(storeKey) {
@@ -10639,7 +10639,7 @@ function openNewTransferModal(prefillImei, prefillTarget) {
       '<div style="font-weight:700;font-size:16px;margin-bottom:16px;"><span class="zh">发起调拨</span><span class="en">New Transfer</span></div>' +
       '<div style="margin-bottom:12px;">' +
         '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;">IMEI</label>' +
-        '<input type="text" id="trImeiInput"' + imeiReadonly + ' placeholder="输入 15 位 IMEI" maxlength="15" value="' + (prefillImei || '') + '">' +
+        '<input type="text" id="trImeiInput"' + imeiReadonly + ' placeholder="输入 15 位 IMEI / Enter 15-digit IMEI" maxlength="15" value="' + (prefillImei || '') + '">' +
       '</div>' +
       '<div style="margin-bottom:12px;">' +
         '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">目标门店</span><span class="en">Target Store</span></label>' +
@@ -10663,7 +10663,7 @@ function openNewTransferModal(prefillImei, prefillTarget) {
     document.getElementById('trCancelBtn').addEventListener('click', closeNewTransferModal);
     document.getElementById('trSubmitBtn').addEventListener('click', submitNewTransfer);
   } catch(err) {
-    alert('Transfer modal error: ' + err.message);
+    alert('调拨弹窗错误 / Transfer error: ' + err.message);
   }
 }
 function closeNewTransferModal() {
@@ -10811,7 +10811,7 @@ function submitDefectiveReport() {
 
   const t = document.getElementById('toast');
   t.classList.add('toast-danger');
-  t.innerText = phoneName.split(' · ')[0] + ' 已报修 (' + issueCount + ' 项故障) · 等待管理员处理';
+  t.innerText = phoneName.split(' · ')[0] + ' 已报修 / Reported (' + issueCount + ' issues) · 等待处理 / Pending review';
   t.classList.add('show');
   setTimeout(() => {
     t.classList.remove('show');
@@ -11090,7 +11090,7 @@ function renderInventory() {
         }
         if (isMyStore) {
           return '<div class="inv-actions">' +
-            '<button class="inv-action-card act-report" onclick="event.stopPropagation();openReportModal(this)" title="Report Defective">' +
+            '<button class="inv-action-card act-report" onclick="event.stopPropagation();openReportModal(this)" title="报修 / Report Defective">' +
               '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2v6M8 11v.5"/><circle cx="8" cy="8" r="6.5"/></svg>' +
               '<span class="zh">报修</span><span class="en">Report</span>' +
             '</button>' +
@@ -11103,7 +11103,7 @@ function renderInventory() {
         // Other store: show transfer button
         var targetName = (STORE_DATA[myStore] || {}).nameEn || myStore;
         return '<div class="inv-actions">' +
-          '<button class="inv-action-card act-transfer" onclick="event.stopPropagation();openNewTransferModal(\'' + p.imei + '\',\'' + targetName.replace(/'/g, "\\'") + '\')" title="Request Transfer">' +
+          '<button class="inv-action-card act-transfer" onclick="event.stopPropagation();openNewTransferModal(\'' + p.imei + '\',\'' + targetName.replace(/'/g, "\\'") + '\')" title="调拨库存 / Request Transfer">' +
             '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4-4 4 4M4 10l4 4 4-4"/></svg>' +
             '<span class="zh">调拨库存</span><span class="en">Transfer</span>' +
           '</button>' +
