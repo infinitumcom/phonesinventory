@@ -9600,8 +9600,28 @@ function renderTransferPage() {
 }
 
 // ===== Stock Request Functions =====
+var _srRowCount = 0;
+function _addSrModelRow(container) {
+  _srRowCount++;
+  var idx = _srRowCount;
+  var row = document.createElement('div');
+  row.className = 'sr-model-row';
+  row.setAttribute('data-sr-idx', idx);
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;margin-bottom:8px;';
+  row.innerHTML =
+    '<input type="text" class="sr-model-input" style="flex:1;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:13px;box-sizing:border-box;" placeholder="iPhone 17 Pro Max 256GB Black">' +
+    '<input type="number" class="sr-qty-input" min="1" value="1" style="width:64px;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:13px;box-sizing:border-box;text-align:center;">' +
+    (idx > 1 ? '<button type="button" class="sr-remove-row" style="width:28px;height:28px;border:none;background:#fee2e2;color:#ef4444;border-radius:50%;font-size:16px;font-weight:700;cursor:pointer;flex-shrink:0;line-height:1;display:flex;align-items:center;justify-content:center;">×</button>' : '<div style="width:28px;flex-shrink:0;"></div>');
+  container.appendChild(row);
+  var removeBtn = row.querySelector('.sr-remove-row');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function() { row.parentNode.removeChild(row); });
+  }
+}
+
 function openStockRequestModal() {
   try {
+    _srRowCount = 0;
     var old = document.getElementById('stockRequestModal');
     if (old) old.parentNode.removeChild(old);
 
@@ -9615,20 +9635,26 @@ function openStockRequestModal() {
     overlay.addEventListener('click', function(e) { if (e.target === overlay) { overlay.parentNode.removeChild(overlay); } });
 
     var box = document.createElement('div');
-    box.style.cssText = 'background:#fff;color:#222;border-radius:14px;padding:24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+    box.style.cssText = 'background:#fff;color:#222;border-radius:14px;padding:24px;max-width:480px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.3);max-height:85vh;overflow-y:auto;';
     box.innerHTML =
       '<div style="font-weight:700;font-size:16px;margin-bottom:16px;"><span class="zh">请求进货</span><span class="en">Stock Request</span></div>' +
-      '<div style="margin-bottom:12px;">' +
+      '<div style="margin-bottom:14px;">' +
         '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">请求门店</span><span class="en">Store</span></label>' +
         '<input type="text" id="srStore" readonly value="' + storeName + '" style="width:100%;color:#888;background:#eee;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;cursor:not-allowed;">' +
       '</div>' +
-      '<div style="margin-bottom:12px;">' +
-        '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">型号</span><span class="en">Model</span></label>' +
-        '<input type="text" id="srModel" style="width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;" placeholder="iPhone 17 Pro Max 256GB Black">' +
+      '<div style="margin-bottom:4px;">' +
+        '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">' +
+          '<label style="flex:1;font-size:12px;font-weight:600;color:#666;"><span class="zh">型号</span><span class="en">Model</span></label>' +
+          '<label style="width:64px;font-size:12px;font-weight:600;color:#666;text-align:center;"><span class="zh">数量</span><span class="en">Qty</span></label>' +
+          '<div style="width:28px;"></div>' +
+        '</div>' +
       '</div>' +
-      '<div style="margin-bottom:12px;">' +
-        '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">数量</span><span class="en">Quantity</span></label>' +
-        '<input type="number" id="srQty" min="1" value="1" style="width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
+      '<div id="srModelRows"></div>' +
+      '<div style="margin-bottom:14px;">' +
+        '<button type="button" id="srAddRowBtn" style="display:flex;align-items:center;gap:4px;padding:6px 14px;border:1px dashed #93c5fd;background:#eff6ff;color:#3b82f6;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">' +
+          '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v10M3 8h10"/></svg>' +
+          '<span class="zh">添加型号</span><span class="en">Add Model</span>' +
+        '</button>' +
       '</div>' +
       '<div style="margin-bottom:16px;">' +
         '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">理由 / 备注</span><span class="en">Reason / Note</span></label>' +
@@ -9642,6 +9668,13 @@ function openStockRequestModal() {
     overlay.appendChild(box);
     document.body.appendChild(overlay);
 
+    // Add first model row
+    var rowsContainer = document.getElementById('srModelRows');
+    _addSrModelRow(rowsContainer);
+
+    document.getElementById('srAddRowBtn').addEventListener('click', function() {
+      _addSrModelRow(rowsContainer);
+    });
     document.getElementById('srCancelBtn').addEventListener('click', function() {
       var m = document.getElementById('stockRequestModal');
       if (m) m.parentNode.removeChild(m);
@@ -9653,26 +9686,36 @@ function openStockRequestModal() {
 }
 
 function submitStockRequest() {
-  var model = document.getElementById('srModel').value.trim();
-  var qty = parseInt(document.getElementById('srQty').value) || 1;
+  var rows = document.querySelectorAll('#srModelRows .sr-model-row');
   var note = document.getElementById('srNote').value.trim();
   var store = document.getElementById('srStore').value.trim();
 
-  if (!model) { showToast('请输入型号 / Enter model'); return; }
-  if (qty < 1) { showToast('数量至少为 1 / Qty must be at least 1'); return; }
+  // Collect all model+qty pairs
+  var items = [];
+  for (var i = 0; i < rows.length; i++) {
+    var model = rows[i].querySelector('.sr-model-input').value.trim();
+    var qty = parseInt(rows[i].querySelector('.sr-qty-input').value) || 1;
+    if (model) items.push({ model: model, qty: qty });
+  }
+
+  if (items.length === 0) { showToast('请至少输入一个型号 / Enter at least one model'); return; }
 
   var acct = window._currentAccount || {};
   var requests = getLocalData('pi_stock_requests');
   var nextNum = (requests.length + 1).toString().padStart(4, '0');
   var year = new Date().getFullYear();
 
+  // Build combined model string for display
+  var modelDisplay = items.map(function(it) { return it.model + ' ×' + it.qty; }).join('; ');
+
   var sr = {
     id: 'SR-' + year + '-' + nextNum,
     date: new Date().toISOString(),
     requestedBy: acct.name || 'Unknown',
     store: store,
-    model: model,
-    qty: qty,
+    model: modelDisplay,
+    items: items,
+    qty: items.reduce(function(s, it) { return s + it.qty; }, 0),
     note: note,
     status: 'pending'
   };
@@ -9761,7 +9804,9 @@ function renderStockRequests() {
           badge +
           '<span style="background:var(--bg-tinted);padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:600;border:1px solid var(--border);">📍 ' + sr.store + '</span>' +
         '</div>' +
-        '<div style="font-size:13px;font-weight:600;">' + sr.model + ' × ' + sr.qty + '</div>' +
+        (sr.items && sr.items.length > 1 ?
+          '<div style="font-size:13px;font-weight:600;">' + sr.items.map(function(it){ return it.model + ' <span style="color:#3b82f6;">×' + it.qty + '</span>'; }).join('<br>') + '</div>' :
+          '<div style="font-size:13px;font-weight:600;">' + sr.model + ' <span style="color:#3b82f6;">× ' + sr.qty + '</span></div>') +
         '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' +
           sr.requestedBy + ' · ' + new Date(sr.date).toLocaleDateString() +
           (sr.note ? ' · ' + sr.note : '') +
