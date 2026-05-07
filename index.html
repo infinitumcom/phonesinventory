@@ -3228,6 +3228,15 @@ body[data-inv-mode="used"] .mode-context-bar .mc-icon { background: var(--warn);
   background: var(--brand-hover);
   border-color: var(--brand-hover);
 }
+.inv-action-card.act-transfer {
+  background: transparent;
+  color: #3b82f6;
+  border: 1px solid #93c5fd;
+}
+.inv-action-card.act-transfer:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+}
 
 /* Toast variants */
 .toast.toast-danger::before {
@@ -6688,6 +6697,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11v2h10v-2M8 2v9m-3-3l3 3 3-3"/></svg>
               <span class="zh">导出</span><span class="en">Export</span>
             </button>
+            <button class="btn" onclick="openStockRequestModal()" style="border-color:#3b82f6;color:#3b82f6;">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M2 8h12"/></svg>
+              <span class="zh">请求进货</span><span class="en">Stock Request</span>
+            </button>
             <button class="btn btn-primary admin-only" onclick="navByName('stockin')">
               <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 2v8M5 7l3 3 3-3"/><rect x="2" y="11" width="12" height="3" rx="1"/></svg>
               <span class="zh">批量录入新机</span><span class="en">Stock In</span>
@@ -7336,6 +7349,26 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           </div>
         </div>
 
+        <!-- Stock Requests Section -->
+        <div style="margin-top:28px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div>
+              <h2 style="font-size:16px;font-weight:700;margin:0;"><span class="zh">库存请求</span><span class="en">Stock Requests</span></h2>
+              <div style="font-size:11.5px;color:var(--text-muted);margin-top:2px;"><span class="zh">门店向总部请求进货</span><span class="en">Store requests to HQ for restocking</span></div>
+            </div>
+            <button class="btn" onclick="openStockRequestModal()" style="border-color:#3b82f6;color:#3b82f6;font-size:12px;">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M2 8h12"/></svg>
+              <span class="zh">+ 新请求</span><span class="en">+ New Request</span>
+            </button>
+          </div>
+          <div id="stockRequestList">
+            <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+              <div style="font-size:24px;margin-bottom:6px;">📋</div>
+              <span class="zh">暂无库存请求</span>
+              <span class="en">No stock requests</span>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
@@ -9561,6 +9594,183 @@ function renderTransferPage() {
     '</div>';
   });
   container.innerHTML = html;
+
+  // Also render stock requests
+  renderStockRequests();
+}
+
+// ===== Stock Request Functions =====
+function openStockRequestModal() {
+  try {
+    var old = document.getElementById('stockRequestModal');
+    if (old) old.parentNode.removeChild(old);
+
+    var acct = window._currentAccount || {};
+    var myStore = acct.store || 'all';
+    var storeName = myStore === 'all' ? 'HQ' : ((STORE_DATA[myStore] || {}).nameEn || myStore);
+
+    var overlay = document.createElement('div');
+    overlay.id = 'stockRequestModal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) { overlay.parentNode.removeChild(overlay); } });
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;color:#222;border-radius:14px;padding:24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+    box.innerHTML =
+      '<div style="font-weight:700;font-size:16px;margin-bottom:16px;"><span class="zh">请求进货</span><span class="en">Stock Request</span></div>' +
+      '<div style="margin-bottom:12px;">' +
+        '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">请求门店</span><span class="en">Store</span></label>' +
+        '<input type="text" id="srStore" readonly value="' + storeName + '" style="width:100%;color:#888;background:#eee;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;cursor:not-allowed;">' +
+      '</div>' +
+      '<div style="margin-bottom:12px;">' +
+        '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">型号</span><span class="en">Model</span></label>' +
+        '<input type="text" id="srModel" style="width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;" placeholder="iPhone 17 Pro Max 256GB Black">' +
+      '</div>' +
+      '<div style="margin-bottom:12px;">' +
+        '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">数量</span><span class="en">Quantity</span></label>' +
+        '<input type="number" id="srQty" min="1" value="1" style="width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
+      '</div>' +
+      '<div style="margin-bottom:16px;">' +
+        '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">理由 / 备注</span><span class="en">Reason / Note</span></label>' +
+        '<input type="text" id="srNote" style="width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;" placeholder="客户等货 / 热销补货 / Customer waiting">' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+        '<button id="srCancelBtn" style="padding:8px 16px;border:1px solid #ddd;background:#f5f5f5;color:#333;border-radius:8px;font-size:13px;cursor:pointer;"><span class="zh">取消</span><span class="en">Cancel</span></button>' +
+        '<button id="srSubmitBtn" style="padding:8px 16px;border:none;background:#3b82f6;color:#fff;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;"><span class="zh">提交请求</span><span class="en">Submit</span></button>' +
+      '</div>';
+
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    document.getElementById('srCancelBtn').addEventListener('click', function() {
+      var m = document.getElementById('stockRequestModal');
+      if (m) m.parentNode.removeChild(m);
+    });
+    document.getElementById('srSubmitBtn').addEventListener('click', submitStockRequest);
+  } catch(err) {
+    alert('Stock request modal error: ' + err.message);
+  }
+}
+
+function submitStockRequest() {
+  var model = document.getElementById('srModel').value.trim();
+  var qty = parseInt(document.getElementById('srQty').value) || 1;
+  var note = document.getElementById('srNote').value.trim();
+  var store = document.getElementById('srStore').value.trim();
+
+  if (!model) { showToast('请输入型号 / Enter model'); return; }
+  if (qty < 1) { showToast('数量至少为 1 / Qty must be at least 1'); return; }
+
+  var acct = window._currentAccount || {};
+  var requests = getLocalData('pi_stock_requests');
+  var nextNum = (requests.length + 1).toString().padStart(4, '0');
+  var year = new Date().getFullYear();
+
+  var sr = {
+    id: 'SR-' + year + '-' + nextNum,
+    date: new Date().toISOString(),
+    requestedBy: acct.name || 'Unknown',
+    store: store,
+    model: model,
+    qty: qty,
+    note: note,
+    status: 'pending'
+  };
+
+  requests.unshift(sr);
+  setLocalData('pi_stock_requests', requests);
+
+  var m = document.getElementById('stockRequestModal');
+  if (m) m.parentNode.removeChild(m);
+
+  showToast('库存请求已提交: ' + sr.id + ' / Stock request submitted');
+  renderStockRequests();
+}
+
+function approveStockRequest(id) {
+  var requests = getLocalData('pi_stock_requests');
+  var sr = requests.find(function(x) { return x.id === id; });
+  if (!sr) return;
+  sr.status = 'approved';
+  sr.approvedBy = (window._currentAccount || {}).name || '';
+  sr.approvedDate = new Date().toISOString();
+  setLocalData('pi_stock_requests', requests);
+  showToast('已批准: ' + id + ' / Approved');
+  renderStockRequests();
+}
+
+function rejectStockRequest(id) {
+  var requests = getLocalData('pi_stock_requests');
+  var sr = requests.find(function(x) { return x.id === id; });
+  if (!sr) return;
+  sr.status = 'rejected';
+  sr.rejectedBy = (window._currentAccount || {}).name || '';
+  setLocalData('pi_stock_requests', requests);
+  showToast('已拒绝: ' + id + ' / Rejected');
+  renderStockRequests();
+}
+
+function fulfillStockRequest(id) {
+  var requests = getLocalData('pi_stock_requests');
+  var sr = requests.find(function(x) { return x.id === id; });
+  if (!sr) return;
+  sr.status = 'fulfilled';
+  sr.fulfilledDate = new Date().toISOString();
+  setLocalData('pi_stock_requests', requests);
+  showToast('已完成: ' + id + ' / Fulfilled');
+  renderStockRequests();
+}
+
+function renderStockRequests() {
+  var container = document.getElementById('stockRequestList');
+  if (!container) return;
+
+  var requests = getLocalData('pi_stock_requests');
+  if (requests.length === 0) {
+    container.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:24px;margin-bottom:6px;">📋</div><span class="zh">暂无库存请求</span><span class="en">No stock requests</span></div>';
+    return;
+  }
+
+  var isAdmin = (window._currentAccount || {}).role === 'admin';
+  var html = '';
+  requests.forEach(function(sr) {
+    var badge = sr.status === 'pending' ?
+      '<span style="background:var(--warn-soft);color:var(--warn);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">⏱ <span class="zh">待审批</span><span class="en">Pending</span></span>' :
+      sr.status === 'approved' ?
+      '<span style="background:#dbeafe;color:#3b82f6;padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">✓ <span class="zh">已批准</span><span class="en">Approved</span></span>' :
+      sr.status === 'fulfilled' ?
+      '<span style="background:var(--success-soft);color:var(--success);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">✓ <span class="zh">已完成</span><span class="en">Fulfilled</span></span>' :
+      '<span style="background:var(--danger-soft);color:var(--danger);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">✕ <span class="zh">已拒绝</span><span class="en">Rejected</span></span>';
+
+    var actions = '';
+    if (isAdmin && sr.status === 'pending') {
+      actions = '<div style="display:flex;gap:6px;">' +
+        '<button class="btn btn-sm" onclick="rejectStockRequest(\'' + sr.id + '\')"><span class="zh">拒绝</span><span class="en">Reject</span></button>' +
+        '<button class="btn btn-sm btn-primary" onclick="approveStockRequest(\'' + sr.id + '\')"><span class="zh">批准</span><span class="en">Approve</span></button>' +
+      '</div>';
+    } else if (isAdmin && sr.status === 'approved') {
+      actions = '<div style="display:flex;gap:6px;">' +
+        '<button class="btn btn-sm btn-primary" onclick="fulfillStockRequest(\'' + sr.id + '\')"><span class="zh">标记完成</span><span class="en">Fulfill</span></button>' +
+      '</div>';
+    }
+
+    html += '<div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:14px 20px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;">' +
+      '<div>' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">' +
+          '<span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:12px;">' + sr.id + '</span>' +
+          badge +
+          '<span style="background:var(--bg-tinted);padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:600;border:1px solid var(--border);">📍 ' + sr.store + '</span>' +
+        '</div>' +
+        '<div style="font-size:13px;font-weight:600;">' + sr.model + ' × ' + sr.qty + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' +
+          sr.requestedBy + ' · ' + new Date(sr.date).toLocaleDateString() +
+          (sr.note ? ' · ' + sr.note : '') +
+        '</div>' +
+      '</div>' +
+      actions +
+    '</div>';
+  });
+  container.innerHTML = html;
 }
 
 // ===== Render Sales Page =====
@@ -10316,7 +10526,7 @@ function toggleTax() {
 }
 
 // ===== New Transfer Modal =====
-function openNewTransferModal() {
+function openNewTransferModal(prefillImei, prefillTarget) {
   try {
     // Remove existing modal if any
     var old = document.getElementById('newTransferModal');
@@ -10327,26 +10537,26 @@ function openNewTransferModal() {
     overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
     overlay.addEventListener('click', function(e) { if (e.target === overlay) closeNewTransferModal(); });
 
+    var imeiReadonly = prefillImei ? ' readonly style="width:100%;color:#222;background:#eee;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;cursor:not-allowed;"' : ' style="width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;"';
+
+    var storeOptions = ['Alhambra','Monterey Park','San Gabriel','Rowland Heights','Arcadia 1','Arcadia 2','Irvine','Rancho Cucamonga','Las Vegas'];
+    var storeOptionsHtml = storeOptions.map(function(s) {
+      var sel = (prefillTarget && s === prefillTarget) ? ' selected' : '';
+      return '<option value="' + s + '"' + sel + '>' + s + '</option>';
+    }).join('');
+
     var box = document.createElement('div');
     box.style.cssText = 'background:#fff;color:#222;border-radius:14px;padding:24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
     box.innerHTML =
       '<div style="font-weight:700;font-size:16px;margin-bottom:16px;"><span class="zh">发起调拨</span><span class="en">New Transfer</span></div>' +
       '<div style="margin-bottom:12px;">' +
         '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;">IMEI</label>' +
-        '<input type="text" id="trImeiInput" style="width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;" placeholder="输入 15 位 IMEI" maxlength="15">' +
+        '<input type="text" id="trImeiInput"' + imeiReadonly + ' placeholder="输入 15 位 IMEI" maxlength="15" value="' + (prefillImei || '') + '">' +
       '</div>' +
       '<div style="margin-bottom:12px;">' +
         '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">目标门店</span><span class="en">Target Store</span></label>' +
         '<select id="trTargetStore" style="width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;-webkit-appearance:auto;appearance:auto;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;">' +
-          '<option value="Alhambra">Alhambra</option>' +
-          '<option value="Monterey Park">Monterey Park</option>' +
-          '<option value="San Gabriel">San Gabriel</option>' +
-          '<option value="Rowland Heights">Rowland Heights</option>' +
-          '<option value="Arcadia 1">Arcadia 1</option>' +
-          '<option value="Arcadia 2">Arcadia 2</option>' +
-          '<option value="Irvine">Irvine</option>' +
-          '<option value="Rancho Cucamonga">Rancho Cucamonga</option>' +
-          '<option value="Las Vegas">Las Vegas</option>' +
+          storeOptionsHtml +
         '</select>' +
       '</div>' +
       '<div style="margin-bottom:16px;">' +
@@ -10779,19 +10989,38 @@ function renderInventory() {
         '<div class="msrp"><span class="ccy">$</span>' + p.price.toLocaleString() + '</div>' +
         '<div class="points-row"><span class="points-tag">' + (p.cond === 'new' ? '15' : '10') + ' P</span></div>' +
       '</div>' +
-      '<div class="inv-actions">' +
-        '<button class="inv-action-card act-report" onclick="event.stopPropagation();openReportModal(this)" title="Report Defective">' +
-          '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2v6M8 11v.5"/><circle cx="8" cy="8" r="6.5"/></svg>' +
-          '<span class="zh">报修</span><span class="en">Report</span>' +
-        '</button>' +
-        (p.status === 'reserved' ? '<span class="status st-reserved" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">预留</span><span class="en">Resv</span></span>' :
-         p.status === 'transit' ? '<span class="status st-transit" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">在途</span><span class="en">Transit</span></span>' :
-         p.status === 'sold' ? '<span class="status st-sold" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">已售</span><span class="en">Sold</span></span>' :
-        '<button class="inv-action-card act-sell" onclick="event.stopPropagation();navByName(\'sale\');setTimeout(function(){var inp=document.getElementById(\'saleImeiInput\');if(inp){inp.value=\'' + p.imei + '\';saleSearchIMEI(\'' + p.imei + '\');}},200);">' +
-          '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l1.5 9h7L13 5H4"/></svg>' +
-          '<span class="zh">开单</span><span class="en">Sell</span>' +
-        '</button>') +
-      '</div>' +
+      (function(){
+        var phoneStore = normalizeStoreKey(p.store || p.storeName || '');
+        var myStore = (window._currentAccount && window._currentAccount.store) || 'all';
+        var isMyStore = (myStore === 'all') || (phoneStore === myStore);
+        var statusBusy = (p.status === 'reserved' || p.status === 'transit' || p.status === 'sold');
+        var statusBadgeHtml = p.status === 'reserved' ? '<span class="status st-reserved" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">预留</span><span class="en">Resv</span></span>' :
+          p.status === 'transit' ? '<span class="status st-transit" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">在途</span><span class="en">Transit</span></span>' :
+          p.status === 'sold' ? '<span class="status st-sold" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">已售</span><span class="en">Sold</span></span>' : '';
+        if (statusBusy) {
+          return '<div class="inv-actions">' + statusBadgeHtml + '</div>';
+        }
+        if (isMyStore) {
+          return '<div class="inv-actions">' +
+            '<button class="inv-action-card act-report" onclick="event.stopPropagation();openReportModal(this)" title="Report Defective">' +
+              '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2v6M8 11v.5"/><circle cx="8" cy="8" r="6.5"/></svg>' +
+              '<span class="zh">报修</span><span class="en">Report</span>' +
+            '</button>' +
+            '<button class="inv-action-card act-sell" onclick="event.stopPropagation();navByName(\'sale\');setTimeout(function(){var inp=document.getElementById(\'saleImeiInput\');if(inp){inp.value=\'' + p.imei + '\';saleSearchIMEI(\'' + p.imei + '\');}},200);">' +
+              '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l1.5 9h7L13 5H4"/></svg>' +
+              '<span class="zh">开单</span><span class="en">Sell</span>' +
+            '</button>' +
+          '</div>';
+        }
+        // Other store: show transfer button
+        var targetName = (STORE_DATA[myStore] || {}).nameEn || myStore;
+        return '<div class="inv-actions">' +
+          '<button class="inv-action-card act-transfer" onclick="event.stopPropagation();openNewTransferModal(\'' + p.imei + '\',\'' + targetName.replace(/'/g, "\\'") + '\')" title="Request Transfer">' +
+            '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4-4 4 4M4 10l4 4 4-4"/></svg>' +
+            '<span class="zh">调拨库存</span><span class="en">Transfer</span>' +
+          '</button>' +
+        '</div>';
+      })() +
     '</div>';
   });
 
