@@ -4,8 +4,8 @@
 # Database (generated on server)
 data/inventory.db
 
-# Generated data (keep phones.js placeholder)
-# data/phones.js is committed as empty placeholder
+# Generated data (server-side Python exports every 2 min from SQLite)
+data/phones.js
 
 # OS files
 .DS_Store
