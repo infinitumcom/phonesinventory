@@ -6701,7 +6701,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <div class="ac-title">
               <span class="zh">滞销处理</span>
               <span class="en">Aged Stock</span>
-              <span style="display:inline-block;background:var(--danger);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:5px;font-family:'JetBrains Mono',monospace;vertical-align:2px;">12</span>
+              <span style="display:inline-block;background:var(--danger);color:white;font-size:10px;font-weight:700;padding:1px 6px;border-radius:8px;margin-left:5px;font-family:'JetBrains Mono',monospace;vertical-align:2px;" id="agedStockBadge">0</span>
             </div>
             <div class="ac-desc"><span class="zh">60+ 天未售 · 建议降价或调拨</span><span class="en">60+ days · Discount or transfer</span></div>
           </div>
@@ -6844,23 +6844,23 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </span>
             <button class="region-filter-pill active" onclick="setRegionFilter(this, 'all')">
               <span class="zh">全部</span><span class="en">All</span>
-              <span class="pill-num">0</span>
+              <span class="pill-num" id="regionCountAll">0</span>
             </button>
             <button class="region-filter-pill" onclick="setRegionFilter(this, 'us')">
               <span class="flag">🇺🇸</span>
               <span class="zh">美版</span><span class="en">US</span>
-              <span class="pill-num">274</span>
+              <span class="pill-num" id="regionCountUS">0</span>
             </button>
             <button class="region-filter-pill" onclick="setRegionFilter(this, 'hk')">
               <span class="flag">🇭🇰</span>
               <span class="zh">港版</span><span class="en">HK</span>
-              <span class="pill-num">68</span>
+              <span class="pill-num" id="regionCountHK">0</span>
               <span style="background:#6b4a8a;color:white;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:700;">📲</span>
             </button>
             <button class="region-filter-pill" onclick="setRegionFilter(this, 'cn')">
               <span class="flag">🇨🇳</span>
               <span class="zh">国行</span><span class="en">CN</span>
-              <span class="pill-num">45</span>
+              <span class="pill-num" id="regionCountCN">0</span>
               <span style="background:#b54a3e;color:white;font-size:9px;padding:1px 4px;border-radius:3px;font-weight:700;">📲</span>
             </button>
             <span style="margin-left:auto;font-size:11px;color:var(--text-muted);">
@@ -8155,33 +8155,33 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <div style="margin-bottom:14px;">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
               <span style="font-weight:600;">iPhone <span class="zh">新机</span><span class="en">New</span></span>
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$22.4K (55%)</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
             </div>
-            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:55%;height:100%;background:var(--brand);"></div></div>
+            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:0%;height:100%;background:var(--brand);"></div></div>
           </div>
 
           <div style="margin-bottom:14px;">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
               <span style="font-weight:600;">iPhone <span class="zh">二手</span><span class="en">Used</span></span>
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$8.6K (21%)</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
             </div>
-            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:21%;height:100%;background:var(--warn);"></div></div>
+            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:0%;height:100%;background:var(--warn);"></div></div>
           </div>
 
           <div style="margin-bottom:14px;">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
               <span style="font-weight:600;">Samsung</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$5.2K (13%)</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
             </div>
-            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:13%;height:100%;background:var(--info);"></div></div>
+            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:0%;height:100%;background:var(--info);"></div></div>
           </div>
 
           <div>
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
               <span style="font-weight:600;">Google Pixel</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$4.4K (11%)</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
             </div>
-            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:11%;height:100%;background:var(--success);"></div></div>
+            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:0%;height:100%;background:var(--success);"></div></div>
           </div>
         </div>
       </div>
@@ -8199,35 +8199,35 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
             <div style="padding:14px;background:var(--bg-tinted);border-radius:9px;">
               <div style="font-size:24px;margin-bottom:4px;">💳</div>
-              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">42%</div>
+              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
-                <span class="zh">刷卡 · $60.4K</span>
-                <span class="en">Card · $60.4K</span>
+                <span class="zh">刷卡 · $0</span>
+                <span class="en">Card · $0</span>
               </div>
             </div>
 
             <div style="padding:14px;background:var(--bg-tinted);border-radius:9px;">
               <div style="font-size:24px;margin-bottom:4px;">💵</div>
-              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">31%</div>
+              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
-                <span class="zh">现金 · $44.6K</span>
-                <span class="en">Cash · $44.6K</span>
+                <span class="zh">现金 · $0</span>
+                <span class="en">Cash · $0</span>
               </div>
             </div>
 
             <div style="padding:14px;background:var(--bg-tinted);border-radius:9px;">
               <div style="font-size:24px;margin-bottom:4px;">📱</div>
-              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">14%</div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Zelle · $20.1K</div>
+              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Zelle · $0</div>
             </div>
 
             <div style="padding:14px;background:var(--bg-tinted);border-radius:9px;">
               <div style="font-size:24px;margin-bottom:4px;">💰</div>
-              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">8%</div>
+              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
                 <span class="zh">微信/支付宝</span>
                 <span class="en">WeChat/Alipay</span>
-                · $11.5K
+                · $0
               </div>
             </div>
 
@@ -8235,10 +8235,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <div style="display:flex;align-items:center;gap:10px;">
                 <div style="font-size:24px;">🔄</div>
                 <div style="flex:1;">
-                  <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:800;letter-spacing:-0.02em;line-height:1;">5%</div>
+                  <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
                   <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
-                    <span class="zh">组合支付 · $7.2K · 12 单</span>
-                    <span class="en">Split payment · $7.2K · 12 orders</span>
+                    <span class="zh">组合支付 · $0 · 0 单</span>
+                    <span class="en">Split payment · $0 · 0 orders</span>
                   </div>
                 </div>
               </div>
@@ -10441,6 +10441,21 @@ function updateFilterCounts() {
   if (modeSubZh) modeSubZh.textContent = filtered.length + ' 部' + (isNew ? '新机' : '二手机') + (INV_FILTERS.brand !== 'all' ? ' · ' + INV_FILTERS.brand.charAt(0).toUpperCase() + INV_FILTERS.brand.slice(1) : '');
   const modeSubEn = document.getElementById('modeSubEn');
   if (modeSubEn) modeSubEn.textContent = filtered.length + (isNew ? ' new phones' : ' used phones') + (INV_FILTERS.brand !== 'all' ? ' · ' + INV_FILTERS.brand.charAt(0).toUpperCase() + INV_FILTERS.brand.slice(1) : '');
+
+  // Update region filter counts
+  var usCount = phones.filter(function(p){ return p && p.region === 'us'; }).length;
+  var hkCount = phones.filter(function(p){ return p && p.region === 'hk'; }).length;
+  var cnCount = phones.filter(function(p){ return p && p.region === 'cn'; }).length;
+  var rcUS = document.getElementById('regionCountUS'); if (rcUS) rcUS.textContent = usCount;
+  var rcHK = document.getElementById('regionCountHK'); if (rcHK) rcHK.textContent = hkCount;
+  var rcCN = document.getElementById('regionCountCN'); if (rcCN) rcCN.textContent = cnCount;
+  // Update "All" region pill count
+  var rcAll = document.getElementById('regionCountAll');
+  if (rcAll) rcAll.textContent = phones.length;
+  // Update aged stock badge
+  var agedCount = phones.filter(function(p){ return p && p.ageDays > 60; }).length;
+  var agedBadge = document.getElementById('agedStockBadge');
+  if (agedBadge) agedBadge.textContent = agedCount;
 
   // Update pagination
   const paginationEl = document.getElementById('paginationInfo');
