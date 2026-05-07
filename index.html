@@ -5231,9 +5231,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
     <div class="sidebar-footer">
       <div class="user-card">
-        <div class="avatar" id="userAvatar">AW</div>
+        <div class="avatar" id="userAvatar">--</div>
         <div style="flex:1;min-width:0;">
-          <div class="user-name" id="userName">Andy Wang</div>
+          <div class="user-name" id="userName">--</div>
           <div class="user-meta" id="userMeta">
             <span class="zh">总部 · Owner</span>
             <span class="en">HQ · Owner</span>
@@ -5280,7 +5280,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/>
           </svg>
         </button>
-        <button class="iconbtn" title="通知" onclick="showToast('📬 3 条新通知 · 3 new notifications')">
+        <button class="iconbtn" title="通知" onclick="showToast('暂无新通知 · No new notifications')">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M8 2a4 4 0 014 4v3l1 2H3l1-2V6a4 4 0 014-4zM6 13a2 2 0 004 0"/>
           </svg>
@@ -6282,27 +6282,27 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
                 <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);">
                   <span class="zh">本月销售目标</span><span class="en">Monthly Goal</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-weight:600;">38 / 45 (84%)</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-weight:600;">0 / -- (0%)</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);">
                   <span class="zh">本月营收</span><span class="en">MTD Revenue</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-weight:600;">$32,840</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-weight:600;">$0</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);">
                   <span class="zh">本月毛利</span><span class="en">MTD Gross Profit</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--success);">+$3,940 (12%)</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--success);">$0</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);">
                   <span class="zh">已发积分</span><span class="en">Points Issued</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--purple);">650 P</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--purple);">0 P</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--border);">
                   <span class="zh">客单价</span><span class="en">Avg Ticket</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-weight:600;">$864</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-weight:600;">$0</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;padding:6px 0;">
                   <span class="zh">9 店排名</span><span class="en">Rank (of 9)</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--gold-deep);">#2 ⭐</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text-muted);">--</span>
                 </div>
               </div>
             </div>
@@ -6325,7 +6325,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </h1>
             <div class="page-subtitle">
               <span class="zh">批次单号</span><span class="en">Batch ID</span>
-              <span class="mono" style="color:var(--text);font-weight:700;">SI-2026-0042</span>
+              <span class="mono" style="color:var(--text);font-weight:700;" id="stockinBatchId">--</span>
               <span style="color:var(--text-faint);">·</span>
               <span class="zh">扫描每部手机的盒子条码 → 自动加入清单 → 一次性入库</span>
               <span class="en">Scan each box → auto-add to queue → batch submit</span>
@@ -6397,7 +6397,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                       <span class="zh">采购订单号</span>
                       <span class="en">PO Number</span>
                     </label>
-                    <input type="text" class="form-input" placeholder="PO-2026-0508" value="PO-2026-0508" style="font-family:'JetBrains Mono',monospace;">
+                    <input type="text" class="form-input" placeholder="PO-2026-XXXX" value="" style="font-family:'JetBrains Mono',monospace;">
                   </div>
                   <div>
                     <label class="form-label">
@@ -6422,7 +6422,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                       <span class="zh">到货日期</span>
                       <span class="en">Received Date</span>
                     </label>
-                    <input type="date" class="form-input" value="2026-05-04">
+                    <input type="date" class="form-input" id="stockinDate">
                   </div>
                 </div>
 
@@ -6433,7 +6433,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                       <span class="en">Default Shelf Prefix</span>
                       <span class="hint"><span class="zh">单台可单独调整</span><span class="en">adjustable per item</span></span>
                     </label>
-                    <input type="text" class="form-input" value="A-12" placeholder="A-12" style="font-family:'JetBrains Mono',monospace;">
+                    <input type="text" class="form-input" value="" placeholder="A-01" style="font-family:'JetBrains Mono',monospace;">
                   </div>
                   <div style="grid-column: span 2;">
                     <label class="form-label">
@@ -6532,21 +6532,19 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
               <div class="batch-row">
                 <span class="label"><span class="zh">手机版本</span><span class="en">Region</span></span>
-                <span class="val" style="font-size:12px;">
-                  <span class="region-tag region-hk" style="height:18px;padding:0 6px;font-size:9.5px;"><span class="flag">🇭🇰</span> HK</span>
-                </span>
+                <span class="val" style="font-size:12px;">--</span>
               </div>
               <div class="batch-row">
                 <span class="label"><span class="zh">入库门店</span><span class="en">Target</span></span>
-                <span class="val">Alhambra</span>
+                <span class="val">--</span>
               </div>
               <div class="batch-row">
                 <span class="label"><span class="zh">供应商</span><span class="en">Supplier</span></span>
-                <span class="val" style="font-size:12px;">港行批发商</span>
+                <span class="val" style="font-size:12px;">--</span>
               </div>
               <div class="batch-row">
                 <span class="label"><span class="zh">采购订单</span><span class="en">PO #</span></span>
-                <span class="val" style="font-size:11.5px;">PO-2026-0508</span>
+                <span class="val" style="font-size:11.5px;">--</span>
               </div>
               <div class="batch-row">
                 <span class="label"><span class="zh">总台数</span><span class="en">Total Units</span></span>
@@ -6921,7 +6919,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </h1>
             <div class="page-subtitle">
               <span class="zh">单号</span><span class="en">Order</span>
-              <span class="mono" style="color:var(--text);font-weight:700;">SL-2026-0509</span>
+              <span class="mono" style="color:var(--text);font-weight:700;" id="saleOrderId">--</span>
               <span style="color:var(--text-faint);">·</span>
               <span class="zh">销售员 -- · --</span>
               <span class="en">Seller -- · --</span>
@@ -7741,131 +7739,17 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
           </div>
 
-          <!-- Scanned device (empty) -->
-          <div class="scan-result" style="text-align:center;padding:24px 20px;color:var(--text-muted);font-size:13px;">
-            <span class="zh">扫描设备后显示信息</span>
-            <span class="en">Device info will appear after scanning</span>
-          </div>
-
-          <!-- Inspection grid -->
-          <div style="margin-bottom:14px;">
-            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;margin-bottom:10px;">
-              <span class="zh">检测评级</span>
-              <span class="en">Inspection Grades</span>
+          <!-- Empty state - no active trade-in -->
+          <div style="text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px;">
+            <div style="font-size:32px;margin-bottom:12px;">📱</div>
+            <div style="font-weight:600;margin-bottom:6px;">
+              <span class="zh">暂无进行中的回收</span>
+              <span class="en">No trade-in in progress</span>
             </div>
-
-            <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
-
-              <div style="background:var(--bg-tinted);border-radius:8px;padding:12px 14px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                  <div style="font-size:12px;font-weight:600;"><span class="zh">屏幕</span><span class="en">Screen</span></div>
-                  <span class="status st-avail" style="font-size:10px;">A</span>
-                </div>
-                <div style="font-size:11px;color:var(--text-muted);">
-                  <span class="zh">无划痕 · 无坏点 · 显示正常</span>
-                  <span class="en">No scratch · No dead pixel · OK</span>
-                </div>
-              </div>
-
-              <div style="background:var(--bg-tinted);border-radius:8px;padding:12px 14px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                  <div style="font-size:12px;font-weight:600;"><span class="zh">机身</span><span class="en">Body</span></div>
-                  <span class="status" style="background:var(--warn-soft);color:var(--warn);font-size:10px;">B</span>
-                </div>
-                <div style="font-size:11px;color:var(--text-muted);">
-                  <span class="zh">底部轻微磨损 · 边角小划痕</span>
-                  <span class="en">Minor wear bottom · Small corner scratch</span>
-                </div>
-              </div>
-
-              <div style="background:var(--bg-tinted);border-radius:8px;padding:12px 14px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                  <div style="font-size:12px;font-weight:600;"><span class="zh">电池</span><span class="en">Battery</span></div>
-                  <span class="status" style="background:var(--warn-soft);color:var(--warn);font-size:10px;">87%</span>
-                </div>
-                <div style="font-size:11px;color:var(--text-muted);">
-                  <span class="zh">健康度 87% · 384 次循环</span>
-                  <span class="en">Health 87% · 384 cycles</span>
-                </div>
-              </div>
-
-              <div style="background:var(--bg-tinted);border-radius:8px;padding:12px 14px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                  <div style="font-size:12px;font-weight:600;"><span class="zh">功能</span><span class="en">Functions</span></div>
-                  <span class="status st-avail" style="font-size:10px;">A</span>
-                </div>
-                <div style="font-size:11px;color:var(--text-muted);">
-                  <span class="zh">摄像头 · 喇叭 · Face ID 全 OK</span>
-                  <span class="en">Camera · Speakers · Face ID OK</span>
-                </div>
-              </div>
-
+            <div style="font-size:12px;">
+              <span class="zh">请先在上方输入 IMEI 验机，然后开始回收流程</span>
+              <span class="en">Enter IMEI above to check device, then start trade-in flow</span>
             </div>
-
-            <div style="margin-top:10px;padding:10px 14px;background:var(--brand-soft);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
-              <div>
-                <div style="font-size:10.5px;color:var(--brand);text-transform:uppercase;letter-spacing:0.07em;font-weight:700;">
-                  <span class="zh">综合评级</span>
-                  <span class="en">Overall Grade</span>
-                </div>
-                <div style="font-family:'Inter',sans-serif;font-size:24px;font-weight:800;color:var(--brand);letter-spacing:-0.02em;line-height:1;margin-top:3px;">
-                  8.5/10 · B+
-                </div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:10.5px;color:var(--text-muted);">
-                  <span class="zh">建议回收价</span>
-                  <span class="en">Suggested buyback</span>
-                </div>
-                <div style="font-family:'Inter',sans-serif;font-size:24px;font-weight:800;color:var(--gold-deep);letter-spacing:-0.02em;line-height:1;margin-top:3px;">
-                  $440 - $480
-                </div>
-                <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">
-                  <span class="zh">挂牌 $599 · 毛利 26%</span>
-                  <span class="en">List $599 · Margin 26%</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Owner / agreement -->
-          <div style="border:1px solid var(--border);border-radius:9px;padding:14px;background:var(--bg-tinted);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-              <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;">
-                <span class="zh">原机主信息</span>
-                <span class="en">Original Owner</span>
-              </div>
-              <span style="font-size:10.5px;color:var(--danger);font-weight:600;">
-                ⚠ <span class="zh">CA §21628 合规要求</span>
-                <span class="en">CA §21628 Required</span>
-              </span>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:11.5px;">
-              <div>
-                <div style="color:var(--text-muted);font-size:10.5px;"><span class="zh">姓名</span><span class="en">Name</span></div>
-                <div style="font-weight:600;">Helena Park</div>
-              </div>
-              <div>
-                <div style="color:var(--text-muted);font-size:10.5px;"><span class="zh">电话</span><span class="en">Phone</span></div>
-                <div style="font-weight:600;font-family:'JetBrains Mono',monospace;">+1 626 555 4421</div>
-              </div>
-              <div>
-                <div style="color:var(--text-muted);font-size:10.5px;"><span class="zh">驾照号</span><span class="en">Driver's License</span></div>
-                <div style="font-weight:600;font-family:'JetBrains Mono',monospace;">CA · D1234567</div>
-              </div>
-              <div>
-                <div style="color:var(--text-muted);font-size:10.5px;"><span class="zh">协议状态</span><span class="en">Agreement</span></div>
-                <div style="font-weight:600;color:var(--success);">✓ <span class="zh">已签字 · iPad</span><span class="en">Signed · iPad</span></div>
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top:14px;display:flex;gap:8px;">
-            <button class="btn"><span class="zh">← 重新检测</span><span class="en">← Re-inspect</span></button>
-            <button class="btn btn-primary" style="flex:1;justify-content:center;">
-              <span class="zh">✓ 确认回收价 $460 · 现金支付 →</span>
-              <span class="en">✓ Confirm $460 · Cash Payout →</span>
-            </button>
           </div>
 
         </div>
@@ -7877,91 +7761,14 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <div class="section-title">
             <span class="zh">检测队列</span>
             <span class="en">QC Queue</span>
-            <span class="count">· 5</span>
+            <span class="count">· 0</span>
           </div>
           <button class="btn btn-sm btn-ghost"><span class="zh">分配技师</span><span class="en">Assign Tech</span></button>
         </div>
 
-        <div style="padding:6px 0;">
-
-          <div style="padding:12px 18px;border-bottom:1px solid var(--border-soft);">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;">
-              <div style="font-size:13px;font-weight:600;">iPhone 13 · 128GB · <span class="zh">红</span><span class="en">Red</span></div>
-              <span class="status" style="background:var(--purple-soft);color:var(--purple);font-size:10px;">QC</span>
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);" class="mono">355489221034567 · San Gabriel</div>
-            <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:11px;">
-              <span style="color:var(--text-muted);">
-                <span class="zh">2h 前 · 张女士</span>
-                <span class="en">2h ago · Ms. Zhang</span>
-              </span>
-              <span style="color:var(--brand);font-weight:600;">
-                <span class="zh">回收 $280</span>
-                <span class="en">Bought $280</span>
-              </span>
-            </div>
-          </div>
-
-          <div style="padding:12px 18px;border-bottom:1px solid var(--border-soft);">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;">
-              <div style="font-size:13px;font-weight:600;">Samsung S22 · 128GB</div>
-              <span class="status" style="background:var(--purple-soft);color:var(--purple);font-size:10px;">QC</span>
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);" class="mono">359110334567890 · Irvine</div>
-            <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:11px;">
-              <span style="color:var(--text-muted);">
-                <span class="zh">5h 前 · J. Lopez</span>
-                <span class="en">5h ago · J. Lopez</span>
-              </span>
-              <span style="color:var(--brand);font-weight:600;">$220</span>
-            </div>
-          </div>
-
-          <div style="padding:12px 18px;border-bottom:1px solid var(--border-soft);">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;">
-              <div style="font-size:13px;font-weight:600;">iPhone 12 · 64GB · <span class="zh">蓝</span><span class="en">Blue</span></div>
-              <span class="status" style="background:var(--warn-soft);color:var(--warn);font-size:10px;">⚠</span>
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);" class="mono">356712445678901 · Arcadia 1</div>
-            <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:11px;">
-              <span style="color:var(--danger);">
-                <span class="zh">屏幕轻裂 · 待评估</span>
-                <span class="en">Cracked screen · Review</span>
-              </span>
-              <span style="color:var(--brand);font-weight:600;">$110</span>
-            </div>
-          </div>
-
-          <div style="padding:12px 18px;border-bottom:1px solid var(--border-soft);">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;">
-              <div style="font-size:13px;font-weight:600;">iPhone 14 · 128GB · <span class="zh">紫</span><span class="en">Purple</span></div>
-              <span class="status" style="background:var(--purple-soft);color:var(--purple);font-size:10px;">QC</span>
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);" class="mono">357193228901234 · San Gabriel</div>
-            <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:11px;">
-              <span style="color:var(--text-muted);">
-                <span class="zh">刚 · Helena Park</span>
-                <span class="en">Just now · Helena Park</span>
-              </span>
-              <span style="color:var(--brand);font-weight:600;">$460</span>
-            </div>
-          </div>
-
-          <div style="padding:12px 18px;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;">
-              <div style="font-size:13px;font-weight:600;">Pixel 8 · 128GB</div>
-              <span class="status" style="background:var(--purple-soft);color:var(--purple);font-size:10px;">QC</span>
-            </div>
-            <div style="font-size:11px;color:var(--text-muted);" class="mono">352001445678920 · Arcadia 2</div>
-            <div style="display:flex;justify-content:space-between;margin-top:5px;font-size:11px;">
-              <span style="color:var(--text-muted);">
-                <span class="zh">1d 前 · D. Kumar</span>
-                <span class="en">1d ago · D. Kumar</span>
-              </span>
-              <span style="color:var(--brand);font-weight:600;">$310</span>
-            </div>
-          </div>
-
+        <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+          <span class="zh">暂无待检测设备</span>
+          <span class="en">No devices in QC queue</span>
         </div>
       </div>
 
@@ -7981,8 +7788,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <span class="en">Customer Database</span>
         </h1>
         <div class="page-subtitle">
-          <span class="zh">9 店共 2,847 位客户 · 复购率 23%</span>
-          <span class="en">2,847 customers · 23% repeat rate</span>
+          <span class="zh">客户数据将从销售记录自动生成</span>
+          <span class="en">Customer data auto-generated from sales</span>
         </div>
       </div>
       <div class="page-actions">
@@ -8052,127 +7859,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <div></div>
         </div>
 
-        <div class="table-row body" style="grid-template-columns: 36px 1.4fr 1.2fr 100px 90px 90px 110px 80px;">
-          <div><div class="avatar" style="width:26px;height:26px;font-size:10px;">LW</div></div>
-          <div>
-            <div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:5px;">Lin Wei <span style="background:var(--gold-soft);color:var(--gold-deep);font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700;">⭐</span></div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 626 555 8821</div>
-          </div>
-          <div>
-            <div style="font-size:12px;font-weight:600;">iPhone 16 · 128GB</div>
-            <div style="font-size:10.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">2026-05-04</div>
-          </div>
-          <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">4</div>
-          <div class="cell-price"><span class="ccy">$</span>4,689</div>
-          <div style="font-size:11.5px;">Rowland Hts</div>
-          <div><span class="rank-badge gold">💎 VIP</span></div>
-          <div class="row-actions">
-            <button class="iconbtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-          </div>
-        </div>
-
-        <div class="table-row body" style="grid-template-columns: 36px 1.4fr 1.2fr 100px 90px 90px 110px 80px;">
-          <div><div class="avatar" style="width:26px;height:26px;font-size:10px;">DK</div></div>
-          <div>
-            <div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:5px;">David Kim <span style="background:var(--gold-soft);color:var(--gold-deep);font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700;">⭐</span></div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 702 555 9923</div>
-          </div>
-          <div>
-            <div style="font-size:12px;font-weight:600;">Samsung S25 Ultra</div>
-            <div style="font-size:10.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">2026-05-04</div>
-          </div>
-          <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">7</div>
-          <div class="cell-price"><span class="ccy">$</span>8,420</div>
-          <div style="font-size:11.5px;">R. Cucamonga</div>
-          <div><span class="rank-badge gold">💎 VIP</span></div>
-          <div class="row-actions">
-            <button class="iconbtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-          </div>
-        </div>
-
-        <div class="table-row body" style="grid-template-columns: 36px 1.4fr 1.2fr 100px 90px 90px 110px 80px;">
-          <div><div class="avatar" style="width:26px;height:26px;font-size:10px;">陈</div></div>
-          <div>
-            <div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:5px;">陈志强 <span style="background:var(--brand-soft);color:var(--brand);font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700;">REPEAT</span></div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 626 555 1147</div>
-          </div>
-          <div>
-            <div style="font-size:12px;font-weight:600;">iPhone 13 · USED</div>
-            <div style="font-size:10.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">2026-05-04</div>
-          </div>
-          <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">5</div>
-          <div class="cell-price"><span class="ccy">$</span>5,210</div>
-          <div style="font-size:11.5px;">San Gabriel</div>
-          <div><span class="rank-badge gold">💎 VIP</span></div>
-          <div class="row-actions">
-            <button class="iconbtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-          </div>
-        </div>
-
-        <div class="table-row body" style="grid-template-columns: 36px 1.4fr 1.2fr 100px 90px 90px 110px 80px;">
-          <div><div class="avatar" style="width:26px;height:26px;font-size:10px;">MG</div></div>
-          <div>
-            <div style="font-weight:600;font-size:13px;">Maria Gonzalez</div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 213 555 4490</div>
-          </div>
-          <div>
-            <div style="font-size:12px;font-weight:600;">iPhone 15 Pro</div>
-            <div style="font-size:10.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">2026-05-04</div>
-          </div>
-          <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">1</div>
-          <div class="cell-price"><span class="ccy">$</span>949</div>
-          <div style="font-size:11.5px;">Alhambra</div>
-          <div><span class="rank-badge normal" style="background:var(--bg-soft);color:var(--text-muted);">
-            <span class="zh">新</span><span class="en">NEW</span>
-          </span></div>
-          <div class="row-actions">
-            <button class="iconbtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-          </div>
-        </div>
-
-        <div class="table-row body" style="grid-template-columns: 36px 1.4fr 1.2fr 100px 90px 90px 110px 80px;">
-          <div><div class="avatar" style="width:26px;height:26px;font-size:10px;">王</div></div>
-          <div>
-            <div style="font-weight:600;font-size:13px;">王慧敏</div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 626 555 6677</div>
-          </div>
-          <div>
-            <div style="font-size:12px;font-weight:600;">iPhone 14 Pro · USED</div>
-            <div style="font-size:10.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">2026-05-04</div>
-          </div>
-          <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">3</div>
-          <div class="cell-price"><span class="ccy">$</span>2,847</div>
-          <div style="font-size:11.5px;">Arcadia 2</div>
-          <div><span class="rank-badge normal" style="background:var(--brand-soft);color:var(--brand);">
-            <span class="zh">银</span><span class="en">SILVER</span>
-          </span></div>
-          <div class="row-actions">
-            <button class="iconbtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-          </div>
-        </div>
-
-        <div class="table-row body" style="grid-template-columns: 36px 1.4fr 1.2fr 100px 90px 90px 110px 80px;opacity:0.7;">
-          <div><div class="avatar" style="width:26px;height:26px;font-size:10px;background:linear-gradient(135deg,#888,#666);">RB</div></div>
-          <div>
-            <div style="font-weight:600;font-size:13px;display:flex;align-items:center;gap:5px;">Robert Brown <span style="background:var(--warn-soft);color:var(--warn);font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700;">⏱</span></div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 626 555 2210</div>
-          </div>
-          <div>
-            <div style="font-size:12px;font-weight:600;">iPhone 12 · USED</div>
-            <div style="font-size:10.5px;color:var(--warn);font-family:'JetBrains Mono',monospace;">
-              <span class="zh">102 天前</span>
-              <span class="en">102 days ago</span>
-            </div>
-          </div>
-          <div style="font-family:'JetBrains Mono',monospace;font-weight:700;">2</div>
-          <div class="cell-price"><span class="ccy">$</span>1,290</div>
-          <div style="font-size:11.5px;">Irvine</div>
-          <div><span class="rank-badge normal" style="background:var(--warn-soft);color:var(--warn);">
-            <span class="zh">流失</span><span class="en">AT RISK</span>
-          </span></div>
-          <div class="row-actions">
-            <button class="iconbtn" title="发送召回短信"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4l6 5 6-5M2 4v8h12V4"/></svg></button>
-          </div>
+        <!-- Empty state -->
+        <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+          <span class="zh">客户数据将从销售记录自动生成</span>
+          <span class="en">Customer data will be auto-generated from sales records</span>
         </div>
 
       </div>
@@ -8217,7 +7907,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       <div class="kpi"><div class="kpi-label"><span class="zh">本月营收</span><span class="en">Revenue MTD</span></div><div class="kpi-value"><span class="ccy">$</span>0</div><div class="kpi-meta">--</div></div>
       <div class="kpi"><div class="kpi-label"><span class="zh">本月毛利</span><span class="en">Profit MTD</span></div><div class="kpi-value"><span class="ccy">$</span>0</div><div class="kpi-meta">--</div></div>
       <div class="kpi"><div class="kpi-label"><span class="zh">滞销库存</span><span class="en">Aged Stock</span></div><div class="kpi-value" style="color:var(--danger);"><span class="ccy">$</span>0</div><div class="kpi-meta">0 <span class="zh">部</span><span class="en">phones</span></div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">库存周转</span><span class="en">Turnover</span></div><div class="kpi-value">38d</div><div class="kpi-meta up"><span class="zh">优于行业平均</span><span class="en">Above industry avg</span></div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">库存周转</span><span class="en">Turnover</span></div><div class="kpi-value">--</div><div class="kpi-meta">--</div></div>
     </div>
 
     <!-- Two columns: Revenue chart + Store ranking -->
@@ -8639,9 +8329,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   </div>
   <div class="drawer-body" id="drawerBody"></div>
   <div class="drawer-foot">
-    <button class="btn"><span class="zh">编辑</span><span class="en">Edit</span></button>
-    <button class="btn" onclick="showToast('已发起调拨申请 / Transfer requested')"><span class="zh">⇄ 调拨</span><span class="en">⇄ Transfer</span></button>
-    <button class="btn btn-primary" onclick="showToast('打开销售单 / Sale opened')"><span class="zh">$ 出售</span><span class="en">$ Sell</span></button>
+    <button class="btn" onclick="showToast('编辑功能开发中 · Edit coming soon')"><span class="zh">编辑</span><span class="en">Edit</span></button>
+    <button class="btn" onclick="drawerStartTransfer()"><span class="zh">⇄ 调拨</span><span class="en">⇄ Transfer</span></button>
+    <button class="btn btn-primary" onclick="drawerStartSale()"><span class="zh">$ 出售</span><span class="en">$ Sell</span></button>
   </div>
 </div>
 
@@ -8691,118 +8381,83 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         <div class="receipt-section">
           <div class="receipt-row">
             <span class="label"><span class="zh">单号</span><span class="en">Order #</span></span>
-            <span class="val" style="font-weight:700;">SL-2026-0509</span>
+            <span class="val" style="font-weight:700;" id="rcptOrderId">--</span>
           </div>
           <div class="receipt-row">
             <span class="label"><span class="zh">日期时间</span><span class="en">Date / Time</span></span>
-            <span class="val">2026-05-04 14:23:18</span>
+            <span class="val" id="rcptDateTime">--</span>
           </div>
           <div class="receipt-row">
             <span class="label"><span class="zh">销售员</span><span class="en">Cashier</span></span>
-            <span class="val">Chester (CH-04)</span>
+            <span class="val" id="rcptCashier">--</span>
           </div>
           <div class="receipt-row">
             <span class="label"><span class="zh">POS 终端</span><span class="en">POS Terminal</span></span>
-            <span class="val">ALH-01</span>
+            <span class="val" id="rcptPOS">--</span>
           </div>
           <div class="receipt-row">
             <span class="label"><span class="zh">客户</span><span class="en">Customer</span></span>
-            <span class="val">Lin Wei <span style="color:#a06b1f;font-weight:700;">⭐ VIP</span></span>
+            <span class="val" id="rcptCustomer">--</span>
           </div>
-          <div class="receipt-row" style="font-size:10px;color:#6b6855;">
+          <div class="receipt-row" style="font-size:10px;color:#6b6855;display:none;" id="rcptVipRow">
             <span class="label">VIP <span class="zh">等级</span><span class="en">Tier</span></span>
-            <span><span class="zh">钻石 · 累计消费 $3,890 (4 次)</span><span class="en">Diamond · Lifetime $3,890 (4x)</span></span>
+            <span id="rcptVipInfo">--</span>
           </div>
         </div>
 
         <!-- LINE ITEM (product) -->
-        <div class="receipt-section">
+        <div class="receipt-section" id="rcptProductSection">
           <div class="receipt-product-block">
-            <div class="receipt-product-name">
-              iPhone 16 Pro Max
-              <span class="receipt-region-badge" style="background:#2c5d8a;">🇺🇸 US</span>
-            </div>
-            <div class="receipt-product-meta">
-              SKU: <strong>APL-IP16PM-256-NT-US</strong><br>
-              <span class="zh">256GB · 原色钛金 · 未拆封</span><br>
-              <span class="en">256GB · Natural Titanium · Sealed</span><br>
-              <strong style="color:#1f1d12;">IMEI:</strong> 35 2847 1568 9012 4<br>
-              <strong style="color:#1f1d12;">S/N:</strong> H4LXW7N2QM
-            </div>
-            <div class="receipt-product-condition">
-              <span style="background:var(--brand);color:white;padding:1px 6px;border-radius:3px;font-size:9.5px;font-weight:700;letter-spacing:0.05em;">NEW</span>
-              <span style="color:var(--brand);font-weight:700;font-size:10.5px;margin-left:5px;">
-                <span class="zh">未拆封 · 厂家密封</span>
-                <span class="en">Sealed · Factory Seal</span>
-              </span>
-            </div>
+            <div class="receipt-product-name" id="rcptProductName">--</div>
+            <div class="receipt-product-meta" id="rcptProductMeta">--</div>
+            <div class="receipt-product-condition" id="rcptProductCondition">--</div>
           </div>
         </div>
 
         <!-- PRICING -->
-        <div class="receipt-section">
+        <div class="receipt-section" id="rcptPricingSection">
           <div class="receipt-row">
             <span class="label"><span class="zh">建议零售价 (MSRP)</span><span class="en">MSRP</span></span>
-            <span class="val">$1,199.00</span>
-          </div>
-          <div class="receipt-row" style="color:#a06b1f;">
-            <span class="label">
-              <span class="zh">VIP 老客户折扣 (10%)</span>
-              <span class="en">VIP Loyalty Discount (10%)</span>
-            </span>
-            <span class="val">−$120.00</span>
+            <span class="val" id="rcptMSRP">--</span>
           </div>
           <div class="receipt-row" style="padding-top:5px;border-top:1px dashed #d8d2bf;margin-top:5px;">
             <span class="label"><span class="zh">应税小计</span><span class="en">Taxable Subtotal</span></span>
-            <span class="val">$1,079.00</span>
+            <span class="val" id="rcptSubtotal">--</span>
           </div>
-          <div class="receipt-row">
-            <span class="label">
-              <span class="zh">销售税 · CA · 10.25%</span>
-              <span class="en">Sales Tax · CA · 10.25%</span>
+          <div class="receipt-row" id="rcptTaxRow">
+            <span class="label" id="rcptTaxLabel">
+              <span class="zh">销售税</span>
+              <span class="en">Sales Tax</span>
             </span>
-            <span class="val">$110.60</span>
-          </div>
-          <div class="receipt-row" style="font-size:10px;color:#6b6855;padding-top:1px;">
-            <span class="label">
-              <span class="zh">└ 州税 7.25% + 县税 2.25% + 市税 0.75%</span>
-              <span class="en">└ State 7.25% + County 2.25% + City 0.75%</span>
-            </span>
-            <span></span>
+            <span class="val" id="rcptTaxAmt">--</span>
           </div>
           <div class="receipt-totals">
             <div class="receipt-row total">
               <span class="label" style="font-size:12px;color:#1f1d12;"><span class="zh">总计</span><span class="en">TOTAL</span></span>
-              <span class="val">$1,189.60</span>
+              <span class="val" id="rcptTotal">--</span>
             </div>
           </div>
         </div>
 
         <!-- PAYMENT BREAKDOWN -->
-        <div class="receipt-section">
+        <div class="receipt-section" id="rcptPaymentSection">
           <div class="receipt-row" style="font-weight:700;color:#1f1d12;margin-bottom:5px;">
             <span class="label" style="color:#1f1d12;font-size:11px;">
               <span class="zh">支付明细</span><span class="en">PAYMENT DETAIL</span>
             </span>
             <span></span>
           </div>
-          <div class="receipt-row">
-            <span class="label">💵 <span class="zh">现金 (Cash)</span><span class="en">Cash</span></span>
-            <span class="val">$1,189.60</span>
+          <div id="rcptPaymentRows">
           </div>
-          <div class="receipt-row" style="font-size:10.5px;color:#6b6855;">
-            <span class="label">└ Tendered</span>
-            <span>$1,200.00</span>
-          </div>
-          <div class="receipt-row" style="font-size:10.5px;color:#6b6855;">
+          <div class="receipt-row" style="font-size:10.5px;color:#6b6855;display:none;" id="rcptChangeRow">
             <span class="label">└ Change</span>
-            <span style="color:var(--success);font-weight:700;">$10.40</span>
+            <span style="color:var(--success);font-weight:700;" id="rcptChangeAmt">$0</span>
           </div>
           <div class="receipt-row" style="padding-top:6px;border-top:1px dashed #d8d2bf;margin-top:5px;font-weight:700;">
             <span class="label" style="color:#1f1d12;font-size:11px;">
               <span class="zh">已支付</span><span class="en">PAID</span>
             </span>
-            <span style="color:var(--success);font-size:13px;">✓ $1,189.60</span>
+            <span style="color:var(--success);font-size:13px;" id="rcptPaidTotal">--</span>
           </div>
         </div>
 
@@ -8868,7 +8523,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               </div>
             </div>
             <div style="flex:1;">
-              <div style="border-bottom:1px solid #1f1d12;height:22px;display:flex;align-items:flex-end;padding-bottom:1px;font-family:'Inter',sans-serif;font-size:11px;color:#1f1d12;font-weight:600;">2026-05-04</div>
+              <div style="border-bottom:1px solid #1f1d12;height:22px;display:flex;align-items:flex-end;padding-bottom:1px;font-family:'Inter',sans-serif;font-size:11px;color:#1f1d12;font-weight:600;" id="rcptSignDate">--</div>
               <div style="font-size:9px;color:#6b6855;margin-top:2px;font-family:'Inter',sans-serif;font-weight:600;">
                 <span class="zh">日期</span><span class="en">Date</span>
               </div>
@@ -8887,8 +8542,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <span class="en">Thank You for Choosing iFixForU!</span>
           </div>
           <div class="receipt-followup">
-            <span class="zh">您的销售员: <strong style="color:#1f1d12;">Chester</strong></span>
-            <span class="en">Your seller: <strong style="color:#1f1d12;">Chester</strong></span><br>
+            <span class="zh">您的销售员: <strong style="color:#1f1d12;" id="rcptSellerZh">--</strong></span>
+            <span class="en">Your seller: <strong style="color:#1f1d12;" id="rcptSellerEn">--</strong></span><br>
             <span class="zh">下次购买请扫描下方二维码,凭 VIP 享受 5% 老客户折扣</span>
             <span class="en">Scan QR for VIP perks · 5% off next purchase</span>
           </div>
@@ -8896,8 +8551,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <div class="receipt-qr"></div>
             <div style="text-align:right;">
               <div style="font-size:9px;color:#6b6855;font-family:'Inter',sans-serif;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:1px;">Order ID</div>
-              <div class="receipt-orderid">SL-2026-0509</div>
-              <div style="font-size:9px;color:#6b6855;margin-top:2px;font-family:'JetBrains Mono',monospace;">ifixforu.com/r/SL26-0509</div>
+              <div class="receipt-orderid" id="rcptFooterOrderId">--</div>
+              <div style="font-size:9px;color:#6b6855;margin-top:2px;font-family:'JetBrains Mono',monospace;" id="rcptFooterLink">--</div>
             </div>
           </div>
           <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #d8d2bf;font-size:8.5px;color:#999;font-family:'Inter',sans-serif;line-height:1.4;text-align:center;">
@@ -9102,8 +8757,8 @@ The more detail you provide, the easier it is to handle this issue."></textarea>
     <div class="modal-foot">
       <span style="margin-right:auto;font-size:11.5px;color:var(--text-muted);align-self:center;">
         <span class="zh">报修人:</span><span class="en">Reporter:</span>
-        <strong style="color:var(--text);" id="rmReporter">Andy Wang</strong>
-        <span class="mono" style="color:var(--text-faint);margin-left:6px;" id="rmTime">2026-05-04 14:35</span>
+        <strong style="color:var(--text);" id="rmReporter">--</strong>
+        <span class="mono" style="color:var(--text-faint);margin-left:6px;" id="rmTime">--</span>
       </span>
       <button class="btn" onclick="closeReportModal()">
         <span class="zh">取消</span><span class="en">Cancel</span>
@@ -9693,7 +9348,7 @@ function initSalePage() {
   saleState.taxRate = (STORE_DATA[saleState.storeKey] || {}).taxRate || 0;
 
   // Update order number display
-  var orderEl = document.querySelector('#page-sale .page-subtitle .mono');
+  var orderEl = document.getElementById('saleOrderId');
   if (orderEl) orderEl.textContent = saleState.orderId;
 
   // Update seller display
@@ -9945,74 +9600,62 @@ function fillReceipt(sale) {
       (storeData.phone ? '☏ <strong>' + storeData.phone + '</strong>' : '');
   }
 
-  // Order info
-  var receiptRows = document.querySelectorAll('.receipt-paper .receipt-section:nth-child(2) .receipt-row .val');
-  if (receiptRows[0]) receiptRows[0].textContent = sale.id;
-  if (receiptRows[1]) receiptRows[1].textContent = new Date(sale.date).toLocaleString();
-  if (receiptRows[2]) receiptRows[2].textContent = sale.seller;
-  // Customer
-  if (receiptRows[4]) receiptRows[4].textContent = sale.customer;
+  // Order info via IDs
+  var el;
+  el = document.getElementById('rcptOrderId'); if (el) el.textContent = sale.id;
+  el = document.getElementById('rcptDateTime'); if (el) el.textContent = new Date(sale.date).toLocaleString();
+  el = document.getElementById('rcptCashier'); if (el) el.textContent = sale.seller;
+  el = document.getElementById('rcptPOS'); if (el) el.textContent = (storeData.nameEn || sale.store).substring(0,3).toUpperCase() + '-01';
+  el = document.getElementById('rcptCustomer'); if (el) el.textContent = sale.customer || '--';
+  el = document.getElementById('rcptVipRow'); if (el) el.style.display = 'none';
 
   // Product
-  var prodName = document.querySelector('.receipt-product-name');
-  if (prodName) {
+  el = document.getElementById('rcptProductName');
+  if (el) {
     var regionFlag = sale.region === 'us' ? '🇺🇸 US' : sale.region === 'hk' ? '🇭🇰 HK' : '🇨🇳 CN';
-    prodName.innerHTML = sale.phoneName + ' <span class="receipt-region-badge" style="background:#2c5d8a;">' + regionFlag + '</span>';
+    el.innerHTML = sale.phoneName + ' <span class="receipt-region-badge" style="background:#2c5d8a;">' + regionFlag + '</span>';
   }
-  var prodMeta = document.querySelector('.receipt-product-meta');
-  if (prodMeta) {
-    prodMeta.innerHTML = (sale.storage || '') + ' · ' + (sale.color || '') + '<br><strong style="color:#1f1d12;">IMEI:</strong> ' + sale.imei;
+  el = document.getElementById('rcptProductMeta');
+  if (el) {
+    el.innerHTML = (sale.storage || '') + ' · ' + (sale.color || '') + '<br><strong style="color:#1f1d12;">IMEI:</strong> ' + sale.imei;
   }
-  var condEl = document.querySelector('.receipt-product-condition');
-  if (condEl) {
+  el = document.getElementById('rcptProductCondition');
+  if (el) {
     var condLabel = sale.cond === 'new' ? 'NEW' : 'USED';
-    condEl.innerHTML = '<span style="background:var(--brand);color:white;padding:1px 6px;border-radius:3px;font-size:9.5px;font-weight:700;letter-spacing:0.05em;">' + condLabel + '</span>';
+    el.innerHTML = '<span style="background:var(--brand);color:white;padding:1px 6px;border-radius:3px;font-size:9.5px;font-weight:700;letter-spacing:0.05em;">' + condLabel + '</span>';
   }
 
-  // Pricing section
-  var pricingSection = document.querySelectorAll('.receipt-paper .receipt-section')[2];
-  if (pricingSection) {
-    var rows = pricingSection.querySelectorAll('.receipt-row');
-    // MSRP
-    if (rows[0]) { var v = rows[0].querySelector('.val'); if (v) v.textContent = '$' + sale.msrp.toFixed(2); }
-    // Discount
-    var discount = sale.msrp - sale.price;
-    if (rows[1]) {
-      rows[1].style.display = discount > 0 ? '' : 'none';
-      var v1 = rows[1].querySelector('.val'); if (v1) v1.textContent = '−$' + discount.toFixed(2);
-    }
-    // Subtotal
-    if (rows[2]) { var v2 = rows[2].querySelector('.val'); if (v2) v2.textContent = '$' + sale.price.toFixed(2); }
-    // Tax
-    if (rows[3]) {
-      rows[3].style.display = sale.taxApplied ? '' : 'none';
-      var v3 = rows[3].querySelector('.val'); if (v3) v3.textContent = '$' + sale.tax.toFixed(2);
-    }
-    // Total
-    var totalRow = pricingSection.querySelector('.receipt-totals .receipt-row .val');
-    if (totalRow) totalRow.textContent = '$' + sale.total.toFixed(2);
+  // Pricing via IDs
+  el = document.getElementById('rcptMSRP'); if (el) el.textContent = '$' + sale.msrp.toFixed(2);
+  el = document.getElementById('rcptSubtotal'); if (el) el.textContent = '$' + sale.price.toFixed(2);
+  el = document.getElementById('rcptTaxRow');
+  if (el) el.style.display = sale.taxApplied ? '' : 'none';
+  el = document.getElementById('rcptTaxLabel');
+  if (el && sale.taxApplied) {
+    var taxPct = sale.taxRate || 0;
+    el.innerHTML = '<span class="zh">销售税 · ' + taxPct + '%</span><span class="en">Sales Tax · ' + taxPct + '%</span>';
   }
+  el = document.getElementById('rcptTaxAmt'); if (el) el.textContent = '$' + (sale.tax || 0).toFixed(2);
+  el = document.getElementById('rcptTotal'); if (el) el.textContent = '$' + sale.total.toFixed(2);
 
-  // Payment
-  var paySection = document.querySelectorAll('.receipt-paper .receipt-section')[3];
-  if (paySection) {
-    var payRows = paySection.querySelectorAll('.receipt-row');
-    // Main payment
-    if (payRows[1]) {
-      var lbl = payRows[1].querySelector('.label');
-      if (lbl) lbl.innerHTML = sale.paymentMethods.join(' + ');
-      var val = payRows[1].querySelector('.val');
-      if (val) val.textContent = '$' + sale.total.toFixed(2);
-    }
-    // Hide tendered/change rows for non-cash
-    if (payRows[2]) payRows[2].style.display = 'none';
-    if (payRows[3]) payRows[3].style.display = 'none';
-    // Paid total
-    if (payRows[4]) {
-      var paidVal = payRows[4].querySelector('span[style*="color:var(--success)"]');
-      if (paidVal) paidVal.textContent = '✓ $' + sale.total.toFixed(2);
-    }
+  // Payment rows
+  el = document.getElementById('rcptPaymentRows');
+  if (el) {
+    var methods = sale.paymentMethods || ['Cash'];
+    el.innerHTML = '<div class="receipt-row"><span class="label">💵 ' + methods.join(' + ') + '</span><span class="val">$' + sale.total.toFixed(2) + '</span></div>';
   }
+  el = document.getElementById('rcptChangeRow'); if (el) el.style.display = 'none';
+  el = document.getElementById('rcptPaidTotal'); if (el) el.textContent = '✓ $' + sale.total.toFixed(2);
+
+  // Footer seller + order ID
+  var sellerName = sale.seller || '--';
+  el = document.getElementById('rcptSellerZh'); if (el) el.textContent = sellerName;
+  el = document.getElementById('rcptSellerEn'); if (el) el.textContent = sellerName;
+  el = document.getElementById('rcptFooterOrderId'); if (el) el.textContent = sale.id;
+  el = document.getElementById('rcptFooterLink');
+  if (el) el.textContent = 'ifixforu.com/r/' + (sale.id || '').replace('SL-', 'SL').replace(/-/g, '-');
+  el = document.getElementById('rcptSignDate');
+  if (el) el.textContent = new Date(sale.date).toISOString().split('T')[0];
 
   // Update send targets
   var smsTarget = document.getElementById('receiptSmsTarget');
@@ -10395,6 +10038,41 @@ function submitNewTransfer() {
   renderTransferPage();
 }
 
+// ===== Drawer Sell/Transfer Buttons =====
+function drawerStartSale() {
+  var imeiEl = document.querySelector('#drawerBody .mono');
+  if (imeiEl) {
+    var imei = imeiEl.textContent.trim().split(/\s/)[0];
+    closeDrawer();
+    navByName('sale');
+    setTimeout(function() {
+      var inp = document.getElementById('saleImeiInput');
+      if (inp) { inp.value = imei; saleSearchIMEI(imei); }
+    }, 200);
+  } else {
+    closeDrawer();
+    navByName('sale');
+  }
+}
+function drawerStartTransfer() {
+  var imeiEl = document.querySelector('#drawerBody .mono');
+  if (imeiEl) {
+    var imei = imeiEl.textContent.trim().split(/\s/)[0];
+    closeDrawer();
+    navByName('transfer');
+    setTimeout(function() {
+      openNewTransferModal();
+      setTimeout(function() {
+        var inp = document.getElementById('trImeiInput');
+        if (inp) inp.value = imei;
+      }, 100);
+    }, 200);
+  } else {
+    closeDrawer();
+    navByName('transfer');
+  }
+}
+
 // ===== Receipt Modal =====
 function openReceiptModal() {
   document.getElementById('receiptModal').classList.add('show');
@@ -10667,7 +10345,7 @@ function renderInventory() {
     const statusHtml = p.status === 'reserved' ? '<span class="status st-reserved" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">预留</span><span class="en">Resv</span></span>' :
       p.status === 'transit' ? '<span class="status st-transit" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">在途</span><span class="en">Transit</span></span>' :
       p.status === 'sold' ? '<span class="status st-sold" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">已售</span><span class="en">Sold</span></span>' :
-      '<button class="iconbtn" onclick="event.stopPropagation();showToast(\'打开销售单 / Sale opened\')" title="销售"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l1.5 9h7L13 5H4"/></svg></button>';
+      '<button class="iconbtn" onclick="event.stopPropagation();navByName(\'sale\');setTimeout(function(){var inp=document.getElementById(\'saleImeiInput\');if(inp){inp.value=\'' + p.imei + '\';saleSearchIMEI(\'' + p.imei + '\');}},200);" title="销售"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l1.5 9h7L13 5H4"/></svg></button>';
     const sealedLabel = p.cond === 'new' ? '<span class="inv-spec-chip"><span class="zh">未拆封</span><span class="en">Sealed</span></span>' : '<span class="inv-spec-chip">' + (isZh ? p.condition.split('\u00b7')[0].trim() : p.conditionEn.split('\u00b7')[0].trim()) + '</span>';
 
     html += '<div class="table-row body inv-row" data-region="' + p.region + '" data-cond="' + p.cond + '" onclick="openDrawer(' + phoneIdx + ')">' +
@@ -11162,6 +10840,14 @@ function setRole(btnOrNull, role, userAccount) {
   if (dashMeta) dashMeta.innerHTML = role === 'admin' ?
     'HQ · <span class="zh">总部</span><span class="en">Owner</span>' :
     store + ' · <span class="zh">员工</span><span class="en">Staff</span>';
+
+  // Update report modal reporter
+  var rmReporter = document.getElementById('rmReporter');
+  if (rmReporter) rmReporter.textContent = name;
+
+  // Set stock-in date to today
+  var stockinDate = document.getElementById('stockinDate');
+  if (stockinDate) stockinDate.value = new Date().toISOString().split('T')[0];
 
   // Staff should not see dashboard — redirect to inventory
   if (role === 'staff') {
