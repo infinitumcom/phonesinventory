@@ -5300,6 +5300,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
         <span class="nav-text"><span class="zh">跨店调拨</span><span class="en">Transfers</span></span>
         <span class="nav-badge warn" style="display:none;">0</span>
+        <span class="nav-badge" id="navBadgeStockReq" style="display:none;background:#3b82f6;color:#fff;">0</span>
       </div>
       <div class="nav-item" onclick="navTo(this, 'tradein')">
         <div class="nav-icon-wrap icon-purple">
@@ -9537,6 +9538,7 @@ function rejectTransfer(transferId) {
 
 // ===== Render Transfer Page =====
 function renderTransferPage() {
+  loadStockRequests(); // fetch latest from server
   var transfers = getLocalData('pi_transfers');
   var pending = transfers.filter(function(t){ return t.status === 'pending'; });
   var transit = transfers.filter(function(t){ return t.status === 'transit'; });
@@ -9695,10 +9697,27 @@ function openStockRequestModal() {
   }
 }
 
+// --- Stock Request API Layer ---
+var _stockRequestsCache = [];
+var SR_API = '/api/stock_requests.php';
+
+function loadStockRequests(callback) {
+  fetch(SR_API).then(function(r) { return r.json(); }).then(function(res) {
+    if (res.ok) _stockRequestsCache = res.data || [];
+    if (callback) callback(_stockRequestsCache);
+    renderStockRequests();
+    updateStockRequestBadge();
+  }).catch(function(err) {
+    console.warn('Stock request API error:', err);
+    if (callback) callback([]);
+  });
+}
+
 function submitStockRequest() {
   var rows = document.querySelectorAll('#srModelRows .sr-model-row');
   var note = document.getElementById('srNote').value.trim();
   var store = document.getElementById('srStore').value.trim();
+  var submitBtn = document.getElementById('srSubmitBtn');
 
   // Collect all model+qty pairs
   var items = [];
@@ -9711,74 +9730,88 @@ function submitStockRequest() {
   if (items.length === 0) { showToast('请至少输入一个型号 / Enter at least one model'); return; }
 
   var acct = window._currentAccount || {};
-  var requests = getLocalData('pi_stock_requests');
-  var nextNum = (requests.length + 1).toString().padStart(4, '0');
-  var year = new Date().getFullYear();
-
-  // Build combined model string for display
   var modelDisplay = items.map(function(it) { return it.model + ' ×' + it.qty; }).join('; ');
 
-  var sr = {
-    id: 'SR-' + year + '-' + nextNum,
-    date: new Date().toISOString(),
-    requestedBy: acct.name || 'Unknown',
-    store: store,
-    model: modelDisplay,
-    items: items,
-    qty: items.reduce(function(s, it) { return s + it.qty; }, 0),
-    note: note,
-    status: 'pending'
-  };
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '...'; }
 
-  requests.unshift(sr);
-  setLocalData('pi_stock_requests', requests);
-
-  var m = document.getElementById('stockRequestModal');
-  if (m) m.parentNode.removeChild(m);
-
-  showToast('库存请求已提交: ' + sr.id + ' / Stock request submitted');
-  renderStockRequests();
+  fetch(SR_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      action: 'create',
+      requestedBy: acct.name || 'Unknown',
+      store: store,
+      model: modelDisplay,
+      items: items,
+      qty: items.reduce(function(s, it) { return s + it.qty; }, 0),
+      note: note
+    })
+  }).then(function(r) { return r.json(); }).then(function(res) {
+    if (res.ok) {
+      var m = document.getElementById('stockRequestModal');
+      if (m) m.parentNode.removeChild(m);
+      showToast('库存请求已提交: ' + res.data.id + ' / Stock request submitted');
+      loadStockRequests();
+    } else {
+      showToast('提交失败 / Submit failed: ' + (res.error || ''));
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<span class="zh">提交请求</span><span class="en">Submit</span>'; }
+    }
+  }).catch(function(err) {
+    showToast('网络错误 / Network error');
+    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerHTML = '<span class="zh">提交请求</span><span class="en">Submit</span>'; }
+  });
 }
 
 function approveStockRequest(id) {
-  var requests = getLocalData('pi_stock_requests');
-  var sr = requests.find(function(x) { return x.id === id; });
-  if (!sr) return;
-  sr.status = 'approved';
-  sr.approvedBy = (window._currentAccount || {}).name || '';
-  sr.approvedDate = new Date().toISOString();
-  setLocalData('pi_stock_requests', requests);
-  showToast('已批准: ' + id + ' / Approved');
-  renderStockRequests();
+  _updateStockRequestStatus(id, 'approve', '已批准 / Approved');
 }
 
 function rejectStockRequest(id) {
-  var requests = getLocalData('pi_stock_requests');
-  var sr = requests.find(function(x) { return x.id === id; });
-  if (!sr) return;
-  sr.status = 'rejected';
-  sr.rejectedBy = (window._currentAccount || {}).name || '';
-  setLocalData('pi_stock_requests', requests);
-  showToast('已拒绝: ' + id + ' / Rejected');
-  renderStockRequests();
+  _updateStockRequestStatus(id, 'reject', '已拒绝 / Rejected');
 }
 
 function fulfillStockRequest(id) {
-  var requests = getLocalData('pi_stock_requests');
-  var sr = requests.find(function(x) { return x.id === id; });
-  if (!sr) return;
-  sr.status = 'fulfilled';
-  sr.fulfilledDate = new Date().toISOString();
-  setLocalData('pi_stock_requests', requests);
-  showToast('已完成: ' + id + ' / Fulfilled');
-  renderStockRequests();
+  _updateStockRequestStatus(id, 'fulfill', '已完成 / Fulfilled');
+}
+
+function _updateStockRequestStatus(id, action, msg) {
+  var acct = window._currentAccount || {};
+  fetch(SR_API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: action, id: id, by: acct.name || '' })
+  }).then(function(r) { return r.json(); }).then(function(res) {
+    if (res.ok) {
+      showToast(id + ' ' + msg);
+      loadStockRequests();
+    } else {
+      showToast('操作失败 / Failed: ' + (res.error || ''));
+    }
+  }).catch(function() { showToast('网络错误 / Network error'); });
+}
+
+function updateStockRequestBadge() {
+  var pending = _stockRequestsCache.filter(function(sr) { return sr.status === 'pending'; });
+  // Update sidebar badge
+  var badge = document.getElementById('navBadgeStockReq');
+  if (badge) {
+    badge.textContent = pending.length;
+    badge.style.display = pending.length > 0 ? '' : 'none';
+  }
+  // Update hero card attention
+  var heroAttn = document.querySelector('.staff-hero .shero-stat:last-child .v');
+  if (heroAttn && (window._currentAccount || {}).role === 'admin') {
+    var transfers = getLocalData('pi_transfers');
+    var pendingTr = transfers.filter(function(t) { return t.status === 'pending'; }).length;
+    heroAttn.textContent = pending.length + pendingTr;
+  }
 }
 
 function renderStockRequests() {
   var container = document.getElementById('stockRequestList');
   if (!container) return;
 
-  var requests = getLocalData('pi_stock_requests');
+  var requests = _stockRequestsCache;
   if (requests.length === 0) {
     container.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:24px;margin-bottom:6px;">📋</div><span class="zh">暂无库存请求</span><span class="en">No stock requests</span></div>';
     return;
@@ -11752,6 +11785,8 @@ if (!window.initDynamicUI) {
     try { initSalePage(); } catch(e){}
     try { renderStaffPage(); } catch(e){}
     try { renderCustomersPage(); } catch(e){}
+    // Load stock requests from server
+    try { loadStockRequests(); } catch(e){}
     // Show aged stock alert after a short delay
     setTimeout(function(){ try { showAgedStockAlert(); } catch(e){} }, 2000);
   };
