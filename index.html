@@ -2099,7 +2099,7 @@ body[data-role="admin"] .staff-only { display: none !important; }
 /* Inventory table — Larger fonts */
 .inv-table .table-row {
   display: grid;
-  grid-template-columns: 50px 2.2fr 0.8fr 0.9fr 0.9fr 55px 100px 110px;
+  grid-template-columns: 50px 1.6fr 0.7fr 1fr 0.8fr 55px 120px 130px;
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-soft);
@@ -4259,7 +4259,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
   /* Inventory table — collapse some columns */
   .inv-table .table-row {
-    grid-template-columns: 50px 2fr 0.8fr 0.85fr 55px 95px 100px;
+    grid-template-columns: 50px 1.5fr 0.7fr 0.8fr 55px 110px 120px;
   }
   .inv-table .table-row > div:nth-child(4) { display: none; } /* hide IMEI on tablet */
 
@@ -10422,9 +10422,15 @@ function renderInventory() {
   }
 
   let html = '';
+  const nowMs = Date.now();
   filtered.forEach((p, idx) => {
     const phoneIdx = phones.indexOf(p);
-    const ageClass = p.ageDays <= 30 ? 'fresh' : p.ageDays <= 60 ? 'mid' : 'stale';
+    // Compute ageDays from purchaseDate if not present
+    if (typeof p.ageDays === 'undefined' && p.purchaseDate) {
+      p.ageDays = Math.max(0, Math.floor((nowMs - new Date(p.purchaseDate).getTime()) / 86400000));
+    }
+    const ageDays = p.ageDays || 0;
+    const ageClass = ageDays <= 30 ? 'fresh' : ageDays <= 60 ? 'mid' : 'stale';
     const condCls = p.cond === 'new' ? 'cond-new' : 'cond-used';
     const condLabel = p.cond === 'new' ? 'NEW' : 'USED';
     const brandCls = p.brand === 'apple' ? 'bc-apple' : p.brand === 'samsung' ? 'bc-samsung' : p.brand === 'google' ? 'bc-google' : 'bc-other';
@@ -10434,10 +10440,6 @@ function renderInventory() {
     const regionCls = 'region-' + p.region;
     const dualSim = (p.region === 'hk' || p.region === 'cn') ? '<span class="dual-sim-chip"><span class="zh">双卡</span><span class="en">Dual SIM</span></span>' : '';
     const imeiShort = p.imei.substring(0,6) + '··· ····' + p.imei.substring(11);
-    const statusHtml = p.status === 'reserved' ? '<span class="status st-reserved" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">预留</span><span class="en">Resv</span></span>' :
-      p.status === 'transit' ? '<span class="status st-transit" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">在途</span><span class="en">Transit</span></span>' :
-      p.status === 'sold' ? '<span class="status st-sold" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">已售</span><span class="en">Sold</span></span>' :
-      '<button class="iconbtn" onclick="event.stopPropagation();navByName(\'sale\');setTimeout(function(){var inp=document.getElementById(\'saleImeiInput\');if(inp){inp.value=\'' + p.imei + '\';saleSearchIMEI(\'' + p.imei + '\');}},200);" title="销售"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l1.5 9h7L13 5H4"/></svg></button>';
     const sealedLabel = p.cond === 'new' ? '<span class="inv-spec-chip"><span class="zh">未拆封</span><span class="en">Sealed</span></span>' : '<span class="inv-spec-chip">' + (isZh ? p.condition.split('\u00b7')[0].trim() : p.conditionEn.split('\u00b7')[0].trim()) + '</span>';
 
     html += '<div class="table-row body inv-row" data-region="' + p.region + '" data-cond="' + p.cond + '" onclick="openDrawer(' + phoneIdx + ')">' +
@@ -10454,7 +10456,7 @@ function renderInventory() {
       '<div class="inv-color"><span class="swatch" style="background:' + p.colorHex + '"></span><span>' + (isZh ? p.color : p.colorEn) + '</span></div>' +
       '<div class="inv-imei">' + imeiShort + '</div>' +
       '<div class="inv-store">' + p.storeName + '<span class="shelf">' + p.shelf + '</span></div>' +
-      '<div class="inv-age ' + ageClass + '">' + p.ageDays + 'd</div>' +
+      '<div class="inv-age ' + ageClass + '">' + ageDays + 'd</div>' +
       '<div class="inv-price-block">' +
         '<div class="msrp-label"><span class="zh">建议零售价</span><span class="en">MSRP</span></div>' +
         '<div class="msrp"><span class="ccy">$</span>' + p.price.toLocaleString() + '</div>' +
