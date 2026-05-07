@@ -2099,9 +2099,10 @@ body[data-role="admin"] .staff-only { display: none !important; }
 /* Inventory table — Larger fonts */
 .inv-table .table-row {
   display: grid;
-  grid-template-columns: 50px 1.3fr 0.7fr 1fr 0.8fr 60px 140px 140px;
+  grid-template-columns: 50px 1.2fr 0.6fr 0.9fr 0.75fr 50px 130px 100px;
   align-items: center;
   padding: 16px 20px;
+  gap: 0 14px;
   border-bottom: 1px solid var(--border-soft);
   transition: background 0.1s;
 }
@@ -3176,30 +3177,30 @@ body[data-inv-mode="used"] .mode-context-bar .mc-icon { background: var(--warn);
 .store-cell.tint-8 { background: linear-gradient(180deg, #eff5f3 0%, var(--bg-elev) 100%); border-color: rgba(13, 79, 60, 0.15); }
 .store-cell.tint-9 { background: linear-gradient(180deg, #faf6ec 0%, var(--bg-elev) 100%); border-color: rgba(140, 110, 47, 0.25); }
 
-/* Inventory action buttons — vertical card style */
+/* Inventory action buttons — compact pill style */
 .inv-actions {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  align-items: stretch;
+  gap: 5px;
+  align-items: flex-start;
 }
 .inv-action-card {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 6px 10px;
+  gap: 4px;
+  padding: 4px 10px;
   border: none;
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: 14px;
+  font-size: 10.5px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.12s;
   white-space: nowrap;
 }
+.inv-action-card svg { width: 11px; height: 11px; }
 .inv-action-card.act-report {
-  background: #fef2f2;
-  color: #dc2626;
+  background: transparent;
+  color: #b54a3e;
   border: 1px solid #fecaca;
 }
 .inv-action-card.act-report:hover {
@@ -3207,13 +3208,13 @@ body[data-inv-mode="used"] .mode-context-bar .mc-icon { background: var(--warn);
   border-color: #f87171;
 }
 .inv-action-card.act-sell {
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #bfdbfe;
+  background: var(--brand);
+  color: #fff;
+  border: 1px solid var(--brand);
 }
 .inv-action-card.act-sell:hover {
-  background: #dbeafe;
-  border-color: #60a5fa;
+  background: var(--brand-hover);
+  border-color: var(--brand-hover);
 }
 
 /* Toast variants */
@@ -4259,7 +4260,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
   /* Inventory table — collapse some columns */
   .inv-table .table-row {
-    grid-template-columns: 50px 1.2fr 0.7fr 0.8fr 55px 130px 130px;
+    grid-template-columns: 50px 1.1fr 0.6fr 0.7fr 50px 120px 90px;
   }
   .inv-table .table-row > div:nth-child(4) { display: none; } /* hide IMEI on tablet */
 
