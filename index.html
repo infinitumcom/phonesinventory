@@ -5324,11 +5324,11 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <!-- Personal stats -->
           <div class="user-stat-card">
             <div class="user-stat-greeting">
-              <span class="zh">下午好,Andy</span>
-              <span class="en">Good afternoon, Andy</span>
+              <span class="zh" id="dashGreetZh">下午好</span>
+              <span class="en" id="dashGreetEn">Good afternoon</span>
             </div>
             <div class="user-stat-meta">
-              <span>HQ · <span class="zh">总部</span><span class="en">Owner</span></span>
+              <span id="dashStoreMeta">--</span>
               <span style="opacity:0.5;">|</span>
               <span class="mono" id="hereDateStr"></span>
             </div>
@@ -11152,6 +11152,28 @@ function setRole(btnOrNull, role, userAccount) {
   if (heroGEn) heroGEn.innerText = greetEn + ', ' + name;
   if (heroS) heroS.innerText = role === 'admin' ? '所有门店 · 10 店总览' : store;
   if (heroSE) heroSE.innerText = role === 'admin' ? 'All Stores · 10 locations' : store;
+
+  // Update dashboard greeting card
+  var dashGZh = document.getElementById('dashGreetZh');
+  var dashGEn = document.getElementById('dashGreetEn');
+  var dashMeta = document.getElementById('dashStoreMeta');
+  if (dashGZh) dashGZh.innerText = greetZh + ',' + name;
+  if (dashGEn) dashGEn.innerText = greetEn + ', ' + name;
+  if (dashMeta) dashMeta.innerHTML = role === 'admin' ?
+    'HQ · <span class="zh">总部</span><span class="en">Owner</span>' :
+    store + ' · <span class="zh">员工</span><span class="en">Staff</span>';
+
+  // Staff should not see dashboard — redirect to inventory
+  if (role === 'staff') {
+    var lastPage = null;
+    try { lastPage = sessionStorage.getItem('pi_current_page'); } catch(e){}
+    if (!lastPage || lastPage === 'dashboard') {
+      setTimeout(function() {
+        var navEl = document.querySelector('.nav-item[onclick*="inventory"]');
+        if (navEl) navTo(navEl, 'inventory');
+      }, 50);
+    }
+  }
 }
 
 function navTo(el, target) {
