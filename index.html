@@ -6862,20 +6862,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <div id="invTableBody"></div>
           </div>
 
-          <div style="padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
-            <div style="font-size:12px;color:var(--text-muted);" id="paginationInfo">
-              <span class="zh">显示当前清单 1-7 / 共 220 部新机</span>
-              <span class="en">Showing 1-7 of 220 NEW phones</span>
-            </div>
-            <div style="display:flex;gap:6px;">
-              <button class="btn btn-sm" disabled style="opacity:0.5;">‹</button>
-              <button class="btn btn-sm btn-primary">1</button>
-              <button class="btn btn-sm">2</button>
-              <button class="btn btn-sm">3</button>
-              <span style="padding:0 8px;color:var(--text-muted);">…</span>
-              <button class="btn btn-sm">25</button>
-              <button class="btn btn-sm">›</button>
-            </div>
+          <div id="invPaginationBar" style="padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:12px;color:var(--text-muted);" id="paginationInfo"></div>
+            <div style="display:flex;gap:6px;" id="paginationButtons"></div>
           </div>
         </div>
 
@@ -10617,6 +10606,8 @@ const INV_FILTERS = {
   status: 'all',     // 'all', 'available', 'aged'
   search: ''
 };
+var INV_PAGE = 1;
+var INV_PER_PAGE = 20;
 
 function getFilteredPhones() {
   return phones.filter(p => {
@@ -10636,21 +10627,84 @@ function getFilteredPhones() {
   });
 }
 
+function renderInvPagination(total, current, totalPages) {
+  var infoEl = document.getElementById('paginationInfo');
+  var btnsEl = document.getElementById('paginationButtons');
+  var isNew = INV_FILTERS.mode === 'new';
+
+  if (infoEl) {
+    if (total === 0) {
+      infoEl.innerHTML = '<span class="zh">共 0 部</span><span class="en">0 phones</span>';
+    } else {
+      var start = (current - 1) * INV_PER_PAGE + 1;
+      var end = Math.min(current * INV_PER_PAGE, total);
+      infoEl.innerHTML = '<span class="zh">显示 ' + start + '-' + end + ' / 共 ' + total + ' 部' + (isNew ? '新机' : '二手机') + '</span>' +
+        '<span class="en">Showing ' + start + '-' + end + ' of ' + total + (isNew ? ' NEW' : ' USED') + '</span>';
+    }
+  }
+
+  if (!btnsEl) return;
+  if (totalPages <= 1) { btnsEl.innerHTML = ''; return; }
+
+  var html = '';
+  // Prev button
+  html += '<button class="btn btn-sm"' + (current <= 1 ? ' disabled style="opacity:0.4;"' : ' onclick="invGoPage(' + (current-1) + ')"') + '>‹</button>';
+
+  // Page numbers — show max 7 buttons with ellipsis
+  var pages = [];
+  if (totalPages <= 7) {
+    for (var i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (current > 3) pages.push('...');
+    var start = Math.max(2, current - 1);
+    var end = Math.min(totalPages - 1, current + 1);
+    for (var i = start; i <= end; i++) pages.push(i);
+    if (current < totalPages - 2) pages.push('...');
+    pages.push(totalPages);
+  }
+
+  pages.forEach(function(pg) {
+    if (pg === '...') {
+      html += '<span style="padding:0 6px;color:var(--text-muted);font-size:12px;">…</span>';
+    } else {
+      html += '<button class="btn btn-sm' + (pg === current ? ' btn-primary' : '') + '" onclick="invGoPage(' + pg + ')">' + pg + '</button>';
+    }
+  });
+
+  // Next button
+  html += '<button class="btn btn-sm"' + (current >= totalPages ? ' disabled style="opacity:0.4;"' : ' onclick="invGoPage(' + (current+1) + ')"') + '>›</button>';
+
+  btnsEl.innerHTML = html;
+}
+
+function invGoPage(page) {
+  INV_PAGE = page;
+  renderInventory();
+  // Scroll to top of table
+  var tableEl = document.querySelector('.inv-table');
+  if (tableEl) tableEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 function renderInventory() {
-  const filtered = getFilteredPhones();
+  const allFiltered = getFilteredPhones();
   const isZh = document.body.dataset.lang === 'zh';
   const container = document.getElementById('invTableBody');
   if (!container) return;
 
-  if (filtered.length === 0) {
+  if (allFiltered.length === 0) {
     container.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:28px;margin-bottom:8px;">📱</div><span class="zh">暂无匹配的手机</span><span class="en">No matching phones</span></div>';
-    // Update count badge
-    var countEl = document.querySelector('#page-inventory .count');
-    if (countEl && countEl.textContent.indexOf('NEW') >= 0) {
-      // this is the new/used filter count, update it
-    }
+    renderInvPagination(0, 0, 0);
+    updateFilterCounts();
     return;
   }
+
+  // Pagination
+  var totalPages = Math.ceil(allFiltered.length / INV_PER_PAGE);
+  if (INV_PAGE > totalPages) INV_PAGE = totalPages;
+  if (INV_PAGE < 1) INV_PAGE = 1;
+  var startIdx = (INV_PAGE - 1) * INV_PER_PAGE;
+  var filtered = allFiltered.slice(startIdx, startIdx + INV_PER_PAGE);
 
   let html = '';
   const nowMs = Date.now();
@@ -10710,6 +10764,7 @@ function renderInventory() {
   });
 
   container.innerHTML = html;
+  renderInvPagination(allFiltered.length, INV_PAGE, totalPages);
   updateFilterCounts();
 }
 
@@ -10789,12 +10844,6 @@ function updateFilterCounts() {
   var agedBadge = document.getElementById('agedStockBadge');
   if (agedBadge) agedBadge.textContent = agedCount;
 
-  // Update pagination
-  const paginationEl = document.getElementById('paginationInfo');
-  if (paginationEl) {
-    paginationEl.innerHTML = '<span class="zh">显示 ' + filtered.length + ' 部' + (isNew ? '新机' : '二手机') + '</span><span class="en">Showing ' + filtered.length + (isNew ? ' NEW' : ' USED') + ' phones</span>';
-  }
-
   // Update mode icon
   const modeIcon = document.getElementById('modeIcon');
   if (modeIcon) modeIcon.textContent = isNew ? 'NEW' : 'USED';
@@ -10803,6 +10852,7 @@ function updateFilterCounts() {
 // Override setInvMode
 function setInvMode(mode) {
   INV_FILTERS.mode = mode;
+  INV_PAGE = 1;
   document.body.dataset.invMode = mode;
   document.getElementById('modeTabNew').classList.toggle('active', mode === 'new');
   document.getElementById('modeTabUsed').classList.toggle('active', mode === 'used');
@@ -10814,6 +10864,7 @@ function setInvMode(mode) {
 // Override setRegionFilter
 function setRegionFilter(btn, region) {
   INV_FILTERS.region = region;
+  INV_PAGE = 1;
   document.body.dataset.invRegion = region;
   btn.parentElement.querySelectorAll('.region-filter-pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
@@ -10827,6 +10878,7 @@ function setActiveStore(pill) {
   document.querySelectorAll('.store-pill').forEach(p => p.classList.remove('active'));
   pill.classList.add('active');
   INV_FILTERS.store = pill.dataset.store || 'all';
+  INV_PAGE = 1;
   renderInventory();
 }
 
@@ -10841,6 +10893,7 @@ function setActiveStore(pill) {
 })();
 
 function setBrandFilter(brand) {
+  INV_PAGE = 1;
   if (INV_FILTERS.brand === brand) {
     INV_FILTERS.brand = 'all'; // toggle off
   } else {
@@ -10869,6 +10922,7 @@ function setBrandFilter(brand) {
   var allChip = document.querySelector('.inv-mode-filters .chip.mode-color');
   if (allChip) allChip.addEventListener('click', function() {
     INV_FILTERS.brand = 'all';
+    INV_PAGE = 1;
     document.querySelectorAll('.inv-mode-filters .chip').forEach(function(c) { c.classList.remove('active'); });
     allChip.classList.add('active');
     renderInventory();
@@ -10880,12 +10934,14 @@ function setBrandFilter(brand) {
   var statusFilters = document.querySelectorAll('#page-inventory .search-bar .filters:last-child .chip');
   if (statusFilters.length >= 2) {
     statusFilters[0].addEventListener('click', function() {
+      INV_PAGE = 1;
       INV_FILTERS.status = INV_FILTERS.status === 'available' ? 'all' : 'available';
       statusFilters.forEach(function(c) { c.classList.remove('active'); });
       if (INV_FILTERS.status === 'available') statusFilters[0].classList.add('active');
       renderInventory();
     });
     statusFilters[1].addEventListener('click', function() {
+      INV_PAGE = 1;
       INV_FILTERS.status = INV_FILTERS.status === 'aged' ? 'all' : 'aged';
       statusFilters.forEach(function(c) { c.classList.remove('active'); });
       if (INV_FILTERS.status === 'aged') statusFilters[1].classList.add('active');
@@ -11318,6 +11374,7 @@ document.addEventListener('keydown', e => {
   if (!input) return;
   input.addEventListener('input', function() {
     INV_FILTERS.search = this.value.trim();
+    INV_PAGE = 1;
     renderInventory();
   });
 })();
