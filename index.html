@@ -5297,7 +5297,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="live-dot"></span>
               <span class="zh">9 家门店实时数据</span>
               <span class="en">9 stores · live</span>
-              <span class="mono" style="color:var(--text-faint);">2026-05-04 14:32</span>
+              <span class="mono" style="color:var(--text-faint);" id="dashboardTimestamp"></span>
             </div>
           </div>
           <div class="page-actions">
@@ -10702,6 +10702,10 @@ if (!window.initDynamicUI) {
     var dateStr = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
     var el = function(id) { return document.getElementById(id); };
     if (el('hereDateStr')) el('hereDateStr').textContent = dateStr;
+    if (el('dashboardTimestamp')) {
+      var now = new Date();
+      el('dashboardTimestamp').textContent = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+    }
     if (el('maGreetZh') && account) el('maGreetZh').textContent = gZh + ',' + account.name;
     if (el('maGreetEn') && account) el('maGreetEn').textContent = 'Welcome, ' + (account ? account.name : '');
   };
