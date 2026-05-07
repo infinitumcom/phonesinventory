@@ -9086,7 +9086,7 @@ function computeStoreStats() {
   // Count stock from phones[]
   phones.forEach(function(p) {
     if (!p || p.status === 'sold') return;
-    var sk = p.store || normalizeStoreKey(p.storeName || '');
+    var sk = normalizeStoreKey(p.store || p.storeName || '');
     if (STORE_DATA[sk]) {
       STORE_DATA[sk].stock++;
       if (p.cond === 'new') STORE_DATA[sk].stockNew++;
@@ -9412,7 +9412,7 @@ function saleSearchIMEI(imei) {
   saleState.phone = found;
   saleState.msrp = found.msrp || found.price || 0;
   saleState.price = saleState.msrp;
-  var storeKey = found.store || normalizeStoreKey(found.storeName || '');
+  var storeKey = normalizeStoreKey(found.store || found.storeName || '');
   saleState.storeKey = storeKey;
   saleState.storeName = found.storeName || (STORE_DATA[storeKey] || {}).nameZh || '';
   saleState.taxRate = (STORE_DATA[storeKey] || {}).taxRate || 0;
@@ -9685,7 +9685,7 @@ function createTransfer(imei, targetStore, reason) {
     storage: phone.storage,
     color: phone.color,
     price: phone.msrp || phone.price || 0,
-    fromStore: phone.store || normalizeStoreKey(phone.storeName || ''),
+    fromStore: normalizeStoreKey(phone.store || phone.storeName || ''),
     fromStoreName: phone.storeName || '',
     toStore: normalizeStoreKey(targetStore),
     toStoreName: targetStore,
@@ -10302,7 +10302,7 @@ function getFilteredPhones() {
     if (!p) return false;
     if (INV_FILTERS.mode && p.cond !== INV_FILTERS.mode) return false;
     if (INV_FILTERS.brand !== 'all' && p.brand !== INV_FILTERS.brand) return false;
-    if (INV_FILTERS.store !== 'all' && (p.store || normalizeStoreKey(p.storeName || '')) !== INV_FILTERS.store) return false;
+    if (INV_FILTERS.store !== 'all' && normalizeStoreKey(p.store || p.storeName || '') !== INV_FILTERS.store) return false;
     if (INV_FILTERS.region !== 'all' && p.region !== INV_FILTERS.region) return false;
     if (INV_FILTERS.status === 'available' && p.status !== 'available') return false;
     if (INV_FILTERS.status === 'aged' && p.ageDays < 60) return false;
@@ -10410,8 +10410,8 @@ function updateFilterCounts() {
       if (newC) newC.innerHTML = 'NEW ' + allNew.length;
       if (usedC) usedC.innerHTML = 'USED ' + allUsed.length;
     } else {
-      const sNew = phones.filter(p => p && p.cond === 'new' && p.store === storeKey).length;
-      const sUsed = phones.filter(p => p && p.cond === 'used' && p.store === storeKey).length;
+      const sNew = phones.filter(p => p && p.cond === 'new' && normalizeStoreKey(p.store || p.storeName || '') === storeKey).length;
+      const sUsed = phones.filter(p => p && p.cond === 'used' && normalizeStoreKey(p.store || p.storeName || '') === storeKey).length;
       if (newC) newC.innerHTML = 'NEW ' + sNew;
       if (usedC) usedC.innerHTML = 'USED ' + sUsed;
     }
