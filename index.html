@@ -5182,7 +5182,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           </svg>
         </div>
         <span class="nav-text"><span class="zh">跨店调拨</span><span class="en">Transfers</span></span>
-        <span class="nav-badge warn">3</span>
+        <span class="nav-badge warn" style="display:none;">0</span>
       </div>
       <div class="nav-item" onclick="navTo(this, 'tradein')">
         <div class="nav-icon-wrap icon-purple">
@@ -5484,7 +5484,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="count">· <span class="zh">9 店合计 · 仅管理员可见</span><span class="en">9 stores · Admin only</span></span>
             </div>
             <div class="section-actions">
-              <button class="btn btn-sm btn-ghost"><span class="zh">📥 导出报表</span><span class="en">📥 Export</span></button>
+              <button class="btn btn-sm btn-ghost" onclick="exportInventoryCSV()"><span class="zh">📥 导出报表</span><span class="en">📥 Export</span></button>
             </div>
           </div>
           <div style="padding:18px 22px;">
@@ -5587,25 +5587,25 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                     <span class="lg-dot us"></span>
                     <span style="font-size:13px;">🇺🇸</span>
                     <span class="lg-label"><span class="zh">美版</span><span class="en">US</span></span>
-                    <span class="lg-num">274</span>
+                    <span class="lg-num">0</span>
                   </div>
                   <div class="lg-item">
                     <span class="lg-dot hk"></span>
                     <span style="font-size:13px;">🇭🇰</span>
                     <span class="lg-label"><span class="zh">港版</span><span class="en">HK</span></span>
-                    <span class="lg-num">68</span>
+                    <span class="lg-num">0</span>
                     <span style="font-size:9px;background:#6b4a8a;color:white;padding:1px 4px;border-radius:3px;font-weight:700;">📲</span>
                   </div>
                   <div class="lg-item">
                     <span class="lg-dot cn"></span>
                     <span style="font-size:13px;">🇨🇳</span>
                     <span class="lg-label"><span class="zh">国行</span><span class="en">CN</span></span>
-                    <span class="lg-num">45</span>
+                    <span class="lg-num">0</span>
                     <span style="font-size:9px;background:#b54a3e;color:white;padding:1px 4px;border-radius:3px;font-weight:700;">📲</span>
                   </div>
                   <span style="margin-left:auto;color:var(--text-muted);font-size:11px;">
                     <span class="zh">双卡机型合计</span><span class="en">Dual-SIM</span>:
-                    <strong style="color:var(--text);">113 (29%)</strong>
+                    <strong style="color:var(--text);">0 (0%)</strong>
                   </span>
                 </div>
               </div>
@@ -5616,8 +5616,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <strong style="font-size:16px;">💡</strong>
               <div>
                 <strong><span class="zh">洞察:</span><span class="en">Insight:</span></strong>
-                <span class="zh">二手机利润率 (24%) 显著高于新机 (4.3%)。建议加强二手回收业务。港版/国行双卡机型占比 29%,符合华人客户需求。</span>
-                <span class="en">Used phones margin (24%) significantly higher than new (4.3%). Dual-SIM (HK/CN) at 29% serves Chinese-American customer demand well.</span>
+                <span class="zh">暂无足够数据生成洞察</span>
+                <span class="en">Not enough data to generate insights yet</span>
               </div>
             </div>
 
@@ -6452,7 +6452,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div class="section-title">
                   <span class="zh">第二步 · 扫描每部手机</span>
                   <span class="en">Step 2 · Scan each phone</span>
-                  <span class="count">· <span style="color:var(--success);">已扫入 5 部</span></span>
+                  <span class="count">· <span style="color:var(--success);">已扫入 0 部</span></span>
                 </div>
                 <div class="section-actions">
                   <button class="btn btn-sm">
@@ -6482,7 +6482,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                     </div>
                   </div>
                   <div>
-                    <input type="text" class="stockin-manual-input" placeholder="或手动输入 IMEI">
+                    <input type="text" class="stockin-manual-input" id="stockinImeiInput" placeholder="或手动输入 IMEI" onkeydown="if(event.key==='Enter')showToast('主入库通道为 Telegram Bot · Stock-in via Telegram Bot')">
                   </div>
                 </div>
 
@@ -6550,34 +6550,34 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               </div>
               <div class="batch-row">
                 <span class="label"><span class="zh">总台数</span><span class="en">Total Units</span></span>
-                <span class="val highlight" style="font-size:16px;">5 <span style="font-size:11px;color:var(--text-muted);font-weight:500;"><span class="zh">部</span><span class="en">phones</span></span></span>
+                <span class="val highlight" style="font-size:16px;">0 <span style="font-size:11px;color:var(--text-muted);font-weight:500;"><span class="zh">部</span><span class="en">phones</span></span></span>
               </div>
               <div class="batch-row">
                 <span class="label"><span class="zh">总进价</span><span class="en">Total Cost</span></span>
-                <span class="val">$4,500</span>
+                <span class="val">$0</span>
               </div>
               <div class="batch-row highlight">
                 <span class="label"><span class="zh">挂牌总价值</span><span class="en">Listed Value</span></span>
-                <span class="val">$4,995</span>
+                <span class="val">$0</span>
               </div>
               <div class="batch-row">
                 <span class="label"><span class="zh">预计毛利</span><span class="en">Gross Profit</span></span>
-                <span class="val" style="color:var(--success);">+$495 <span style="font-size:10px;opacity:0.7;">(11%)</span></span>
+                <span class="val" style="color:var(--success);">$0</span>
               </div>
               <div class="batch-row highlight-purple">
                 <span class="label"><span class="zh">总积分池</span><span class="en">Points Pool</span></span>
-                <span class="val">100 P</span>
+                <span class="val">0 P</span>
               </div>
 
               <div class="batch-row total">
                 <span><span class="zh">应付供应商</span><span class="en">To Pay Supplier</span></span>
-                <span class="val">$4,500</span>
+                <span class="val">$0</span>
               </div>
 
-              <button class="btn btn-primary batch-action-btn" onclick="showToast('已成功录入 5 部新机入 Alhambra 库存 / 5 phones added to Alhambra')">
+              <button class="btn btn-primary batch-action-btn" onclick="showToast('主入库通道为 Telegram Bot 拍照入库 · Primary stock-in via Telegram Bot')">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3 3 7-7"/></svg>
-                <span class="zh">确认入库 5 部</span>
-                <span class="en">Confirm Stock-In · 5</span>
+                <span class="zh">确认入库</span>
+                <span class="en">Confirm Stock-In</span>
               </button>
 
               <button class="btn btn-ghost" style="width:100%;margin-top:6px;justify-content:center;font-size:12px;color:var(--text-muted);">
@@ -6590,7 +6590,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <ul style="margin:6px 0 0 16px;padding:0;">
                   <li style="margin-bottom:3px;"><span class="zh">每部手机生成内部 ID</span><span class="en">Generate internal ID per phone</span></li>
                   <li style="margin-bottom:3px;"><span class="zh">自动打印双码标签(内部 ID + IMEI)</span><span class="en">Print dual barcode labels</span></li>
-                  <li style="margin-bottom:3px;"><span class="zh">5 部手机进入 Alhambra 在售库存</span><span class="en">5 phones become "Available" at Alhambra</span></li>
+                  <li style="margin-bottom:3px;"><span class="zh">手机进入目标门店在售库存</span><span class="en">Phones become "Available" at target store</span></li>
                   <li><span class="zh">采购单关联到此批次</span><span class="en">PO linked to this batch</span></li>
                 </ul>
               </div>
@@ -6923,8 +6923,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="zh">单号</span><span class="en">Order</span>
               <span class="mono" style="color:var(--text);font-weight:700;">SL-2026-0509</span>
               <span style="color:var(--text-faint);">·</span>
-              <span class="zh">销售员 Chester · Alhambra</span>
-              <span class="en">Seller Chester · Alhambra</span>
+              <span class="zh">销售员 -- · --</span>
+              <span class="en">Seller -- · --</span>
             </div>
           </div>
           <div class="page-actions">
@@ -6942,24 +6942,26 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         <div class="sale-grid">
           <div>
 
-            <!-- Phone scanned -->
-            <div class="scan-result">
-              <div class="scan-result-name">iPhone 16 Pro Max</div>
-              <div class="scan-result-tags">
-                <span class="device-tag"><span class="swatch" style="background:#1d1d1f;width:9px;height:9px;"></span><span class="zh">原色钛金</span><span class="en">Natural Ti</span></span>
-                <span class="device-tag">256GB</span>
-                <span class="device-tag"><span class="zh">未拆封</span><span class="en">Sealed</span></span>
-                <span class="device-tag"><span class="cond-tag cond-new" style="width:auto;height:auto;padding:1px 6px;">NEW</span></span>
-                <span class="device-tag" style="padding:0;background:transparent;border:none;">
-                  <span class="region-tag region-us"><span class="flag">🇺🇸</span> US</span>
-                </span>
-                <span class="device-tag" style="background:var(--purple-soft);color:var(--purple);"><span style="font-family:'JetBrains Mono',monospace;">◆ 20 P</span></span>
+            <!-- IMEI Scan Input -->
+            <div id="saleImeiInputWrap" style="margin-bottom:16px;">
+              <div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:20px 22px;">
+                <div style="font-size:14px;font-weight:700;margin-bottom:10px;"><span class="zh">扫描 IMEI 添加手机</span><span class="en">Scan IMEI to add phone</span></div>
+                <div style="display:flex;gap:8px;">
+                  <input type="text" id="saleImeiInput" class="form-input" placeholder="输入 15 位 IMEI / Enter 15-digit IMEI" maxlength="15" style="flex:1;font-family:'JetBrains Mono',monospace;font-size:14px;" onkeydown="if(event.key==='Enter')saleSearchIMEI(this.value)">
+                  <button class="btn btn-primary" onclick="saleSearchIMEI(document.getElementById('saleImeiInput').value)"><span class="zh">查找</span><span class="en">Search</span></button>
+                </div>
               </div>
+            </div>
+
+            <!-- Phone scanned (hidden until IMEI found) -->
+            <div class="scan-result" style="display:none;">
+              <div class="scan-result-name">--</div>
+              <div class="scan-result-tags"></div>
               <div class="scan-result-grid">
-                <div class="scan-result-cell"><div class="label">IMEI</div><div class="val mono">352847156890124</div></div>
-                <div class="scan-result-cell"><div class="label"><span class="zh">门店</span><span class="en">Store</span></div><div class="val">Alhambra</div></div>
-                <div class="scan-result-cell"><div class="label"><span class="zh">货位</span><span class="en">Shelf</span></div><div class="val mono">A-12-03</div></div>
-                <div class="scan-result-cell"><div class="label"><span class="zh">建议零售价</span><span class="en">MSRP</span></div><div class="val mono" style="color:var(--brand);">$1,199</div></div>
+                <div class="scan-result-cell"><div class="label">IMEI</div><div class="val mono">--</div></div>
+                <div class="scan-result-cell"><div class="label"><span class="zh">门店</span><span class="en">Store</span></div><div class="val">--</div></div>
+                <div class="scan-result-cell"><div class="label"><span class="zh">货位</span><span class="en">Shelf</span></div><div class="val mono">--</div></div>
+                <div class="scan-result-cell"><div class="label"><span class="zh">建议零售价</span><span class="en">MSRP</span></div><div class="val mono" style="color:var(--brand);">--</div></div>
               </div>
             </div>
 
@@ -6977,14 +6979,11 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               </div>
               <div style="padding:18px 22px;">
 
-                <div class="vip-banner">
+                <div class="vip-banner" style="display:none;">
                   <div class="vip-banner-icon">⭐</div>
                   <div class="vip-banner-text">
-                    <strong><span class="zh">VIP 老客户 · 第 4 次购买</span><span class="en">VIP customer · 4th purchase</span></strong>
-                    <div class="sub">
-                      <span class="zh">2024 起累计 $3,890 · 自动加 10% 老客户折扣</span>
-                      <span class="en">$3,890 since 2024 · Auto 10% loyalty discount</span>
-                    </div>
+                    <strong><span class="zh">VIP 老客户</span><span class="en">VIP customer</span></strong>
+                    <div class="sub"></div>
                   </div>
                 </div>
 
@@ -6995,7 +6994,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                   </div>
                   <div>
                     <label class="form-label"><span class="zh">手机号</span><span class="en">Phone</span> <span class="req">*</span></label>
-                    <input type="text" class="form-input" value="+1 626 555 8821">
+                    <input type="text" class="form-input" value="" placeholder="+1 xxx xxx xxxx">
                   </div>
                 </div>
 
@@ -7037,7 +7036,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                       <span class="hint"><span class="zh">系统自动带出</span><span class="en">auto-filled</span></span>
                     </label>
                     <div class="form-input-wrap">
-                      <input type="text" class="form-input" value="1199" disabled style="opacity:0.7;">
+                      <input type="text" class="form-input" value="" disabled style="opacity:0.7;" placeholder="--">
                       <span class="form-input-suffix">USD</span>
                     </div>
                   </div>
@@ -7049,7 +7048,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                       <span class="hint"><span class="zh">可让利</span><span class="en">may discount</span></span>
                     </label>
                     <div class="form-input-wrap">
-                      <input type="text" class="form-input" value="1079" style="font-weight:700;color:var(--brand);font-size:16px;">
+                      <input type="text" class="form-input" value="" style="font-weight:700;color:var(--brand);font-size:16px;" placeholder="0">
                       <span class="form-input-suffix">USD</span>
                     </div>
                   </div>
@@ -7140,8 +7139,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div style="display:flex;gap:10px;align-items:center;">
                   <div style="width:42px;height:42px;background:var(--brand-soft);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;">📱</div>
                   <div style="flex:1;">
-                    <div style="font-weight:700;font-size:13.5px;line-height:1.3;">iPhone 16 Pro Max</div>
-                    <div style="color:var(--text-muted);font-size:11.5px;margin-top:2px;">256GB · <span class="zh">原色钛金</span><span class="en">Natural Ti</span></div>
+                    <div style="font-weight:700;font-size:13.5px;line-height:1.3;">--</div>
+                    <div style="color:var(--text-muted);font-size:11.5px;margin-top:2px;">--</div>
                   </div>
                 </div>
               </div>
@@ -7150,24 +7149,24 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div class="summary-section-label">
                   <span class="zh">金额明细</span><span class="en">Amount</span>
                 </div>
-                <div class="summary-row"><span><span class="zh">建议零售价</span><span class="en">MSRP</span></span><span class="amount">$1,199.00</span></div>
-                <div class="summary-row" style="color:var(--gold-deep);">
+                <div class="summary-row"><span><span class="zh">建议零售价</span><span class="en">MSRP</span></span><span class="amount">$0.00</span></div>
+                <div class="summary-row" style="color:var(--gold-deep);display:none;">
                   <span>
-                    <span class="zh">VIP 折扣 (10%)</span>
-                    <span class="en">VIP Discount (10%)</span>
+                    <span class="zh">折扣</span>
+                    <span class="en">Discount</span>
                   </span>
-                  <span class="amount">−$120.00</span>
+                  <span class="amount">$0.00</span>
                 </div>
                 <div class="summary-row" style="color:var(--text-muted);font-size:11.5px;padding-top:6px;border-top:1px dashed var(--border);">
                   <span><span class="zh">小计</span><span class="en">Subtotal</span></span>
-                  <span class="amount" style="color:var(--text);">$1,079.00</span>
+                  <span class="amount" style="color:var(--text);">$0.00</span>
                 </div>
                 <div class="summary-row" id="summaryTaxRow">
                   <span>
                     <span class="zh">销售税 (CA 10.25%)</span>
                     <span class="en">Tax (CA 10.25%)</span>
                   </span>
-                  <span class="amount" id="summaryTaxAmt">$110.60</span>
+                  <span class="amount" id="summaryTaxAmt">$0.00</span>
                 </div>
                 <div class="summary-row" id="summaryNoTaxRow" style="display:none;color:var(--text-muted);font-style:italic;font-size:11.5px;">
                   <span>
@@ -7178,7 +7177,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
                 <div class="summary-row total">
                   <span><span class="zh">总计</span><span class="en">Total</span></span>
-                  <span class="amount" id="summaryTotal">$1,189.60</span>
+                  <span class="amount" id="summaryTotal">$0.00</span>
                 </div>
               </div>
 
@@ -7202,16 +7201,16 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                   <span class="zh">销售员归属</span><span class="en">Seller</span>
                 </div>
                 <div class="seller-row">
-                  <div class="avatar">CH</div>
+                  <div class="avatar">--</div>
                   <div class="info">
-                    <div class="name">Chester</div>
-                    <div class="meta">Alhambra · <span style="color:var(--purple);font-weight:700;">315 P <span class="zh">余额</span><span class="en">balance</span></span></div>
+                    <div class="name">--</div>
+                    <div class="meta">--</div>
                   </div>
                   <button class="btn btn-sm btn-ghost">+ <span class="zh">协作员</span><span class="en">Assist</span></button>
                 </div>
               </div>
 
-              <button class="btn btn-primary btn-lg" style="width:100%;justify-content:center;margin-top:8px;" onclick="openReceiptModal()">
+              <button class="btn btn-primary btn-lg" style="width:100%;justify-content:center;margin-top:8px;" onclick="completeSale()">
                 <span class="zh">✓ 完成销售并生成收据</span>
                 <span class="en">✓ Complete & Generate Receipt</span>
               </button>
@@ -7510,7 +7509,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="en">Request → Approve → Transit → Received · Avg 8min</span>
             </div>
           </div>
-          <button class="btn btn-primary"><span class="zh">+ 发起调拨</span><span class="en">+ New Transfer</span></button>
+          <button class="btn btn-primary" onclick="openNewTransferModal()"><span class="zh">+ 发起调拨</span><span class="en">+ New Transfer</span></button>
         </div>
 
         <div class="kpi-grid cols-4">
@@ -7531,142 +7530,20 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <button class="chip"><span class="zh">已完成</span><span class="en">Completed</span><span class="chip-num">0</span></button>
         </div>
 
-        <!-- Detailed transfer card with timeline -->
-        <div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;margin-bottom:12px;overflow:hidden;">
-          <div style="padding:16px 20px;border-bottom:1px solid var(--border-soft);display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;">
-            <div style="flex:1;min-width:280px;">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
-                <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:13px;">TR-2026-0042</span>
-                <span style="background:var(--warn-soft);color:var(--warn);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">⏱ <span class="zh">紧急</span><span class="en">Urgent</span></span>
-                <span style="background:var(--gold-soft);color:var(--gold-deep);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">💰 <span class="zh">已付定金 $200</span><span class="en">Deposit $200</span></span>
-              </div>
-              <div style="font-size:14.5px;font-weight:700;margin-bottom:4px;">Samsung Galaxy S25 Ultra · 512GB · 钛黑</div>
-              <div style="font-size:11.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">IMEI 351092778900234 · <span style="color:var(--brand);">$1,419</span></div>
-            </div>
-            <div style="display:flex;gap:6px;">
-              <button class="btn btn-sm"><span class="zh">驳回</span><span class="en">Reject</span></button>
-              <button class="btn btn-sm btn-primary"><span class="zh">✓ 同意调拨</span><span class="en">✓ Approve</span></button>
-            </div>
-          </div>
-
-          <div style="padding:16px 20px;background:var(--bg-tinted);">
-            <div style="font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.07em;font-weight:600;margin-bottom:12px;">
-              <span class="zh">调拨流程</span><span class="en">Transfer Timeline</span>
-            </div>
-
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative;">
-              <div style="display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;">
-                <div style="width:28px;height:28px;background:var(--brand);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:'JetBrains Mono',monospace;box-shadow:0 0 0 4px var(--brand-tint);z-index:2;">1</div>
-                <div style="font-size:11.5px;font-weight:700;margin-top:8px;"><span class="zh">申请</span><span class="en">Requested</span></div>
-                <div style="font-size:10.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:2px;">14:28 · -6h</div>
-                <div style="font-size:10.5px;color:var(--text-soft);margin-top:2px;">Grace @ Alhambra</div>
-                <div style="position:absolute;top:14px;right:0;height:1px;width:50%;background:var(--brand);"></div>
-              </div>
-
-              <div style="display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;">
-                <div style="position:absolute;top:14px;left:0;height:1px;width:50%;background:var(--brand);"></div>
-                <div style="width:28px;height:28px;background:var(--brand);color:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;box-shadow:0 0 0 4px var(--brand-tint);z-index:2;animation:pulse 2s infinite;">2</div>
-                <div style="font-size:11.5px;font-weight:700;margin-top:8px;color:var(--brand);"><span class="zh">待审批</span><span class="en">Pending Approval</span></div>
-                <div style="font-size:10.5px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-top:2px;">
-                  <span class="zh">现在</span><span class="en">Now</span>
-                </div>
-                <div style="font-size:10.5px;color:var(--text-soft);margin-top:2px;">
-                  <span class="zh">您 @ Arcadia 1</span>
-                  <span class="en">You @ Arcadia 1</span>
-                </div>
-                <div style="position:absolute;top:14px;right:0;height:1px;width:50%;background:var(--border);"></div>
-              </div>
-
-              <div style="display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;opacity:0.5;">
-                <div style="position:absolute;top:14px;left:0;height:1px;width:50%;background:var(--border);"></div>
-                <div style="width:28px;height:28px;background:var(--bg-soft);color:var(--text-muted);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:'JetBrains Mono',monospace;border:1px solid var(--border);z-index:2;">3</div>
-                <div style="font-size:11.5px;font-weight:700;margin-top:8px;"><span class="zh">在途</span><span class="en">In Transit</span></div>
-                <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">UPS / <span class="zh">自取</span><span class="en">pickup</span></div>
-                <div style="position:absolute;top:14px;right:0;height:1px;width:50%;background:var(--border);"></div>
-              </div>
-
-              <div style="display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;opacity:0.5;">
-                <div style="position:absolute;top:14px;left:0;height:1px;width:50%;background:var(--border);"></div>
-                <div style="width:28px;height:28px;background:var(--bg-soft);color:var(--text-muted);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:'JetBrains Mono',monospace;border:1px solid var(--border);z-index:2;">4</div>
-                <div style="font-size:11.5px;font-weight:700;margin-top:8px;"><span class="zh">入库完成</span><span class="en">Received</span></div>
-                <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">Alhambra</div>
-              </div>
-            </div>
-          </div>
-
-          <div style="padding:14px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;font-size:11.5px;">
-            <div>
-              <div style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">
-                <span class="zh">来源 / 目标</span><span class="en">From / To</span>
-              </div>
-              <div><strong>Arcadia 1</strong> → <strong>Alhambra</strong></div>
-            </div>
-            <div>
-              <div style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">
-                <span class="zh">调拨理由</span><span class="en">Reason</span>
-              </div>
-              <div>
-                <span class="zh">客户指定 · 已付定金</span>
-                <span class="en">Customer specified · Deposit paid</span>
-              </div>
-            </div>
-            <div>
-              <div style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">
-                <span class="zh">客户信息</span><span class="en">Customer</span>
-              </div>
-              <div>Lily Chen · +1 626 555 9012</div>
-            </div>
+        <!-- Transfer list (dynamic) -->
+        <div id="transferList">
+          <div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+            <div style="font-size:28px;margin-bottom:8px;">📦</div>
+            <span class="zh">暂无调拨记录</span>
+            <span class="en">No transfer records</span>
           </div>
         </div>
 
-        <!-- Compact transfer cards -->
-        <div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:14px 20px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;">
-          <div>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;">TR-2026-0043</span>
-              <span style="background:var(--bg-tinted);padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:600;border:1px solid var(--border);">📍 R. Cucamonga</span>
-              <span style="color:var(--brand);">→</span>
-              <span style="background:var(--brand-soft);padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:600;color:var(--brand);">📍 Arcadia 1</span>
-            </div>
-            <div style="font-size:13px;font-weight:600;">iPhone 16 Pro Max · 256GB · 原色钛</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
-              <span class="mono">IMEI ··· 7841</span> ·
-              <span class="zh">店长 Jason · 补货 · 2h 前</span>
-              <span class="en">Jason · Restocking · 2h ago</span>
-            </div>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-sm"><span class="zh">驳回</span><span class="en">Reject</span></button>
-            <button class="btn btn-sm btn-primary"><span class="zh">同意</span><span class="en">Approve</span></button>
-          </div>
-        </div>
-
-        <div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:14px 20px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;">
-          <div>
-            <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;">TR-2026-0044</span>
-              <span style="background:var(--warn-soft);color:var(--warn);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">⏱ <span class="zh">紧急</span><span class="en">Urgent</span></span>
-              <span style="background:var(--bg-tinted);padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:600;border:1px solid var(--border);">📍 Arcadia 2</span>
-              <span style="color:var(--brand);">→</span>
-              <span style="background:var(--brand-soft);padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:600;color:var(--brand);">📍 Arcadia 1</span>
-            </div>
-            <div style="font-size:13px;font-weight:600;">iPhone 15 · 128GB · 蓝</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
-              <span class="mono">IMEI ··· 1129</span> ·
-              <span class="zh">店员 Harry · 客户当面交易 · 30m 前</span>
-              <span class="en">Harry · Walk-in customer · 30m ago</span>
-            </div>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn btn-sm"><span class="zh">驳回</span><span class="en">Reject</span></button>
-            <button class="btn btn-sm btn-primary"><span class="zh">同意</span><span class="en">Approve</span></button>
-          </div>
-        </div>
 
       </div>
     </div>
 
-    <!-- Full pages (sales records, trade-in, customers, reports) -->
+        <!-- Full pages (sales records, trade-in, customers, reports) -->
     <!-- ============= SALES RECORDS PAGE (FULL) ============= -->
 <div class="page-content" id="page-sales">
   <div class="content">
@@ -7678,16 +7555,16 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <span class="en">Sales Records</span>
         </h1>
         <div class="page-subtitle">
-          <span class="zh">本月共 128 单 · 总营收</span>
-          <span class="en">128 sales MTD · Total</span>
-          <span class="mono" style="color:var(--brand);font-weight:700;">$143,892</span>
+          <span class="zh">本月共 0 单 · 总营收</span>
+          <span class="en">0 sales MTD · Total</span>
+          <span class="mono" style="color:var(--brand);font-weight:700;">$0</span>
           <span style="color:var(--text-faint);">·</span>
           <span class="zh">毛利</span><span class="en">Profit</span>
-          <span class="mono" style="color:var(--success);font-weight:700;">$40,610</span>
+          <span class="mono" style="color:var(--success);font-weight:700;">$0</span>
         </div>
       </div>
       <div class="page-actions">
-        <button class="btn"><span class="zh">📥 月度报表</span><span class="en">📥 Monthly Report</span></button>
+        <button class="btn" onclick="exportSalesCSV()"><span class="zh">📥 月度报表</span><span class="en">📥 Monthly Report</span></button>
         <button class="btn"><span class="zh">📅 自定义日期</span><span class="en">📅 Date Range</span></button>
         <button class="btn btn-primary" onclick="navByName('sale')"><span class="zh">+ 新销售单</span><span class="en">+ New Sale</span></button>
       </div>
@@ -7743,292 +7620,22 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <div></div>
         </div>
 
-        <!-- Row with VIP customer -->
-        <div class="table-row body" style="grid-template-columns: 110px 1.6fr 1.1fr 95px 110px 120px 80px;">
-          <div>
-            <div class="mono" style="font-weight:700;font-size:11.5px;color:var(--text);">SL-2026-0508</div>
-            <div style="font-size:10.5px;color:var(--text-muted);" class="mono">05-04 14:23</div>
-            <div style="margin-top:3px;"><span class="status st-avail" style="font-size:9.5px;padding:1px 6px;">✓ <span class="zh">已发收据</span><span class="en">Receipt sent</span></span></div>
-          </div>
-          <div class="cell-product">
-            <div class="name">iPhone 16 · 128GB · <span class="zh">白</span><span class="en">White</span></div>
-            <div class="meta mono">352901567823901</div>
-            <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">
-              <span class="zh">含 1 年 Apple 保修 · 90 天店保</span>
-              <span class="en">1yr Apple warranty · 90d store</span>
-            </div>
-          </div>
-          <div>
-            <div style="font-weight:600;font-size:12.5px;display:flex;align-items:center;gap:5px;">
-              Lin Wei
-              <span style="background:var(--gold-soft);color:var(--gold-deep);font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700;">⭐ VIP</span>
-            </div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 626 555 8821</div>
-            <div style="font-size:10px;color:var(--gold-deep);margin-top:1px;">
-              <span class="zh">第 4 次购买</span>
-              <span class="en">4th purchase</span>
-            </div>
-          </div>
-          <div>
-            <div style="background:var(--info-soft);color:var(--info);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">💳 Visa</div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;font-family:'JetBrains Mono',monospace;">····8821</div>
-          </div>
-          <div style="font-size:11.5px;">
-            <div style="font-weight:600;">Rowland Hts</div>
-            <div style="color:var(--text-muted);font-size:10.5px;">Chester · CH</div>
-          </div>
-          <div>
-            <div class="cell-price"><span class="ccy">$</span>799</div>
-            <div style="font-size:10.5px;color:var(--success);font-family:'JetBrains Mono',monospace;font-weight:600;">+$79 (10%)</div>
-          </div>
-          <div class="row-actions">
-            <button class="iconbtn" title="详情"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-            <button class="iconbtn" title="重发收据"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4l6 5 6-5M2 4v8h12V4"/></svg></button>
+        <div id="salesTableBody">
+          <div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+            <div style="font-size:28px;margin-bottom:8px;">📋</div>
+            <span class="zh">暂无销售记录</span>
+            <span class="en">No sales records yet</span>
           </div>
         </div>
 
-        <div class="table-row body" style="grid-template-columns: 110px 1.6fr 1.1fr 95px 110px 120px 80px;">
-          <div>
-            <div class="mono" style="font-weight:700;font-size:11.5px;color:var(--text);">SL-2026-0507</div>
-            <div style="font-size:10.5px;color:var(--text-muted);" class="mono">05-04 13:11</div>
-            <div style="margin-top:3px;"><span class="status st-avail" style="font-size:9.5px;padding:1px 6px;">✓ <span class="zh">已发</span><span class="en">Sent</span></span></div>
-          </div>
-          <div class="cell-product">
-            <div class="name">iPhone 15 Pro · 256GB · <span class="zh">钛蓝</span><span class="en">Blue Ti</span></div>
-            <div class="meta mono">358224109876543</div>
-            <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">
-              <span class="zh">含 90 天店保</span>
-              <span class="en">90d store warranty</span>
-            </div>
-          </div>
-          <div>
-            <div style="font-weight:600;font-size:12.5px;">Maria Gonzalez</div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 213 555 4490</div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:1px;">
-              <span class="zh">新客户</span><span class="en">New customer</span>
-            </div>
-          </div>
-          <div>
-            <div style="background:var(--success-soft);color:var(--success);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">💵 Cash</div>
-          </div>
-          <div style="font-size:11.5px;">
-            <div style="font-weight:600;">Alhambra</div>
-            <div style="color:var(--text-muted);font-size:10.5px;">Jayden · JS</div>
-          </div>
-          <div>
-            <div class="cell-price"><span class="ccy">$</span>949</div>
-            <div style="font-size:10.5px;color:var(--success);font-family:'JetBrains Mono',monospace;font-weight:600;">+$249 (26%)</div>
-          </div>
-          <div class="row-actions">
-            <button class="iconbtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-          </div>
-        </div>
-
-        <!-- Row with split payment -->
-        <div class="table-row body" style="grid-template-columns: 110px 1.6fr 1.1fr 95px 110px 120px 80px;">
-          <div>
-            <div class="mono" style="font-weight:700;font-size:11.5px;color:var(--text);">SL-2026-0506</div>
-            <div style="font-size:10.5px;color:var(--text-muted);" class="mono">05-04 11:48</div>
-            <div style="margin-top:3px;"><span class="status st-avail" style="font-size:9.5px;padding:1px 6px;">✓ <span class="zh">已发</span><span class="en">Sent</span></span></div>
-          </div>
-          <div class="cell-product">
-            <div class="name">iPhone 13 · 128GB · <span class="zh">红</span><span class="en">Red</span> <span class="cond-tag cond-used" style="height:14px;width:30px;font-size:8px;display:inline-flex;margin-left:3px;">USED</span></div>
-            <div class="meta mono">355489221034567</div>
-            <div style="font-size:10.5px;color:var(--text-muted);margin-top:2px;">
-              <span class="zh">含 30 天店保 · 二手机</span>
-              <span class="en">30d store warranty · Pre-owned</span>
-            </div>
-          </div>
-          <div>
-            <div style="font-weight:600;font-size:12.5px;display:flex;align-items:center;gap:5px;">
-              陈志强
-              <span style="background:var(--brand-soft);color:var(--brand);font-size:9px;padding:1px 5px;border-radius:6px;font-weight:700;">REPEAT</span>
-            </div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 626 555 1147</div>
-            <div style="font-size:10px;color:var(--brand);margin-top:1px;">
-              <span class="zh">第 2 次</span><span class="en">2nd time</span>
-            </div>
-          </div>
-          <div>
-            <div style="background:var(--brand-soft);color:var(--brand);padding:3px 8px;border-radius:5px;font-size:10.5px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">📱 Zelle</div>
-            <div style="font-size:9.5px;color:var(--text-muted);margin-top:2px;">+ 💵 $89</div>
-            <div style="font-size:9px;color:var(--text-faint);">
-              <span class="zh">组合支付</span>
-              <span class="en">Split pay</span>
-            </div>
-          </div>
-          <div style="font-size:11.5px;">
-            <div style="font-weight:600;">San Gabriel</div>
-            <div style="color:var(--text-muted);font-size:10.5px;">Steve · SS</div>
-          </div>
-          <div>
-            <div class="cell-price"><span class="ccy">$</span>389</div>
-            <div style="font-size:10.5px;color:var(--success);font-family:'JetBrains Mono',monospace;font-weight:600;">+$109 (28%)</div>
-          </div>
-          <div class="row-actions">
-            <button class="iconbtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-          </div>
-        </div>
-
-        <!-- Cross-store transfer sale -->
-        <div class="table-row body" style="grid-template-columns: 110px 1.6fr 1.1fr 95px 110px 120px 80px;">
-          <div>
-            <div class="mono" style="font-weight:700;font-size:11.5px;color:var(--text);">SL-2026-0505</div>
-            <div style="font-size:10.5px;color:var(--text-muted);" class="mono">05-04 10:22</div>
-            <div style="margin-top:3px;"><span class="status st-transit" style="font-size:9.5px;padding:1px 6px;">⇄ <span class="zh">跨店</span><span class="en">Cross-store</span></span></div>
-          </div>
-          <div class="cell-product">
-            <div class="name">Samsung S25 Ultra · 512GB · <span class="zh">钛黑</span><span class="en">Ti Black</span></div>
-            <div class="meta mono">351092778901234</div>
-            <div style="font-size:10.5px;color:var(--info);margin-top:2px;">
-              <span class="zh">货源 Rancho Cucamonga → 调拨至 Arcadia 1 成交</span>
-              <span class="en">From R. Cucamonga → transferred to Arcadia 1</span>
-            </div>
-          </div>
-          <div>
-            <div style="font-weight:600;font-size:12.5px;">David Kim</div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 702 555 9923</div>
-          </div>
-          <div>
-            <div style="background:var(--info-soft);color:var(--info);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">💳 MC</div>
-            <div style="font-size:10px;color:var(--text-muted);margin-top:2px;font-family:'JetBrains Mono',monospace;">····2284</div>
-          </div>
-          <div style="font-size:11.5px;">
-            <div style="font-weight:600;">Arcadia 1</div>
-            <div style="color:var(--text-muted);font-size:10.5px;">Jason · JZ</div>
-            <div style="font-size:9.5px;color:var(--info);font-weight:600;">
-              <span class="zh">提成归 DB</span>
-              <span class="en">Commission to DB</span>
-            </div>
-          </div>
-          <div>
-            <div class="cell-price"><span class="ccy">$</span>1,419</div>
-            <div style="font-size:10.5px;color:var(--success);font-family:'JetBrains Mono',monospace;font-weight:600;">+$139 (10%)</div>
-          </div>
-          <div class="row-actions">
-            <button class="iconbtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-          </div>
-        </div>
-
-        <!-- Row with assist seller -->
-        <div class="table-row body" style="grid-template-columns: 110px 1.6fr 1.1fr 95px 110px 120px 80px;">
-          <div>
-            <div class="mono" style="font-weight:700;font-size:11.5px;color:var(--text);">SL-2026-0504</div>
-            <div style="font-size:10.5px;color:var(--text-muted);" class="mono">05-04 09:50</div>
-            <div style="margin-top:3px;"><span class="status st-avail" style="font-size:9.5px;padding:1px 6px;">✓ <span class="zh">已发</span><span class="en">Sent</span></span></div>
-          </div>
-          <div class="cell-product">
-            <div class="name">iPhone 14 Pro · 256GB · <span class="zh">黑</span><span class="en">Black</span> <span class="cond-tag cond-used" style="height:14px;width:32px;font-size:8px;display:inline-flex;margin-left:3px;">USED</span></div>
-            <div class="meta mono">357816654321098</div>
-          </div>
-          <div>
-            <div style="font-weight:600;font-size:12.5px;">王慧敏</div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 626 555 6677</div>
-          </div>
-          <div>
-            <div style="background:var(--success-soft);color:var(--success);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">💵 Cash</div>
-          </div>
-          <div style="font-size:11.5px;">
-            <div style="font-weight:600;">Arcadia 2</div>
-            <div style="color:var(--text-muted);font-size:10.5px;">Bill · 70%</div>
-            <div style="color:var(--text-muted);font-size:10.5px;">+ Harry · 30%</div>
-          </div>
-          <div>
-            <div class="cell-price"><span class="ccy">$</span>799</div>
-            <div style="font-size:10.5px;color:var(--success);font-family:'JetBrains Mono',monospace;font-weight:600;">+$149 (19%)</div>
-          </div>
-          <div class="row-actions">
-            <button class="iconbtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-          </div>
-        </div>
-
-        <!-- Returned row -->
-        <div class="table-row body" style="grid-template-columns: 110px 1.6fr 1.1fr 95px 110px 120px 80px;background:var(--danger-soft);opacity:0.85;">
-          <div>
-            <div class="mono" style="font-weight:700;font-size:11.5px;color:var(--text);text-decoration:line-through;">SL-2026-0498</div>
-            <div style="font-size:10.5px;color:var(--text-muted);" class="mono">05-03 14:22</div>
-            <div style="margin-top:3px;"><span class="status" style="background:var(--danger);color:white;font-size:9.5px;padding:1px 6px;">↩ <span class="zh">已退货</span><span class="en">Returned</span></span></div>
-          </div>
-          <div class="cell-product">
-            <div class="name" style="text-decoration:line-through;">iPhone 16 · 256GB · <span class="zh">蓝</span><span class="en">Blue</span></div>
-            <div class="meta mono">352847889067123</div>
-            <div style="font-size:10.5px;color:var(--danger);margin-top:2px;">
-              <span class="zh">退货原因:激活后客户改主意 · 已恢复入库</span>
-              <span class="en">Reason: changed mind after activation · Restocked</span>
-            </div>
-          </div>
-          <div>
-            <div style="font-weight:600;font-size:12.5px;">Robert Chen</div>
-            <div style="font-size:10.5px;color:var(--text-muted);">+1 626 555 7700</div>
-          </div>
-          <div>
-            <div style="background:var(--danger-soft);color:var(--danger);padding:3px 8px;border-radius:5px;font-size:10.5px;font-weight:600;border:1px solid var(--danger);">↩ <span class="zh">原路退</span><span class="en">Refunded</span></div>
-          </div>
-          <div style="font-size:11.5px;">
-            <div style="font-weight:600;">Alhambra</div>
-            <div style="color:var(--text-muted);font-size:10.5px;">Chester · CH</div>
-            <div style="font-size:9.5px;color:var(--danger);font-weight:600;">
-              <span class="zh">提成已撤销</span>
-              <span class="en">Commission reversed</span>
-            </div>
-          </div>
-          <div>
-            <div class="cell-price" style="text-decoration:line-through;color:var(--text-muted);"><span class="ccy">$</span>899</div>
-            <div style="font-size:10.5px;color:var(--danger);font-family:'JetBrains Mono',monospace;font-weight:600;">−$899 ↩</div>
-          </div>
-          <div class="row-actions">
-            <button class="iconbtn"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>
-          </div>
-        </div>
-
-        <div class="table-row body" style="grid-template-columns: 110px 1.6fr 1.1fr 95px 110px 120px 80px;">
-          <div>
-            <div class="mono" style="font-weight:700;font-size:11.5px;color:var(--text);">SL-2026-0503</div>
-            <div style="font-size:10.5px;color:var(--text-muted);" class="mono">05-04 09:15</div>
-            <div style="margin-top:3px;"><span class="status" style="background:var(--warn-soft);color:var(--warn);font-size:9.5px;padding:1px 6px;">⏱ <span class="zh">待发收据</span><span class="en">Pending receipt</span></span></div>
-          </div>
-          <div class="cell-product">
-            <div class="name">Pixel 9 Pro · 256GB</div>
-            <div class="meta mono">354103789012345</div>
-          </div>
-          <div>
-            <div style="font-weight:600;font-size:12.5px;">Steven Lee</div>
-            <div style="font-size:10.5px;color:var(--danger);">
-              <span class="zh">⚠ 电话无效</span>
-              <span class="en">⚠ Invalid phone</span>
-            </div>
-          </div>
-          <div>
-            <div style="background:var(--success-soft);color:var(--success);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">💵 Cash</div>
-          </div>
-          <div style="font-size:11.5px;">
-            <div style="font-weight:600;">Las Vegas</div>
-            <div style="color:var(--text-muted);font-size:10.5px;">Kelvin Liu · KL</div>
-          </div>
-          <div>
-            <div class="cell-price"><span class="ccy">$</span>999</div>
-            <div style="font-size:10.5px;color:var(--success);font-family:'JetBrains Mono',monospace;font-weight:600;">+$119 (12%)</div>
-          </div>
-          <div class="row-actions">
-            <button class="iconbtn" title="补发收据"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4l6 5 6-5M2 4v8h12V4"/></svg></button>
-          </div>
-        </div>
+        <!-- Demo rows removed, rendered dynamically by renderSalesPage() -->
 
       </div>
 
-      <div style="padding:14px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div id="salesPagination" style="padding:14px 18px;border-top:1px solid var(--border);">
         <div style="font-size:12px;color:var(--text-muted);">
-          <span class="zh">显示 1-7 / 共 128 单</span>
-          <span class="en">Showing 1-7 of 128 sales</span>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn btn-sm" disabled style="opacity:0.5;">‹</button>
-          <button class="btn btn-sm btn-primary">1</button>
-          <button class="btn btn-sm">2</button>
-          <button class="btn btn-sm">3</button>
-          <span style="padding:0 8px;color:var(--text-muted);">…</span>
-          <button class="btn btn-sm">19</button>
-          <button class="btn btn-sm">›</button>
+          <span class="zh">共 0 单</span>
+          <span class="en">0 sales</span>
         </div>
       </div>
     </div>
@@ -9310,12 +8917,12 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         <button class="receipt-send-btn primary" onclick="sendReceipt('sms')">
           <span class="rs-icon">📱</span>
           <div class="rs-label"><span class="zh">短信</span><span class="en">SMS</span></div>
-          <div class="rs-target">+1 626 555 8821</div>
+          <div class="rs-target" id="receiptSmsTarget">--</div>
         </button>
         <button class="receipt-send-btn" onclick="sendReceipt('email')">
           <span class="rs-icon">📧</span>
           <div class="rs-label"><span class="zh">邮件</span><span class="en">Email</span></div>
-          <div class="rs-target" style="font-size:9px;">lin.wei@gmail.com</div>
+          <div class="rs-target" id="receiptEmailTarget" style="font-size:9px;">--</div>
         </button>
         <button class="receipt-send-btn" onclick="sendReceipt('print')">
           <span class="rs-icon">🖨</span>
@@ -9771,6 +9378,894 @@ const STORE_DATA = {
   }
 };
 
+// ===== Phase 1: Data Foundation Layer =====
+
+// 1.1 Store key normalization (Bot stores full names like "Monterey Park")
+function normalizeStoreKey(raw) {
+  if (!raw) return '';
+  var map = {
+    'alhambra': 'alhambra',
+    'monterey park': 'monterey-park',
+    'san gabriel': 'san-gabriel',
+    'rowland heights': 'rowland-heights',
+    'arcadia 1': 'arcadia-1', 'arcadia 1 (huntington)': 'arcadia-1',
+    'arcadia 2': 'arcadia-2', 'arcadia 2 (baldwin)': 'arcadia-2',
+    'irvine': 'irvine', 'irvine (99 ranch)': 'irvine',
+    'rancho cucamonga': 'rancho-cucamonga', 'rancho cucamonga (99 ranch)': 'rancho-cucamonga',
+    'las vegas': 'las-vegas',
+    'hq': 'hq-warehouse', 'hq 总仓': 'hq-warehouse', 'hq warehouse': 'hq-warehouse'
+  };
+  var key = raw.toLowerCase().trim();
+  if (map[key]) return map[key];
+  // fallback: slugify
+  return key.replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
+}
+
+// 1.2 localStorage data layer
+function getLocalData(key) {
+  try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch(e) { return []; }
+}
+function setLocalData(key, data) {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch(e) {}
+}
+function generateId(prefix) {
+  var now = new Date();
+  var items = prefix === 'TR' ? getLocalData('pi_transfers') : getLocalData('pi_sales');
+  var seq = (items.length + 1).toString().padStart(4, '0');
+  return prefix + '-' + now.getFullYear() + '-' + seq;
+}
+
+// 1.3 Compute store stats dynamically from phones[] + localStorage
+function computeStoreStats() {
+  var sales = getLocalData('pi_sales');
+  var today = new Date(); today.setHours(0,0,0,0);
+  var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  // Reset dynamic fields in STORE_DATA
+  Object.keys(STORE_DATA).forEach(function(k) {
+    STORE_DATA[k].stock = 0; STORE_DATA[k].stockNew = 0; STORE_DATA[k].stockUsed = 0;
+    STORE_DATA[k].todaySold = 0; STORE_DATA[k].todayRev = 0;
+    STORE_DATA[k].mtdSold = 0; STORE_DATA[k].cash = 0;
+  });
+
+  // Count stock from phones[]
+  phones.forEach(function(p) {
+    if (!p || p.status === 'sold') return;
+    var sk = p.store || normalizeStoreKey(p.storeName || '');
+    if (STORE_DATA[sk]) {
+      STORE_DATA[sk].stock++;
+      if (p.cond === 'new') STORE_DATA[sk].stockNew++;
+      else STORE_DATA[sk].stockUsed++;
+    }
+  });
+
+  // Process sales
+  sales.forEach(function(s) {
+    var sk = s.storeKey || normalizeStoreKey(s.store || '');
+    if (!STORE_DATA[sk]) return;
+    var d = new Date(s.date);
+    if (d >= monthStart) {
+      STORE_DATA[sk].mtdSold++;
+    }
+    if (d >= today) {
+      STORE_DATA[sk].todaySold++;
+      STORE_DATA[sk].todayRev += (s.total || 0);
+    }
+    if (s.paymentMethods && s.paymentMethods.indexOf('Cash') >= 0) {
+      STORE_DATA[sk].cash += (s.total || 0);
+    }
+  });
+
+  // Compute mtdRank
+  var ranked = Object.keys(STORE_DATA).filter(function(k){ return k !== 'hq-warehouse'; })
+    .sort(function(a,b){ return STORE_DATA[b].mtdSold - STORE_DATA[a].mtdSold; });
+  ranked.forEach(function(k, i){ STORE_DATA[k].mtdRank = i + 1; });
+}
+
+// 1.4 renderDashboard — update all KPI cards and heatmap from live data
+function renderDashboard() {
+  computeStoreStats();
+  var sales = getLocalData('pi_sales');
+  var transfers = getLocalData('pi_transfers');
+  var today = new Date(); today.setHours(0,0,0,0);
+  var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  // --- KPI cards ---
+  var totalAvail = 0, totalNew = 0, totalUsed = 0, totalCash = 0;
+  var mtdSold = 0, mtdRev = 0, mtdProfit = 0;
+  Object.keys(STORE_DATA).forEach(function(k) {
+    totalAvail += STORE_DATA[k].stock;
+    totalNew += STORE_DATA[k].stockNew;
+    totalUsed += STORE_DATA[k].stockUsed;
+    totalCash += STORE_DATA[k].cash;
+  });
+  sales.forEach(function(s) {
+    var d = new Date(s.date);
+    if (d >= monthStart) {
+      mtdSold++;
+      mtdRev += (s.total || 0);
+      mtdProfit += (s.profit || 0);
+    }
+  });
+  var aov = mtdSold > 0 ? Math.round(mtdRev / mtdSold) : 0;
+  var margin = mtdRev > 0 ? Math.round(mtdProfit / mtdRev * 100) : 0;
+
+  // Update dashboard KPI values
+  var el = function(id) { return document.getElementById(id); };
+  if (el('kpiAvailable')) el('kpiAvailable').textContent = totalAvail;
+  if (el('kpiAvailable') && el('kpiAvailable').parentElement) {
+    var meta = el('kpiAvailable').parentElement.querySelector('.kpi-meta');
+    if (meta) meta.innerHTML = '<span class="zh">' + totalNew + ' NEW · ' + totalUsed + ' USED</span><span class="en">' + totalNew + ' NEW · ' + totalUsed + ' USED</span>';
+  }
+
+  // Cash KPI (2nd card)
+  var kpis = document.querySelectorAll('#page-dashboard .kpi-value');
+  if (kpis[1]) {
+    kpis[1].innerHTML = '<span class="ccy">$</span>' + totalCash.toLocaleString();
+    var m1 = kpis[1].parentElement.querySelector('.kpi-meta');
+    if (m1) m1.innerHTML = totalCash > 0 ? ('<span class="zh">9 店合计</span><span class="en">9 stores total</span>') : '<span class="zh">暂无数据</span><span class="en">No data yet</span>';
+  }
+  // Sold MTD (3rd)
+  if (kpis[2]) {
+    kpis[2].textContent = mtdSold;
+    var m2 = kpis[2].parentElement.querySelector('.kpi-meta');
+    if (m2) m2.textContent = mtdSold > 0 ? ('+' + mtdSold + ' vs prev') : '--';
+  }
+  // Revenue MTD (4th)
+  if (kpis[3]) {
+    kpis[3].innerHTML = '<span class="ccy">$</span>' + mtdRev.toLocaleString();
+    var m3 = kpis[3].parentElement.querySelector('.kpi-meta');
+    if (m3) m3.innerHTML = '<span class="zh">客单价</span><span class="en">AOV</span> <span class="mono">$' + aov.toLocaleString() + '</span>';
+  }
+  // Profit MTD (5th)
+  if (kpis[4]) {
+    kpis[4].innerHTML = '<span class="ccy">$</span>' + mtdProfit.toLocaleString();
+    var m4 = kpis[4].parentElement.querySelector('.kpi-meta');
+    if (m4) m4.textContent = margin + '% margin';
+  }
+
+  // --- Financial overview ---
+  var totalCost = 0, totalMSRP = 0, newCount = 0, usedCount = 0;
+  var newCost = 0, newMSRP = 0, usedCost = 0, usedMSRP = 0;
+  phones.forEach(function(p) {
+    if (!p || p.status === 'sold') return;
+    var cost = p.cost || 0;
+    var msrp = p.msrp || p.price || 0;
+    totalCost += cost;
+    totalMSRP += msrp;
+    if (p.cond === 'new') { newCount++; newCost += cost; newMSRP += msrp; }
+    else { usedCount++; usedCost += cost; usedMSRP += msrp; }
+  });
+  var totalProfit = totalMSRP - totalCost;
+  var totalMargin = totalMSRP > 0 ? Math.round(totalProfit / totalMSRP * 100) : 0;
+
+  var finCards = document.querySelectorAll('#page-dashboard .fin-card-value');
+  if (finCards[0]) finCards[0].innerHTML = '<span class="ccy">$</span>' + totalCost.toLocaleString();
+  if (finCards[1]) finCards[1].innerHTML = '<span class="ccy">$</span>' + totalMSRP.toLocaleString();
+  if (finCards[2]) finCards[2].innerHTML = '<span class="ccy">$</span>' + totalProfit.toLocaleString();
+  // Update cost meta
+  var finMetas = document.querySelectorAll('#page-dashboard .fin-card-meta');
+  if (finMetas[0]) {
+    var k0 = finMetas[0].querySelector('.key');
+    if (k0) k0.innerHTML = '<span class="zh">' + totalAvail + ' 部 · 9 店总和</span><span class="en">' + totalAvail + ' phones · 9 stores</span>';
+  }
+  // Margin value
+  if (finMetas[2]) {
+    var v2 = finMetas[2].querySelector('.v');
+    if (v2) { v2.textContent = totalMargin + '%'; v2.style.color = 'var(--success)'; }
+  }
+
+  // NEW/USED breakdown
+  var breakStats = document.querySelectorAll('#page-dashboard .fin-breakdown-stat');
+  if (breakStats[0]) {
+    var bv0 = breakStats[0].querySelector('.v');
+    if (bv0) bv0.innerHTML = newCount + ' <span style="font-size:13px;color:var(--text-muted);font-weight:500;">部</span>';
+    var bs0 = breakStats[0].querySelector('.sub');
+    if (bs0) {
+      var np = newMSRP - newCost;
+      bs0.innerHTML = '<span class="zh">成本 $' + newCost.toLocaleString() + ' · 收入预期 $' + newMSRP.toLocaleString() + ' · 利润 $' + np.toLocaleString() + '</span>' +
+        '<span class="en">Cost $' + newCost.toLocaleString() + ' · Revenue $' + newMSRP.toLocaleString() + ' · Profit $' + np.toLocaleString() + '</span>';
+    }
+  }
+  if (breakStats[1]) {
+    var bv1 = breakStats[1].querySelector('.v');
+    if (bv1) bv1.innerHTML = usedCount + ' <span style="font-size:13px;color:var(--text-muted);font-weight:500;">部</span>';
+    var bs1 = breakStats[1].querySelector('.sub');
+    if (bs1) {
+      var up = usedMSRP - usedCost;
+      bs1.innerHTML = '<span class="zh">成本 $' + usedCost.toLocaleString() + ' · 收入预期 $' + usedMSRP.toLocaleString() + ' · 利润 $' + up.toLocaleString() + '</span>' +
+        '<span class="en">Cost $' + usedCost.toLocaleString() + ' · Revenue $' + usedMSRP.toLocaleString() + ' · Profit $' + up.toLocaleString() + '</span>';
+    }
+  }
+
+  // --- Region distribution ---
+  var usCount = 0, hkCount = 0, cnCount = 0;
+  phones.forEach(function(p) {
+    if (!p || p.status === 'sold') return;
+    if (p.region === 'us') usCount++;
+    else if (p.region === 'hk') hkCount++;
+    else if (p.region === 'cn') cnCount++;
+  });
+  var regTotal = usCount + hkCount + cnCount;
+  var dualSim = hkCount + cnCount;
+  var dualPct = regTotal > 0 ? Math.round(dualSim / regTotal * 100) : 0;
+
+  // Update region dist label
+  var regLabel = document.querySelector('#page-dashboard .region-dist-info > .label');
+  if (regLabel) {
+    regLabel.innerHTML = '<span class="zh">版本分布 · 9 店合计 ' + regTotal + ' 部</span><span class="en">Region Distribution · ' + regTotal + ' phones across 9 stores</span>';
+  }
+  // Bar widths
+  var segUs = document.querySelector('#page-dashboard .seg-us');
+  var segHk = document.querySelector('#page-dashboard .seg-hk');
+  var segCn = document.querySelector('#page-dashboard .seg-cn');
+  if (segUs && segHk && segCn) {
+    if (regTotal > 0) {
+      segUs.style.width = (usCount / regTotal * 100).toFixed(1) + '%'; segUs.textContent = usCount;
+      segHk.style.width = (hkCount / regTotal * 100).toFixed(1) + '%'; segHk.textContent = hkCount;
+      segCn.style.width = (cnCount / regTotal * 100).toFixed(1) + '%'; segCn.textContent = cnCount;
+    } else {
+      segUs.style.width = '33.3%'; segUs.textContent = '0';
+      segHk.style.width = '33.3%'; segHk.textContent = '0';
+      segCn.style.width = '33.4%'; segCn.textContent = '0';
+    }
+  }
+  // Legend numbers
+  var lgNums = document.querySelectorAll('#page-dashboard .lg-num');
+  if (lgNums[0]) lgNums[0].textContent = usCount;
+  if (lgNums[1]) lgNums[1].textContent = hkCount;
+  if (lgNums[2]) lgNums[2].textContent = cnCount;
+  // Dual-SIM total
+  var dualEl = document.querySelector('#page-dashboard .region-dist-legend > span:last-child strong');
+  if (dualEl) dualEl.textContent = dualSim + ' (' + dualPct + '%)';
+
+  // --- Heatmap store cells ---
+  var storeKeys = ['alhambra','monterey-park','san-gabriel','rowland-heights','arcadia-1','arcadia-2','irvine','rancho-cucamonga','las-vegas'];
+  storeKeys.forEach(function(sk) {
+    var cell = document.querySelector('.store-cell[onclick*="' + sk + '"]');
+    if (!cell) return;
+    var stats = cell.querySelectorAll('.store-mini-stat .v');
+    var sd = STORE_DATA[sk];
+    if (stats[0]) stats[0].textContent = sd.stock;
+    if (stats[1]) stats[1].textContent = sd.todaySold;
+    if (stats[2]) stats[2].textContent = '$' + sd.todayRev.toLocaleString();
+  });
+
+  // --- Inventory hero card ---
+  if (el('invHeroCount')) el('invHeroCount').textContent = totalAvail;
+  var heroSub = document.querySelector('#invHeroCount');
+  if (heroSub && heroSub.parentElement) {
+    var heroS = heroSub.parentElement.querySelector('.s');
+    if (heroS) heroS.textContent = totalNew + ' NEW · ' + totalUsed + ' USED';
+  }
+
+  // --- Sidebar transfer badge ---
+  var pendingTransfers = transfers.filter(function(t){ return t.status === 'pending'; }).length;
+  var trBadge = document.querySelector('.nav-item[onclick*="transfer"] .nav-badge');
+  if (trBadge) {
+    trBadge.textContent = pendingTransfers;
+    trBadge.style.display = pendingTransfers > 0 ? '' : 'none';
+  }
+
+  // Inventory badge
+  var invBadge = document.getElementById('navBadgeInventory');
+  if (invBadge) invBadge.textContent = totalAvail;
+
+  // --- Insight box ---
+  var insightBox = document.querySelector('#page-dashboard .gold-soft, #page-dashboard [style*="gold-soft"]');
+  // Find the insight box by looking for the 💡 container
+  var insightBoxes = document.querySelectorAll('#page-dashboard [style*="gold-soft"]');
+  insightBoxes.forEach(function(box) {
+    if (box.querySelector('strong') && box.textContent.indexOf('💡') >= 0) {
+      if (regTotal < 10) {
+        var div = box.querySelector('div:last-child');
+        if (div) div.innerHTML = '<strong><span class="zh">洞察:</span><span class="en">Insight:</span></strong> <span class="zh">暂无足够数据生成洞察</span><span class="en">Not enough data to generate insights yet</span>';
+      }
+    }
+  });
+}
+
+// ===== Sale State Machine =====
+var saleState = {
+  phone: null,
+  customer: { name: '', phone: '', email: '', source: '' },
+  price: 0,
+  msrp: 0,
+  taxRate: 0,
+  taxApplied: true,
+  paymentMethods: [],
+  orderId: '',
+  storeKey: '',
+  storeName: ''
+};
+
+function initSalePage() {
+  saleState.phone = null;
+  saleState.customer = { name: '', phone: '', email: '', source: '' };
+  saleState.price = 0;
+  saleState.msrp = 0;
+  saleState.taxApplied = true;
+  saleState.paymentMethods = [];
+  saleState.orderId = generateId('SL');
+  var acct = window._currentAccount || {};
+  saleState.storeKey = normalizeStoreKey(acct.store || '');
+  saleState.storeName = acct.store || '';
+  saleState.taxRate = (STORE_DATA[saleState.storeKey] || {}).taxRate || 0;
+
+  // Update order number display
+  var orderEl = document.querySelector('#page-sale .page-subtitle .mono');
+  if (orderEl) orderEl.textContent = saleState.orderId;
+
+  // Update seller display
+  var subtitleEl = document.querySelector('#page-sale .page-subtitle');
+  if (subtitleEl) {
+    var zhSpan = subtitleEl.querySelectorAll('span.zh');
+    var enSpan = subtitleEl.querySelectorAll('span.en');
+    if (zhSpan[1]) zhSpan[1].textContent = '销售员 ' + (acct.name || '') + ' · ' + (acct.store || '');
+    if (enSpan[1]) enSpan[1].textContent = 'Seller ' + (acct.name || '') + ' · ' + (acct.store || '');
+  }
+
+  // Reset scan result area
+  var scanResult = document.querySelector('#page-sale .scan-result');
+  if (scanResult) {
+    scanResult.style.display = 'none';
+  }
+
+  // Show IMEI input
+  var scanInput = document.getElementById('saleImeiInput');
+  if (scanInput) {
+    scanInput.parentElement.style.display = '';
+    scanInput.value = '';
+  }
+
+  // Reset customer form
+  var custInputs = document.querySelectorAll('#page-sale .form-input');
+  custInputs.forEach(function(inp) {
+    if (!inp.disabled) inp.value = '';
+  });
+
+  // Hide VIP banner
+  var vipBanner = document.querySelector('#page-sale .vip-banner');
+  if (vipBanner) vipBanner.style.display = 'none';
+
+  // Reset payment buttons
+  document.querySelectorAll('#page-sale .pay-method-btn').forEach(function(b) {
+    b.classList.remove('selected');
+  });
+
+  // Reset summary
+  updateSaleSummary();
+}
+
+function saleSearchIMEI(imei) {
+  if (!imei || imei.length < 10) {
+    showToast('请输入有效的 IMEI / Enter valid IMEI');
+    return;
+  }
+  var found = null;
+  for (var i = 0; i < phones.length; i++) {
+    if (phones[i] && phones[i].imei === imei && phones[i].status === 'available') {
+      found = phones[i];
+      break;
+    }
+  }
+  if (!found) {
+    showToast('未找到此 IMEI 或已售出 / IMEI not found or already sold');
+    return;
+  }
+  saleState.phone = found;
+  saleState.msrp = found.msrp || found.price || 0;
+  saleState.price = saleState.msrp;
+  var storeKey = found.store || normalizeStoreKey(found.storeName || '');
+  saleState.storeKey = storeKey;
+  saleState.storeName = found.storeName || (STORE_DATA[storeKey] || {}).nameZh || '';
+  saleState.taxRate = (STORE_DATA[storeKey] || {}).taxRate || 0;
+
+  // Show scan result
+  var scanResult = document.querySelector('#page-sale .scan-result');
+  if (scanResult) {
+    scanResult.style.display = '';
+    var nameEl = scanResult.querySelector('.scan-result-name');
+    if (nameEl) nameEl.textContent = found.name || 'Unknown';
+    var tagsEl = scanResult.querySelector('.scan-result-tags');
+    if (tagsEl) {
+      var isZh = document.body.dataset.lang === 'zh';
+      var colorLabel = isZh ? (found.color || '') : (found.colorEn || found.color || '');
+      var condLabel = found.cond === 'new' ? 'NEW' : 'USED';
+      var condCls = found.cond === 'new' ? 'cond-new' : 'cond-used';
+      var regionFlag = found.region === 'us' ? '🇺🇸' : found.region === 'hk' ? '🇭🇰' : '🇨🇳';
+      var regionLabel = (found.region || 'us').toUpperCase();
+      var sealedLabel = found.cond === 'new' ? (isZh ? '未拆封' : 'Sealed') : (isZh ? (found.condition || '').split('·')[0].trim() : (found.conditionEn || '').split('·')[0].trim());
+      tagsEl.innerHTML =
+        '<span class="device-tag"><span class="swatch" style="background:#1d1d1f;width:9px;height:9px;"></span>' + colorLabel + '</span>' +
+        '<span class="device-tag">' + (found.storage || '') + '</span>' +
+        '<span class="device-tag">' + sealedLabel + '</span>' +
+        '<span class="device-tag"><span class="cond-tag ' + condCls + '" style="width:auto;height:auto;padding:1px 6px;">' + condLabel + '</span></span>' +
+        '<span class="device-tag" style="padding:0;background:transparent;border:none;"><span class="region-tag region-' + found.region + '"><span class="flag">' + regionFlag + '</span> ' + regionLabel + '</span></span>';
+    }
+    var cells = scanResult.querySelectorAll('.scan-result-cell .val');
+    if (cells[0]) cells[0].textContent = found.imei;
+    if (cells[1]) cells[1].textContent = saleState.storeName;
+    if (cells[2]) cells[2].textContent = found.shelf || 'N/A';
+    if (cells[3]) cells[3].textContent = '$' + saleState.msrp.toLocaleString();
+  }
+
+  // Hide IMEI input
+  var scanInput = document.getElementById('saleImeiInput');
+  if (scanInput) scanInput.parentElement.style.display = 'none';
+
+  // Update MSRP input
+  var msrpInput = document.querySelector('#page-sale input[disabled]');
+  if (msrpInput) msrpInput.value = saleState.msrp;
+  // Update actual price input
+  var priceInput = document.querySelector('#page-sale .form-input[style*="font-weight:700"]');
+  if (priceInput) { priceInput.value = saleState.msrp; }
+
+  // Update tax rate display
+  var taxRateEl = document.getElementById('taxRate');
+  if (taxRateEl) taxRateEl.textContent = (STORE_DATA[saleState.storeKey] || {}).taxRateLabel || ('Tax ' + saleState.taxRate + '%');
+
+  updateSaleSummary();
+  showToast('已找到: ' + found.name + ' / Found: ' + found.name);
+}
+
+function updateSaleSummary() {
+  var p = saleState.phone;
+  // Summary card item
+  var summaryName = document.querySelector('#page-sale .summary-card .summary-section div[style*="font-weight:700"]');
+  if (summaryName) summaryName.textContent = p ? p.name : '--';
+  var summarySpec = document.querySelector('#page-sale .summary-card .summary-section div[style*="color:var(--text-muted)"]');
+  if (summarySpec && p) {
+    var isZh = document.body.dataset.lang === 'zh';
+    summarySpec.innerHTML = (p.storage || '') + ' · ' + (isZh ? (p.color || '') : (p.colorEn || p.color || ''));
+  }
+
+  var price = saleState.price || 0;
+  var msrp = saleState.msrp || 0;
+  var discount = msrp - price;
+  var subtotal = price;
+  var tax = saleState.taxApplied ? Math.round(subtotal * saleState.taxRate) / 100 : 0;
+  var total = subtotal + tax;
+
+  // Update summary rows
+  var msrpRow = document.querySelector('#page-sale .summary-row .amount');
+  if (msrpRow) msrpRow.textContent = '$' + msrp.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  var discountRow = document.querySelector('#page-sale .summary-row[style*="gold-deep"]');
+  if (discountRow) {
+    var dAmt = discountRow.querySelector('.amount');
+    if (dAmt) dAmt.textContent = discount > 0 ? '−$' + discount.toFixed(2) : '$0.00';
+    discountRow.style.display = discount > 0 ? '' : 'none';
+  }
+
+  // Subtotal
+  var subtotalRow = document.querySelector('#page-sale .summary-row[style*="dashed"] .amount');
+  if (subtotalRow) subtotalRow.textContent = '$' + subtotal.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  // Tax amount
+  var taxAmt = document.getElementById('summaryTaxAmt');
+  if (taxAmt) taxAmt.textContent = '$' + tax.toFixed(2);
+
+  // Total
+  var totalEl = document.getElementById('summaryTotal');
+  if (totalEl) totalEl.textContent = '$' + total.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2});
+
+  // Seller info
+  var acct = window._currentAccount || {};
+  var sellerName = document.querySelector('#page-sale .seller-row .name');
+  if (sellerName) sellerName.textContent = acct.name || '--';
+  var sellerAvatar = document.querySelector('#page-sale .seller-row .avatar');
+  if (sellerAvatar) sellerAvatar.textContent = (acct.name || 'XX').split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+  var sellerMeta = document.querySelector('#page-sale .seller-row .meta');
+  if (sellerMeta) sellerMeta.textContent = (acct.store || '') + ' · Staff';
+}
+
+function completeSale() {
+  if (!saleState.phone) { showToast('请先扫描 IMEI / Scan IMEI first'); return; }
+  // Get customer info from form
+  var custInputs = document.querySelectorAll('#page-sale .form-input');
+  var custName = custInputs[0] ? custInputs[0].value.trim() : '';
+  var custPhone = custInputs[1] ? custInputs[1].value.trim() : '';
+  if (!custName) { showToast('请输入客户姓名 / Enter customer name'); return; }
+
+  // Get actual price from input
+  var priceInput = document.querySelector('#page-sale .form-input[style*="font-weight:700"]');
+  var actualPrice = priceInput ? parseFloat(priceInput.value) : saleState.price;
+  if (isNaN(actualPrice) || actualPrice <= 0) { showToast('请输入有效价格 / Enter valid price'); return; }
+  saleState.price = actualPrice;
+
+  // Get payment methods
+  var methods = [];
+  document.querySelectorAll('#page-sale .pay-method-btn.selected').forEach(function(b) {
+    methods.push(b.querySelector('.pm-label').textContent.trim());
+  });
+  if (methods.length === 0) { showToast('请选择支付方式 / Select payment method'); return; }
+  saleState.paymentMethods = methods;
+
+  var tax = saleState.taxApplied ? Math.round(actualPrice * saleState.taxRate) / 100 : 0;
+  var total = actualPrice + tax;
+  var cost = saleState.phone.cost || 0;
+  var profit = actualPrice - cost;
+  var acct = window._currentAccount || {};
+
+  var sale = {
+    id: saleState.orderId,
+    date: new Date().toISOString(),
+    imei: saleState.phone.imei,
+    phoneName: saleState.phone.name,
+    storage: saleState.phone.storage,
+    color: saleState.phone.color,
+    colorEn: saleState.phone.colorEn,
+    cond: saleState.phone.cond,
+    region: saleState.phone.region,
+    cost: cost,
+    msrp: saleState.msrp,
+    price: actualPrice,
+    tax: tax,
+    total: total,
+    profit: profit,
+    taxApplied: saleState.taxApplied,
+    taxRate: saleState.taxRate,
+    customer: custName,
+    customerPhone: custPhone,
+    customerEmail: custInputs[2] ? custInputs[2].value.trim() : '',
+    paymentMethods: methods,
+    store: saleState.storeName,
+    storeKey: saleState.storeKey,
+    seller: acct.name || '',
+    status: 'completed'
+  };
+
+  // Save sale
+  var sales = getLocalData('pi_sales');
+  sales.unshift(sale);
+  setLocalData('pi_sales', sales);
+
+  // Mark phone as sold
+  saleState.phone.status = 'sold';
+
+  // Build receipt and show
+  fillReceipt(sale);
+  openReceiptModal();
+
+  // Refresh dashboard
+  renderDashboard();
+  renderInventory();
+
+  showToast('销售完成: ' + sale.id + ' / Sale completed');
+}
+
+function fillReceipt(sale) {
+  // Store info
+  var storeData = STORE_DATA[sale.storeKey] || {};
+  var storeEl = document.querySelector('.receipt-store');
+  if (storeEl) {
+    storeEl.innerHTML = '<strong>' + (storeData.nameEn || sale.store) + '</strong><br>' +
+      (storeData.addr || '') + '<br>' +
+      (storeData.phone ? '☏ <strong>' + storeData.phone + '</strong>' : '');
+  }
+
+  // Order info
+  var receiptRows = document.querySelectorAll('.receipt-paper .receipt-section:nth-child(2) .receipt-row .val');
+  if (receiptRows[0]) receiptRows[0].textContent = sale.id;
+  if (receiptRows[1]) receiptRows[1].textContent = new Date(sale.date).toLocaleString();
+  if (receiptRows[2]) receiptRows[2].textContent = sale.seller;
+  // Customer
+  if (receiptRows[4]) receiptRows[4].textContent = sale.customer;
+
+  // Product
+  var prodName = document.querySelector('.receipt-product-name');
+  if (prodName) {
+    var regionFlag = sale.region === 'us' ? '🇺🇸 US' : sale.region === 'hk' ? '🇭🇰 HK' : '🇨🇳 CN';
+    prodName.innerHTML = sale.phoneName + ' <span class="receipt-region-badge" style="background:#2c5d8a;">' + regionFlag + '</span>';
+  }
+  var prodMeta = document.querySelector('.receipt-product-meta');
+  if (prodMeta) {
+    prodMeta.innerHTML = (sale.storage || '') + ' · ' + (sale.color || '') + '<br><strong style="color:#1f1d12;">IMEI:</strong> ' + sale.imei;
+  }
+  var condEl = document.querySelector('.receipt-product-condition');
+  if (condEl) {
+    var condLabel = sale.cond === 'new' ? 'NEW' : 'USED';
+    condEl.innerHTML = '<span style="background:var(--brand);color:white;padding:1px 6px;border-radius:3px;font-size:9.5px;font-weight:700;letter-spacing:0.05em;">' + condLabel + '</span>';
+  }
+
+  // Pricing section
+  var pricingSection = document.querySelectorAll('.receipt-paper .receipt-section')[2];
+  if (pricingSection) {
+    var rows = pricingSection.querySelectorAll('.receipt-row');
+    // MSRP
+    if (rows[0]) { var v = rows[0].querySelector('.val'); if (v) v.textContent = '$' + sale.msrp.toFixed(2); }
+    // Discount
+    var discount = sale.msrp - sale.price;
+    if (rows[1]) {
+      rows[1].style.display = discount > 0 ? '' : 'none';
+      var v1 = rows[1].querySelector('.val'); if (v1) v1.textContent = '−$' + discount.toFixed(2);
+    }
+    // Subtotal
+    if (rows[2]) { var v2 = rows[2].querySelector('.val'); if (v2) v2.textContent = '$' + sale.price.toFixed(2); }
+    // Tax
+    if (rows[3]) {
+      rows[3].style.display = sale.taxApplied ? '' : 'none';
+      var v3 = rows[3].querySelector('.val'); if (v3) v3.textContent = '$' + sale.tax.toFixed(2);
+    }
+    // Total
+    var totalRow = pricingSection.querySelector('.receipt-totals .receipt-row .val');
+    if (totalRow) totalRow.textContent = '$' + sale.total.toFixed(2);
+  }
+
+  // Payment
+  var paySection = document.querySelectorAll('.receipt-paper .receipt-section')[3];
+  if (paySection) {
+    var payRows = paySection.querySelectorAll('.receipt-row');
+    // Main payment
+    if (payRows[1]) {
+      var lbl = payRows[1].querySelector('.label');
+      if (lbl) lbl.innerHTML = sale.paymentMethods.join(' + ');
+      var val = payRows[1].querySelector('.val');
+      if (val) val.textContent = '$' + sale.total.toFixed(2);
+    }
+    // Hide tendered/change rows for non-cash
+    if (payRows[2]) payRows[2].style.display = 'none';
+    if (payRows[3]) payRows[3].style.display = 'none';
+    // Paid total
+    if (payRows[4]) {
+      var paidVal = payRows[4].querySelector('span[style*="color:var(--success)"]');
+      if (paidVal) paidVal.textContent = '✓ $' + sale.total.toFixed(2);
+    }
+  }
+
+  // Update send targets
+  var smsTarget = document.getElementById('receiptSmsTarget');
+  if (smsTarget) smsTarget.textContent = sale.customerPhone || '--';
+  var emailTarget = document.getElementById('receiptEmailTarget');
+  if (emailTarget) emailTarget.textContent = sale.customerEmail || '--';
+}
+
+// ===== Transfer Functions =====
+function createTransfer(imei, targetStore, reason) {
+  if (!imei) { showToast('请输入 IMEI'); return; }
+  var phone = null;
+  for (var i = 0; i < phones.length; i++) {
+    if (phones[i] && phones[i].imei === imei && phones[i].status === 'available') {
+      phone = phones[i]; break;
+    }
+  }
+  if (!phone) { showToast('未找到可调拨的手机 / Phone not found'); return; }
+  var acct = window._currentAccount || {};
+  var transfer = {
+    id: generateId('TR'),
+    date: new Date().toISOString(),
+    imei: phone.imei,
+    phoneName: phone.name,
+    storage: phone.storage,
+    color: phone.color,
+    price: phone.msrp || phone.price || 0,
+    fromStore: phone.store || normalizeStoreKey(phone.storeName || ''),
+    fromStoreName: phone.storeName || '',
+    toStore: normalizeStoreKey(targetStore),
+    toStoreName: targetStore,
+    reason: reason || '',
+    requestedBy: acct.name || '',
+    status: 'pending'
+  };
+  var transfers = getLocalData('pi_transfers');
+  transfers.unshift(transfer);
+  setLocalData('pi_transfers', transfers);
+  phone.status = 'reserved';
+  renderDashboard();
+  showToast('调拨已创建: ' + transfer.id + ' / Transfer created');
+  return transfer;
+}
+
+function approveTransfer(transferId) {
+  var transfers = getLocalData('pi_transfers');
+  var t = transfers.find(function(x){ return x.id === transferId; });
+  if (!t) return;
+  t.status = 'transit';
+  t.approvedBy = (window._currentAccount || {}).name || '';
+  t.approvedDate = new Date().toISOString();
+  setLocalData('pi_transfers', transfers);
+  renderDashboard();
+  renderTransferPage();
+  showToast('调拨已批准 / Transfer approved: ' + transferId);
+}
+
+function rejectTransfer(transferId) {
+  var transfers = getLocalData('pi_transfers');
+  var t = transfers.find(function(x){ return x.id === transferId; });
+  if (!t) return;
+  t.status = 'rejected';
+  t.rejectedBy = (window._currentAccount || {}).name || '';
+  setLocalData('pi_transfers', transfers);
+  // Restore phone status
+  for (var i = 0; i < phones.length; i++) {
+    if (phones[i] && phones[i].imei === t.imei && phones[i].status === 'reserved') {
+      phones[i].status = 'available'; break;
+    }
+  }
+  renderDashboard();
+  renderTransferPage();
+  showToast('调拨已驳回 / Transfer rejected: ' + transferId);
+}
+
+// ===== Render Transfer Page =====
+function renderTransferPage() {
+  var transfers = getLocalData('pi_transfers');
+  var pending = transfers.filter(function(t){ return t.status === 'pending'; });
+  var transit = transfers.filter(function(t){ return t.status === 'transit'; });
+  var completed = transfers.filter(function(t){ return t.status === 'completed'; });
+
+  // Update KPIs
+  var trKpis = document.querySelectorAll('#page-transfer .kpi-value');
+  if (trKpis[0]) trKpis[0].textContent = pending.length;
+  if (trKpis[1]) trKpis[1].textContent = transit.length;
+  if (trKpis[2]) trKpis[2].textContent = completed.length;
+
+  // Update filter chips
+  var trChips = document.querySelectorAll('#page-transfer .filters .chip-num');
+  if (trChips[0]) trChips[0].textContent = pending.length;
+  if (trChips[1]) trChips[1].textContent = transfers.filter(function(t){ return t.requestedBy === ((window._currentAccount||{}).name||''); }).length;
+  if (trChips[2]) trChips[2].textContent = transit.length;
+  if (trChips[3]) trChips[3].textContent = completed.length;
+
+  // Render transfer list
+  var container = document.getElementById('transferList');
+  if (!container) return;
+  if (transfers.length === 0) {
+    container.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:28px;margin-bottom:8px;">📦</div><span class="zh">暂无调拨记录</span><span class="en">No transfer records</span></div>';
+    return;
+  }
+  var html = '';
+  transfers.forEach(function(t) {
+    var statusBadge = t.status === 'pending' ?
+      '<span style="background:var(--warn-soft);color:var(--warn);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">⏱ <span class="zh">待审批</span><span class="en">Pending</span></span>' :
+      t.status === 'transit' ?
+      '<span style="background:var(--info-soft);color:var(--info);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">🚚 <span class="zh">在途</span><span class="en">In Transit</span></span>' :
+      t.status === 'completed' ?
+      '<span style="background:var(--success-soft);color:var(--success);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">✓ <span class="zh">完成</span><span class="en">Done</span></span>' :
+      '<span style="background:var(--danger-soft);color:var(--danger);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">✕ <span class="zh">驳回</span><span class="en">Rejected</span></span>';
+    var fromName = (STORE_DATA[t.fromStore]||{}).nameEn || t.fromStoreName || t.fromStore;
+    var toName = (STORE_DATA[t.toStore]||{}).nameEn || t.toStoreName || t.toStore;
+    var actions = t.status === 'pending' ?
+      '<div style="display:flex;gap:6px;"><button class="btn btn-sm" onclick="rejectTransfer(\'' + t.id + '\')"><span class="zh">驳回</span><span class="en">Reject</span></button><button class="btn btn-sm btn-primary" onclick="approveTransfer(\'' + t.id + '\')"><span class="zh">同意</span><span class="en">Approve</span></button></div>' : '';
+    html += '<div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:14px 20px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;">' +
+      '<div>' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">' +
+          '<span style="font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:12px;">' + t.id + '</span>' +
+          statusBadge +
+          '<span style="background:var(--bg-tinted);padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:600;border:1px solid var(--border);">📍 ' + fromName + '</span>' +
+          '<span style="color:var(--brand);">→</span>' +
+          '<span style="background:var(--brand-soft);padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:600;color:var(--brand);">📍 ' + toName + '</span>' +
+        '</div>' +
+        '<div style="font-size:13px;font-weight:600;">' + t.phoneName + (t.storage ? ' · ' + t.storage : '') + '</div>' +
+        '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' +
+          '<span class="mono">IMEI ' + t.imei + '</span> · ' +
+          t.requestedBy + ' · ' + new Date(t.date).toLocaleDateString() +
+        '</div>' +
+      '</div>' +
+      actions +
+    '</div>';
+  });
+  container.innerHTML = html;
+}
+
+// ===== Render Sales Page =====
+function renderSalesPage() {
+  var sales = getLocalData('pi_sales');
+  var today = new Date(); today.setHours(0,0,0,0);
+  var weekStart = new Date(today); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+
+  var todaySales = 0, todayRev = 0, weekSales = 0, weekRev = 0, mtdSales = 0, mtdRev = 0, mtdProfit = 0;
+  sales.forEach(function(s) {
+    var d = new Date(s.date);
+    if (d >= monthStart) { mtdSales++; mtdRev += (s.total||0); mtdProfit += (s.profit||0); }
+    if (d >= weekStart) { weekSales++; weekRev += (s.total||0); }
+    if (d >= today) { todaySales++; todayRev += (s.total||0); }
+  });
+  var aov = mtdSales > 0 ? Math.round(mtdRev / mtdSales) : 0;
+
+  // Update subtitle
+  var subtitle = document.querySelector('#page-sales .page-subtitle');
+  if (subtitle) {
+    subtitle.innerHTML = '<span class="zh">本月共 ' + mtdSales + ' 单 · 总营收</span><span class="en">' + mtdSales + ' sales MTD · Total</span> ' +
+      '<span class="mono" style="color:var(--brand);font-weight:700;">$' + mtdRev.toLocaleString() + '</span> ' +
+      '<span style="color:var(--text-faint);">·</span> ' +
+      '<span class="zh">毛利</span><span class="en">Profit</span> ' +
+      '<span class="mono" style="color:var(--success);font-weight:700;">$' + mtdProfit.toLocaleString() + '</span>';
+  }
+
+  // KPIs
+  var salesKpis = document.querySelectorAll('#page-sales .kpi-value');
+  if (salesKpis[0]) { salesKpis[0].textContent = todaySales; var m0 = salesKpis[0].parentElement.querySelector('.kpi-meta'); if(m0) m0.textContent = '$' + todayRev.toLocaleString(); }
+  if (salesKpis[1]) { salesKpis[1].textContent = weekSales; var m1 = salesKpis[1].parentElement.querySelector('.kpi-meta'); if(m1) m1.textContent = '$' + weekRev.toLocaleString(); }
+  if (salesKpis[2]) { salesKpis[2].textContent = mtdSales; }
+  if (salesKpis[3]) { salesKpis[3].innerHTML = '<span class="ccy">$</span>' + aov.toLocaleString(); }
+
+  // Table body
+  var container = document.getElementById('salesTableBody');
+  if (!container) return;
+  if (sales.length === 0) {
+    container.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:28px;margin-bottom:8px;">📋</div><span class="zh">暂无销售记录</span><span class="en">No sales records yet</span></div>';
+    // Update pagination
+    var pag = document.getElementById('salesPagination');
+    if (pag) pag.innerHTML = '<div style="font-size:12px;color:var(--text-muted);"><span class="zh">共 0 单</span><span class="en">0 sales</span></div>';
+    return;
+  }
+  var html = '';
+  sales.forEach(function(s) {
+    var d = new Date(s.date);
+    var dateStr = (d.getMonth()+1).toString().padStart(2,'0') + '-' + d.getDate().toString().padStart(2,'0') + ' ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+    var profitPct = s.price > 0 ? Math.round(s.profit / s.price * 100) : 0;
+    var condTag = s.cond === 'used' ? ' <span class="cond-tag cond-used" style="height:14px;width:30px;font-size:8px;display:inline-flex;margin-left:3px;">USED</span>' : '';
+    var payIcon = s.paymentMethods && s.paymentMethods[0] === 'Cash' ? '💵' : '💳';
+    var payLabel = (s.paymentMethods || []).join('+');
+    html += '<div class="table-row body" style="grid-template-columns: 110px 1.6fr 1.1fr 95px 110px 120px 80px;">' +
+      '<div>' +
+        '<div class="mono" style="font-weight:700;font-size:11.5px;color:var(--text);">' + s.id + '</div>' +
+        '<div style="font-size:10.5px;color:var(--text-muted);" class="mono">' + dateStr + '</div>' +
+        '<div style="margin-top:3px;"><span class="status st-avail" style="font-size:9.5px;padding:1px 6px;">✓ <span class="zh">已完成</span><span class="en">Done</span></span></div>' +
+      '</div>' +
+      '<div class="cell-product">' +
+        '<div class="name">' + s.phoneName + (s.storage ? ' · ' + s.storage : '') + condTag + '</div>' +
+        '<div class="meta mono">' + s.imei + '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="font-weight:600;font-size:12.5px;">' + s.customer + '</div>' +
+        '<div style="font-size:10.5px;color:var(--text-muted);">' + (s.customerPhone || '') + '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div style="background:var(--success-soft);color:var(--success);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">' + payIcon + ' ' + payLabel + '</div>' +
+      '</div>' +
+      '<div style="font-size:11.5px;">' +
+        '<div style="font-weight:600;">' + (s.store || '') + '</div>' +
+        '<div style="color:var(--text-muted);font-size:10.5px;">' + s.seller + '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div class="cell-price"><span class="ccy">$</span>' + (s.total||0).toLocaleString() + '</div>' +
+        '<div style="font-size:10.5px;color:var(--success);font-family:\'JetBrains Mono\',monospace;font-weight:600;">+$' + (s.profit||0).toLocaleString() + ' (' + profitPct + '%)</div>' +
+      '</div>' +
+      '<div class="row-actions">' +
+        '<button class="iconbtn" title="详情"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>' +
+      '</div>' +
+    '</div>';
+  });
+  container.innerHTML = html;
+  var pag = document.getElementById('salesPagination');
+  if (pag) pag.innerHTML = '<div style="font-size:12px;color:var(--text-muted);"><span class="zh">共 ' + sales.length + ' 单</span><span class="en">' + sales.length + ' sales</span></div>';
+}
+
+// ===== Export CSV =====
+function exportSalesCSV() {
+  var sales = getLocalData('pi_sales');
+  if (sales.length === 0) { showToast('暂无数据可导出 / No data to export'); return; }
+  var csv = 'Order ID,Date,Phone,IMEI,Customer,Price,Tax,Total,Profit,Payment,Store,Seller\n';
+  sales.forEach(function(s) {
+    csv += [s.id, s.date, '"'+s.phoneName+'"', s.imei, '"'+s.customer+'"', s.price, s.tax, s.total, s.profit, '"'+(s.paymentMethods||[]).join('+')+'"', '"'+s.store+'"', s.seller].join(',') + '\n';
+  });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sales_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('CSV 已下载 / CSV downloaded');
+}
+
+function exportInventoryCSV() {
+  if (phones.length === 0) { showToast('暂无数据可导出 / No data'); return; }
+  var csv = 'Name,IMEI,Storage,Color,Condition,Region,Store,Shelf,Cost,MSRP,Status,Age\n';
+  phones.forEach(function(p) {
+    if (!p) return;
+    csv += ['"'+p.name+'"', p.imei, p.storage, '"'+p.color+'"', p.cond, p.region, '"'+(p.storeName||'')+'"', p.shelf, p.cost||0, p.msrp||p.price||0, p.status, p.ageDays||0].join(',') + '\n';
+  });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'inventory_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('CSV 已下载 / CSV downloaded');
+}
+
 function openStoreDetail(storeKey) {
   const data = STORE_DATA[storeKey];
   if (!data) return;
@@ -9829,11 +10324,11 @@ let taxApplied = true; // default: tax IS applied
 
 function toggleTax() {
   taxApplied = !taxApplied;
+  saleState.taxApplied = taxApplied;
   const row = document.getElementById('taxToggleRow');
   const checkbox = document.getElementById('taxCheckbox');
   const taxRow = document.getElementById('summaryTaxRow');
   const noTaxRow = document.getElementById('summaryNoTaxRow');
-  const total = document.getElementById('summaryTotal');
 
   if (!row) return;
 
@@ -9842,14 +10337,62 @@ function toggleTax() {
     checkbox.classList.add('checked');
     if (taxRow) taxRow.style.display = 'flex';
     if (noTaxRow) noTaxRow.style.display = 'none';
-    if (total) total.innerText = '$1,189.60';
   } else {
     row.classList.remove('active');
     checkbox.classList.remove('checked');
     if (taxRow) taxRow.style.display = 'none';
     if (noTaxRow) noTaxRow.style.display = 'flex';
-    if (total) total.innerText = '$1,079.00';
   }
+  updateSaleSummary();
+}
+
+// ===== New Transfer Modal =====
+function openNewTransferModal() {
+  var html = '<div class="modal-overlay" id="newTransferModal" onclick="if(event.target===this)closeNewTransferModal()" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;">' +
+    '<div style="background:white;border-radius:14px;padding:24px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+      '<div style="font-weight:700;font-size:16px;margin-bottom:16px;"><span class="zh">发起调拨</span><span class="en">New Transfer</span></div>' +
+      '<div style="margin-bottom:12px;">' +
+        '<label style="font-size:12px;font-weight:600;color:var(--text-soft);display:block;margin-bottom:4px;">IMEI</label>' +
+        '<input type="text" id="trImeiInput" class="form-input" placeholder="输入 15 位 IMEI" maxlength="15" style="width:100%;">' +
+      '</div>' +
+      '<div style="margin-bottom:12px;">' +
+        '<label style="font-size:12px;font-weight:600;color:var(--text-soft);display:block;margin-bottom:4px;"><span class="zh">目标门店</span><span class="en">Target Store</span></label>' +
+        '<select id="trTargetStore" class="form-select" style="width:100%;">' +
+          '<option value="Alhambra">Alhambra</option>' +
+          '<option value="Monterey Park">Monterey Park</option>' +
+          '<option value="San Gabriel">San Gabriel</option>' +
+          '<option value="Rowland Heights">Rowland Heights</option>' +
+          '<option value="Arcadia 1">Arcadia 1</option>' +
+          '<option value="Arcadia 2">Arcadia 2</option>' +
+          '<option value="Irvine">Irvine</option>' +
+          '<option value="Rancho Cucamonga">Rancho Cucamonga</option>' +
+          '<option value="Las Vegas">Las Vegas</option>' +
+        '</select>' +
+      '</div>' +
+      '<div style="margin-bottom:16px;">' +
+        '<label style="font-size:12px;font-weight:600;color:var(--text-soft);display:block;margin-bottom:4px;"><span class="zh">调拨理由</span><span class="en">Reason</span></label>' +
+        '<input type="text" id="trReason" class="form-input" placeholder="客户指定 / 补货 / Customer request" style="width:100%;">' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;justify-content:flex-end;">' +
+        '<button class="btn" onclick="closeNewTransferModal()"><span class="zh">取消</span><span class="en">Cancel</span></button>' +
+        '<button class="btn btn-primary" onclick="submitNewTransfer()"><span class="zh">提交</span><span class="en">Submit</span></button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+function closeNewTransferModal() {
+  var m = document.getElementById('newTransferModal');
+  if (m) m.remove();
+}
+function submitNewTransfer() {
+  var imei = document.getElementById('trImeiInput').value.trim();
+  var target = document.getElementById('trTargetStore').value;
+  var reason = document.getElementById('trReason').value.trim();
+  if (!imei) { showToast('请输入 IMEI / Enter IMEI'); return; }
+  createTransfer(imei, target, reason);
+  closeNewTransferModal();
+  renderTransferPage();
 }
 
 // ===== Receipt Modal =====
@@ -9862,9 +10405,11 @@ function closeReceiptModal() {
 }
 
 function sendReceipt(method) {
+  const custPhone = saleState.customer.phone || '';
+  const custEmail = saleState.customer.email || '';
   const labels = {
-    'sms': '短信已发送至 +1 626 555 8821 / SMS sent',
-    'email': '邮件已发送至 lin.wei@gmail.com / Email sent',
+    'sms': '短信已发送至 ' + custPhone + ' / SMS sent',
+    'email': '邮件已发送 / Email sent',
     'print': '小票已发送到打印机 / Sent to printer'
   };
   showToast(labels[method] || 'Receipt sent');
@@ -9916,8 +10461,7 @@ function openReportModal(btn) {
   document.getElementById('rmPhoneImei').innerText = 'IMEI ' + imei + (shelfText ? ' · ' + shelfText : '');
   document.getElementById('rmPhoneStore').innerText = '📍 ' + storeName;
 
-  const role = document.body.dataset.role || 'admin';
-  const reporterName = role === 'admin' ? 'Andy Wang' : 'Chester';
+  const reporterName = (window._currentAccount || {}).name || 'Staff';
   document.getElementById('rmReporter').innerText = reporterName;
 
   const now = new Date();
@@ -10078,7 +10622,7 @@ function getFilteredPhones() {
     if (!p) return false;
     if (INV_FILTERS.mode && p.cond !== INV_FILTERS.mode) return false;
     if (INV_FILTERS.brand !== 'all' && p.brand !== INV_FILTERS.brand) return false;
-    if (INV_FILTERS.store !== 'all' && p.store !== INV_FILTERS.store) return false;
+    if (INV_FILTERS.store !== 'all' && (p.store || normalizeStoreKey(p.storeName || '')) !== INV_FILTERS.store) return false;
     if (INV_FILTERS.region !== 'all' && p.region !== INV_FILTERS.region) return false;
     if (INV_FILTERS.status === 'available' && p.status !== 'available') return false;
     if (INV_FILTERS.status === 'aged' && p.ageDays < 60) return false;
@@ -10096,6 +10640,16 @@ function renderInventory() {
   const isZh = document.body.dataset.lang === 'zh';
   const container = document.getElementById('invTableBody');
   if (!container) return;
+
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:28px;margin-bottom:8px;">📱</div><span class="zh">暂无匹配的手机</span><span class="en">No matching phones</span></div>';
+    // Update count badge
+    var countEl = document.querySelector('#page-inventory .count');
+    if (countEl && countEl.textContent.indexOf('NEW') >= 0) {
+      // this is the new/used filter count, update it
+    }
+    return;
+  }
 
   let html = '';
   filtered.forEach((p, idx) => {
@@ -10631,6 +11185,15 @@ function navTo(el, target) {
     document.getElementById('crumbEn').innerText = titles[target].en;
   }
   window.scrollTo(0, 0);
+
+  // Page-specific render hooks
+  try {
+    if (target === 'dashboard') renderDashboard();
+    if (target === 'sales') renderSalesPage();
+    if (target === 'transfer') renderTransferPage();
+    if (target === 'inventory') { renderDashboard(); renderInventory(); }
+    if (target === 'sale') initSalePage();
+  } catch(e){}
 }
 
 // Payment method click handler (multi-select)
@@ -10722,6 +11285,12 @@ if (!window.initDynamicUI) {
       var metaEn = account.role === 'admin' ? 'HQ · Admin' : (account.store || '') + ' · Staff';
       el('maStoreMeta').innerHTML = '<span class="zh">' + metaZh + '</span><span class="en">' + metaEn + '</span>';
     }
+    // Render all dynamic data
+    try { renderDashboard(); } catch(e){}
+    try { renderSalesPage(); } catch(e){}
+    try { renderTransferPage(); } catch(e){}
+    try { renderInventory(); } catch(e){}
+    try { initSalePage(); } catch(e){}
   };
 }
 </script>
