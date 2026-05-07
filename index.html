@@ -4952,14 +4952,11 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     loginBtn.disabled = true;
     loginBtn.textContent = '...';
 
-    // Save session
+    // Always save session (so refresh keeps correct user)
     try {
-      var rem = document.getElementById('rememberDevice');
-      if (rem && rem.checked) {
-        localStorage.setItem('pi_session', JSON.stringify({
-          email: em, name: acct.name, role: acct.role, store: acct.store, ts: Date.now()
-        }));
-      }
+      localStorage.setItem('pi_session', JSON.stringify({
+        email: em, name: acct.name, role: acct.role, store: acct.store, ts: Date.now()
+      }));
     } catch(e){}
 
     setTimeout(function() {
@@ -5012,6 +5009,14 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           setTimeout(function() {
             try { if (window.setRole) window.setRole(null, s.role, sa); } catch(e){}
             try { if (window.initDynamicUI) window.initDynamicUI(sa); } catch(e){}
+            // Restore last active page
+            try {
+              var lastPage = sessionStorage.getItem('pi_current_page');
+              if (lastPage && document.getElementById('page-' + lastPage)) {
+                var navEl = document.querySelector('.nav-item[onclick*="' + lastPage + '"]');
+                if (navEl) { navTo(navEl, lastPage); }
+              }
+            } catch(e){}
           }, 100);
         });
       }
@@ -5056,6 +5061,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   // Logout
   window.doLogout = function() {
     localStorage.removeItem('pi_session');
+    try { sessionStorage.removeItem('pi_current_page'); } catch(e){}
     document.getElementById('mainApp').style.display = 'none';
     document.getElementById('loginScreen').classList.remove('hidden');
     pinField.value = '';
@@ -6604,34 +6610,34 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         <div class="staff-hero">
           <div style="position:relative;z-index:1;">
             <div class="staff-hero-greet">
-              <span class="zh" id="heroGreetZh">下午好,Andy</span>
-              <span class="en" id="heroGreetEn">Good afternoon, Andy</span>
+              <span class="zh" id="heroGreetZh"></span>
+              <span class="en" id="heroGreetEn"></span>
             </div>
             <div class="staff-hero-meta">
               <span id="heroStore" class="zh">所有门店 · 10 店总览</span>
               <span id="heroStoreEn" class="en">All Stores · 10 locations</span>
               <span style="opacity:0.5;">|</span>
-              <span class="mono" style="font-size:11px;">Wed, May 4 · 14:32</span>
+              <span class="mono" style="font-size:11px;" id="hereDateStr"></span>
             </div>
           </div>
           <div class="staff-hero-stats">
             <div class="shero-stat">
               <div class="l"><span class="zh">今日销售</span><span class="en">Today</span></div>
-              <div class="v">28</div>
-              <div class="s admin-only">$24.9K</div>
+              <div class="v">0</div>
+              <div class="s admin-only">$0</div>
               <div class="s staff-only"><span class="zh">部</span><span class="en">phones</span></div>
             </div>
             <div class="shero-stat">
               <div class="l"><span class="zh">在售库存</span><span class="en">Available</span></div>
               <div class="v" id="invHeroCount">0</div>
-              <div class="s">220 NEW · 167 USED</div>
+              <div class="s">0 NEW · 0 USED</div>
             </div>
             <div class="shero-stat">
               <div class="l"><span class="zh">需关注</span><span class="en">Attention</span></div>
-              <div class="v" style="color:#ffc266;">8</div>
+              <div class="v" style="color:#ffc266;">0</div>
               <div class="s">
-                <span class="zh">3 调拨 · 5 待检</span>
-                <span class="en">3 transfers · 5 QC</span>
+                <span class="zh">0 调拨 · 0 待检</span>
+                <span class="en">0 transfers · 0 QC</span>
               </div>
             </div>
           </div>
@@ -10603,6 +10609,9 @@ function navTo(el, target) {
   document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + target).classList.add('active');
 
+  // Save current page so refresh restores it
+  try { sessionStorage.setItem('pi_current_page', target); } catch(e){}
+
   const titles = {
     dashboard: { zh:'总控台', en:'Dashboard' },
     'store-detail': { zh:'门店详情', en:'Store Detail' },
@@ -10708,6 +10717,11 @@ if (!window.initDynamicUI) {
     }
     if (el('maGreetZh') && account) el('maGreetZh').textContent = gZh + ',' + account.name;
     if (el('maGreetEn') && account) el('maGreetEn').textContent = 'Welcome, ' + (account ? account.name : '');
+    if (el('maStoreMeta') && account) {
+      var metaZh = account.role === 'admin' ? '总部 · 管理员' : (account.store || '') + ' · 员工';
+      var metaEn = account.role === 'admin' ? 'HQ · Admin' : (account.store || '') + ' · Staff';
+      el('maStoreMeta').innerHTML = '<span class="zh">' + metaZh + '</span><span class="en">' + metaEn + '</span>';
+    }
   };
 }
 </script>
