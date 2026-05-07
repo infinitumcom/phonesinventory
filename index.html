@@ -4853,6 +4853,25 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
     <div class="form-group">
       <label class="form-label">
+        <span class="zh">选择门店</span><span class="en">Select Store</span>
+      </label>
+      <select id="loginStore" class="form-input" style="appearance:auto;cursor:pointer;">
+        <option value=""><span class="zh">— 请选择当前所在门店 —</span></option>
+        <option value="Alhambra">Alhambra</option>
+        <option value="Monterey Park">Monterey Park</option>
+        <option value="San Gabriel">San Gabriel</option>
+        <option value="Rowland Heights">Rowland Heights</option>
+        <option value="Arcadia 1">Arcadia 1 (Huntington)</option>
+        <option value="Arcadia 2">Arcadia 2 (Baldwin)</option>
+        <option value="Irvine">Irvine (99 Ranch)</option>
+        <option value="Rancho Cucamonga">Rancho Cucamonga (99 Ranch)</option>
+        <option value="Las Vegas">Las Vegas</option>
+        <option value="HQ">HQ 总仓 / Warehouse</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">
         <span class="zh">工作邮箱</span><span class="en">Work Email</span>
       </label>
       <input type="email" id="loginEmail" class="form-input" placeholder="name@ifixforu.com" autocomplete="email" />
@@ -4950,6 +4969,22 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   var errorBox = document.getElementById('loginError');
   var errorText = document.getElementById('loginErrorText');
 
+  // Auto-select store when email is entered (convenience)
+  emailField.addEventListener('blur', function() {
+    var em = this.value.trim().toLowerCase();
+    var acct = ACCOUNTS[em];
+    var storeSelect = document.getElementById('loginStore');
+    if (acct && storeSelect && acct.store && acct.store !== 'all') {
+      // Auto-select the staff's default store if no store chosen yet
+      if (!storeSelect.value) {
+        for (var i = 0; i < storeSelect.options.length; i++) {
+          if (storeSelect.options[i].value === acct.store) {
+            storeSelect.selectedIndex = i; break;
+          }
+        }
+      }
+    }
+  });
   // PIN: digits only, auto-submit on 6
   pinField.addEventListener('input', function() {
     this.value = this.value.replace(/[^0-9]/g, '').substring(0, 6);
@@ -4969,9 +5004,12 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   }
 
   function tryLogin() {
+    var storeSelect = document.getElementById('loginStore');
+    var selectedStore = storeSelect ? storeSelect.value : '';
     var em = emailField.value.trim().toLowerCase();
     var pin = pinField.value.replace(/[^0-9]/g, '');
 
+    if (!selectedStore) { showErr('请先选择门店 / Select a store first'); if (storeSelect) storeSelect.focus(); return; }
     if (!em) { showErr('请输入工作邮箱 / Enter email'); emailField.focus(); return; }
     if (pin.length < 6) { showErr('请输入6位密码 (已输入' + pin.length + '位)'); pinField.focus(); return; }
 
@@ -4982,6 +5020,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       return;
     }
 
+    // Use selected store for this session (allows staff to work at different stores)
+    var sessionStore = acct.role === 'admin' ? 'all' : selectedStore;
+    acct._sessionStore = sessionStore;
+
     // Success - hide login, show app
     errorBox.classList.remove('show');
     loginBtn.disabled = true;
@@ -4990,7 +5032,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     // Always save session (so refresh keeps correct user)
     try {
       localStorage.setItem('pi_session', JSON.stringify({
-        email: em, name: acct.name, role: acct.role, store: acct.store, ts: Date.now()
+        email: em, name: acct.name, role: acct.role, store: sessionStore, ts: Date.now()
       }));
     } catch(e){}
 
@@ -5003,6 +5045,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       // Set role and user info based on login account
       window._currentAccount = acct;
       window._currentAccount.email = em;
+      window._currentAccount.store = sessionStore;
       try { if (window.setRole) window.setRole(null, acct.role, acct); } catch(e){}
       // Init dynamic UI
       try { if (window.initDynamicUI) window.initDynamicUI(acct); } catch(e){}
@@ -7167,16 +7210,16 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
           </div>
           <div class="page-actions">
-            <button class="btn"><span class="zh">📥 下载 Excel</span><span class="en">📥 Excel</span></button>
-            <button class="btn btn-primary"><span class="zh">💰 发放本月提成</span><span class="en">💰 Process Payout</span></button>
+            <button class="btn" onclick="exportStaffCSV()"><span class="zh">📥 下载 Excel</span><span class="en">📥 Excel</span></button>
+            <button class="btn btn-primary" onclick="processMonthlyPayout()"><span class="zh">💰 发放本月提成</span><span class="en">💰 Process Payout</span></button>
           </div>
         </div>
 
         <div class="kpi-grid cols-4">
-          <div class="kpi"><div class="kpi-label"><span class="zh">本月销售</span><span class="en">Units Sold</span></div><div class="kpi-value">0</div><div class="kpi-meta">—</div></div>
-          <div class="kpi"><div class="kpi-label"><span class="zh">积分总额</span><span class="en">Total Points</span></div><div class="kpi-value" style="color:var(--purple);">0<span style="font-size:14px;color:var(--text-muted);font-weight:600;margin-left:3px;">P</span></div><div class="kpi-meta">—</div></div>
-          <div class="kpi"><div class="kpi-label"><span class="zh">销冠</span><span class="en">Top Seller</span></div><div class="kpi-value" style="font-size:20px;">—</div><div class="kpi-meta">—</div></div>
-          <div class="kpi"><div class="kpi-label"><span class="zh">活跃员工</span><span class="en">Active Staff</span></div><div class="kpi-value">0</div><div class="kpi-meta">—</div></div>
+          <div class="kpi"><div class="kpi-label"><span class="zh">本月销售</span><span class="en">Units Sold</span></div><div class="kpi-value" id="staffKpiUnits">0</div><div class="kpi-meta" id="staffKpiUnitsMeta">—</div></div>
+          <div class="kpi"><div class="kpi-label"><span class="zh">积分总额</span><span class="en">Total Points</span></div><div class="kpi-value" style="color:var(--purple);" id="staffKpiPoints">0<span style="font-size:14px;color:var(--text-muted);font-weight:600;margin-left:3px;">P</span></div><div class="kpi-meta" id="staffKpiPointsMeta">—</div></div>
+          <div class="kpi"><div class="kpi-label"><span class="zh">销冠</span><span class="en">Top Seller</span></div><div class="kpi-value" style="font-size:20px;" id="staffKpiTop">—</div><div class="kpi-meta" id="staffKpiTopMeta">—</div></div>
+          <div class="kpi"><div class="kpi-label"><span class="zh">活跃员工</span><span class="en">Active Staff</span></div><div class="kpi-value" id="staffKpiActive">0</div><div class="kpi-meta" id="staffKpiActiveMeta">—</div></div>
         </div>
 
         <div class="section" style="margin-bottom:14px;">
@@ -7223,195 +7266,19 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="en">May Leaderboard</span>
               <span class="count">· 11 staff</span>
             </div>
-            <div class="filters">
-              <button class="chip active"><span class="zh">全部</span><span class="en">All</span></button>
-              <button class="chip">Alhambra</button>
-              <button class="chip">Arcadia 1</button>
-              <button class="chip">+ <span class="zh">7 家</span><span class="en">7 more</span></button>
+            <div class="filters" id="staffStoreFilters">
+              <button class="chip active" onclick="setStaffFilter(this,'all')"><span class="zh">全部</span><span class="en">All</span></button>
+              <button class="chip" onclick="setStaffFilter(this,'Alhambra')">Alhambra</button>
+              <button class="chip" onclick="setStaffFilter(this,'Monterey Park')">Monterey Park</button>
+              <button class="chip" onclick="setStaffFilter(this,'San Gabriel')">San Gabriel</button>
+              <button class="chip" onclick="setStaffFilter(this,'Arcadia 1')">Arcadia 1</button>
+              <button class="chip" onclick="setStaffFilter(this,'Las Vegas')">Las Vegas</button>
             </div>
           </div>
 
           <div style="padding:14px 18px;">
-            <div class="staff-grid">
-
-              <div class="staff-card top">
-                <div class="staff-head">
-                  <div class="avatar" style="background:linear-gradient(135deg,#b8964a,#8c6e2f);">JS</div>
-                  <div class="info">
-                    <div class="name">Jayden Sun <span class="rank-badge gold">🏆 #1</span></div>
-                    <div class="meta">Alhambra · Staff · <span class="zh">入职 2 年</span><span class="en">2y tenure</span></div>
-                  </div>
-                </div>
-                <div class="staff-stats">
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">销售台数</span><span class="en">Units</span></div>
-                    <div class="stat-val">0</div>
-                    <div class="stat-meta">0 NEW · 0 USED</div>
-                  </div>
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">本月积分</span><span class="en">Points MTD</span></div>
-                    <div class="stat-val" style="color:var(--purple);">0<span style="font-size:13px;color:var(--text-muted);font-weight:600;margin-left:2px;">P</span></div>
-                    <div class="stat-meta">0 + 0 P</div>
-                  </div>
-                </div>
-                <div>
-                  <div class="staff-progress">
-                    <span><span class="zh">月度目标 25 台</span><span class="en">Goal 25 units</span></span>
-                    <span style="color:var(--brand);font-weight:600;">0%</span>
-                  </div>
-                  <div class="progress-bar"><div class="progress-fill" style="width:0%;"></div></div>
-                </div>
-              </div>
-
-              <div class="staff-card">
-                <div class="staff-head">
-                  <div class="avatar">SS</div>
-                  <div class="info">
-                    <div class="name">Steve Shen <span class="rank-badge silver">#2</span></div>
-                    <div class="meta">Monterey Park · Staff · <span class="zh">入职 1.5 年</span><span class="en">1.5y tenure</span></div>
-                  </div>
-                </div>
-                <div class="staff-stats">
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">销售台数</span><span class="en">Units</span></div>
-                    <div class="stat-val">0</div>
-                    <div class="stat-meta">0 NEW · 0 USED</div>
-                  </div>
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">本月积分</span><span class="en">Points MTD</span></div>
-                    <div class="stat-val" style="color:var(--purple);">0<span style="font-size:13px;color:var(--text-muted);font-weight:600;margin-left:2px;">P</span></div>
-                    <div class="stat-meta">0 + 0 P</div>
-                  </div>
-                </div>
-                <div>
-                  <div class="staff-progress">
-                    <span><span class="zh">月度目标 25 台</span><span class="en">Goal 25 units</span></span>
-                    <span style="color:var(--brand);font-weight:600;">0%</span>
-                  </div>
-                  <div class="progress-bar"><div class="progress-fill" style="width:0%;"></div></div>
-                </div>
-              </div>
-
-              <div class="staff-card">
-                <div class="staff-head">
-                  <div class="avatar">CH</div>
-                  <div class="info">
-                    <div class="name">Chester <span class="rank-badge bronze">#3</span></div>
-                    <div class="meta">Alhambra · Staff · <span class="zh">入职 8 月</span><span class="en">8mo tenure</span></div>
-                  </div>
-                </div>
-                <div class="staff-stats">
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">销售台数</span><span class="en">Units</span></div>
-                    <div class="stat-val">0</div>
-                    <div class="stat-meta">0 NEW · 0 USED</div>
-                  </div>
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">本月积分</span><span class="en">Points MTD</span></div>
-                    <div class="stat-val" style="color:var(--purple);">0<span style="font-size:13px;color:var(--text-muted);font-weight:600;margin-left:2px;">P</span></div>
-                    <div class="stat-meta">0 + 0 P</div>
-                  </div>
-                </div>
-                <div>
-                  <div class="staff-progress">
-                    <span><span class="zh">月度目标 20 台</span><span class="en">Goal 20 units</span></span>
-                    <span style="color:var(--brand);font-weight:600;">0%</span>
-                  </div>
-                  <div class="progress-bar"><div class="progress-fill" style="width:0%;"></div></div>
-                </div>
-              </div>
-
-              <div class="staff-card">
-                <div class="staff-head">
-                  <div class="avatar">HZ</div>
-                  <div class="info">
-                    <div class="name">Harry Zou <span class="rank-badge normal">#4</span></div>
-                    <div class="meta">Arcadia 2 · Staff · <span class="zh">入职 1 年</span><span class="en">1y tenure</span></div>
-                  </div>
-                </div>
-                <div class="staff-stats">
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">销售台数</span><span class="en">Units</span></div>
-                    <div class="stat-val">0</div>
-                    <div class="stat-meta">0 NEW · 0 USED</div>
-                  </div>
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">本月积分</span><span class="en">Points MTD</span></div>
-                    <div class="stat-val" style="color:var(--purple);">0<span style="font-size:13px;color:var(--text-muted);font-weight:600;margin-left:2px;">P</span></div>
-                    <div class="stat-meta">0 + 0 P</div>
-                  </div>
-                </div>
-                <div>
-                  <div class="staff-progress">
-                    <span><span class="zh">月度目标 20 台</span><span class="en">Goal 20 units</span></span>
-                    <span style="color:var(--brand);font-weight:600;">0%</span>
-                  </div>
-                  <div class="progress-bar"><div class="progress-fill" style="width:0%;"></div></div>
-                </div>
-              </div>
-
-              <div class="staff-card">
-                <div class="staff-head">
-                  <div class="avatar">JZ</div>
-                  <div class="info">
-                    <div class="name">Jason Zeng <span class="rank-badge normal" style="background:var(--brand-soft);color:var(--brand);">店长 / Manager</span></div>
-                    <div class="meta">Rancho Cucamonga · <span class="zh">入职 3 年</span><span class="en">3y tenure</span></div>
-                  </div>
-                </div>
-                <div class="staff-stats">
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">本店总销售</span><span class="en">Store Sales</span></div>
-                    <div class="stat-val">0</div>
-                    <div class="stat-meta">
-                      <span class="zh">含全员</span>
-                      <span class="en">incl. team</span>
-                    </div>
-                  </div>
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">店面营收</span><span class="en">Store Rev</span></div>
-                    <div class="stat-val gold"><span class="ccy">$</span>0</div>
-                    <div class="stat-meta">—</div>
-                  </div>
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">店长奖金</span><span class="en">Mgr Bonus</span></div>
-                    <div class="stat-val muted">—</div>
-                    <div class="stat-meta">
-                      <span class="zh">月底单算</span>
-                      <span class="en">EOM separate</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div class="staff-card">
-                <div class="staff-head">
-                  <div class="avatar">BH</div>
-                  <div class="info">
-                    <div class="name">Bill Han <span class="rank-badge normal">#5</span></div>
-                    <div class="meta">San Gabriel · Staff · <span class="zh">入职 6 月</span><span class="en">6mo tenure</span></div>
-                  </div>
-                </div>
-                <div class="staff-stats">
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">销售台数</span><span class="en">Units</span></div>
-                    <div class="stat-val">0</div>
-                    <div class="stat-meta">0 NEW · 0 USED</div>
-                  </div>
-                  <div class="stat-block">
-                    <div class="stat-label"><span class="zh">本月积分</span><span class="en">Points MTD</span></div>
-                    <div class="stat-val" style="color:var(--purple);">0<span style="font-size:13px;color:var(--text-muted);font-weight:600;margin-left:2px;">P</span></div>
-                    <div class="stat-meta">0 + 0 P</div>
-                  </div>
-                </div>
-                <div>
-                  <div class="staff-progress">
-                    <span><span class="zh">月度目标 15 台</span><span class="en">Goal 15 units</span></span>
-                    <span style="color:var(--brand);font-weight:600;">0%</span>
-                  </div>
-                  <div class="progress-bar"><div class="progress-fill" style="width:0%;"></div></div>
-                </div>
-              </div>
-
+            <div class="staff-grid" id="staffGridBody">
+              <!-- Dynamic staff cards rendered by renderStaffPage() -->
             </div>
           </div>
         </div>
@@ -7719,21 +7586,20 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
       </div>
       <div class="page-actions">
-        <button class="btn"><span class="zh">📤 导出名单</span><span class="en">📤 Export List</span></button>
-        <button class="btn"><span class="zh">📨 群发短信</span><span class="en">📨 SMS Campaign</span></button>
-        <button class="btn btn-primary"><span class="zh">+ 添加客户</span><span class="en">+ Add Customer</span></button>
+        <button class="btn" onclick="exportCustomersCSV()"><span class="zh">📤 导出名单</span><span class="en">📤 Export List</span></button>
+        <button class="btn btn-primary" onclick="openAddCustomerModal()"><span class="zh">+ 添加客户</span><span class="en">+ Add Customer</span></button>
       </div>
     </div>
 
     <div class="kpi-grid cols-5">
-      <div class="kpi"><div class="kpi-label"><span class="zh">总客户数</span><span class="en">Total</span></div><div class="kpi-value">0</div><div class="kpi-meta">—</div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">VIP 客户</span><span class="en">VIP</span></div><div class="kpi-value" style="color:var(--gold-deep);">0</div><div class="kpi-meta">
+      <div class="kpi"><div class="kpi-label"><span class="zh">总客户数</span><span class="en">Total</span></div><div class="kpi-value" id="custKpiTotal">0</div><div class="kpi-meta" id="custKpiTotalMeta">—</div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">VIP 客户</span><span class="en">VIP</span></div><div class="kpi-value" style="color:var(--gold-deep);" id="custKpiVip">0</div><div class="kpi-meta">
         <span class="zh">累计 $5K+</span>
         <span class="en">$5K+ lifetime</span>
       </div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">复购客户</span><span class="en">Repeat</span></div><div class="kpi-value">0</div><div class="kpi-meta">0% <span class="zh">复购率</span><span class="en">repeat rate</span></div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">平均 LTV</span><span class="en">Avg LTV</span></div><div class="kpi-value"><span class="ccy">$</span>0</div><div class="kpi-meta">—</div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">流失风险</span><span class="en">At Risk</span></div><div class="kpi-value" style="color:var(--warn);">0</div><div class="kpi-meta">
+      <div class="kpi"><div class="kpi-label"><span class="zh">复购客户</span><span class="en">Repeat</span></div><div class="kpi-value" id="custKpiRepeat">0</div><div class="kpi-meta" id="custKpiRepeatMeta">0% <span class="zh">复购率</span><span class="en">repeat rate</span></div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">平均 LTV</span><span class="en">Avg LTV</span></div><div class="kpi-value" id="custKpiLtv"><span class="ccy">$</span>0</div><div class="kpi-meta" id="custKpiLtvMeta">—</div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">流失风险</span><span class="en">At Risk</span></div><div class="kpi-value" style="color:var(--warn);" id="custKpiAtRisk">0</div><div class="kpi-meta">
         <span class="zh">90 天未购买</span>
         <span class="en">90d inactive</span>
       </div></div>
@@ -7750,7 +7616,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
         <button class="btn btn-sm btn-ghost"><span class="zh">查看全部</span><span class="en">View all</span></button>
       </div>
-      <div style="padding:30px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
+      <div id="custVipList" style="padding:30px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
         <span class="zh">暂无 VIP 客户数据</span>
         <span class="en">No VIP customers yet</span>
       </div>
@@ -7763,18 +7629,18 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/>
           </svg>
-          <input type="text" class="search-input" placeholder="搜索 Search: 姓名 Name / 电话 Phone / Email">
+          <input type="text" class="search-input" id="custSearchInput" placeholder="搜索 Search: 姓名 Name / 电话 Phone / Email" oninput="renderCustomersPage()">
         </div>
-        <div class="filters">
-          <button class="chip active"><span class="zh">全部</span><span class="en">All</span><span class="chip-num">0</span></button>
-          <button class="chip">⭐ VIP <span class="chip-num">0</span></button>
-          <button class="chip"><span class="zh">复购</span><span class="en">Repeat</span><span class="chip-num">0</span></button>
-          <button class="chip"><span class="zh">流失风险</span><span class="en">At Risk</span><span class="chip-num">0</span></button>
+        <div class="filters" id="custFilters">
+          <button class="chip active" onclick="setCustFilter(this,'all')"><span class="zh">全部</span><span class="en">All</span><span class="chip-num" id="custChipAll">0</span></button>
+          <button class="chip" onclick="setCustFilter(this,'vip')">⭐ VIP <span class="chip-num" id="custChipVip">0</span></button>
+          <button class="chip" onclick="setCustFilter(this,'repeat')"><span class="zh">复购</span><span class="en">Repeat</span><span class="chip-num" id="custChipRepeat">0</span></button>
+          <button class="chip" onclick="setCustFilter(this,'atrisk')"><span class="zh">流失风险</span><span class="en">At Risk</span><span class="chip-num" id="custChipAtRisk">0</span></button>
         </div>
       </div>
 
       <div class="data-table">
-        <div class="table-row table-head" style="grid-template-columns: 36px 1.4fr 1.2fr 100px 90px 90px 110px 80px;">
+        <div class="table-row table-head" style="grid-template-columns: 36px 1.4fr 1.2fr 100px 90px 110px 80px;">
           <div></div>
           <div><span class="zh">姓名 / 电话</span><span class="en">Name / Phone</span></div>
           <div><span class="zh">最近购买</span><span class="en">Last Purchase</span></div>
@@ -7782,15 +7648,14 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <div>LTV</div>
           <div><span class="zh">主要门店</span><span class="en">Main Store</span></div>
           <div><span class="zh">等级</span><span class="en">Tier</span></div>
-          <div></div>
         </div>
 
-        <!-- Empty state -->
-        <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
-          <span class="zh">客户数据将从销售记录自动生成</span>
-          <span class="en">Customer data will be auto-generated from sales records</span>
+        <div id="custTableBody">
+          <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+            <span class="zh">客户数据将从销售记录自动生成</span>
+            <span class="en">Customer data will be auto-generated from sales records</span>
+          </div>
         </div>
-
       </div>
     </div>
 
@@ -9747,7 +9612,9 @@ function renderSalesPage() {
       '<div>' +
         '<div class="mono" style="font-weight:700;font-size:11.5px;color:var(--text);">' + s.id + '</div>' +
         '<div style="font-size:10.5px;color:var(--text-muted);" class="mono">' + dateStr + '</div>' +
-        '<div style="margin-top:3px;"><span class="status st-avail" style="font-size:9.5px;padding:1px 6px;">✓ <span class="zh">已完成</span><span class="en">Done</span></span></div>' +
+        '<div style="margin-top:3px;">' + (s.status === 'returned' ?
+          '<span class="status" style="font-size:9.5px;padding:1px 6px;background:var(--danger-soft);color:var(--danger);">↩ <span class="zh">已退货</span><span class="en">Returned</span></span>' :
+          '<span class="status st-avail" style="font-size:9.5px;padding:1px 6px;">✓ <span class="zh">已完成</span><span class="en">Done</span></span>') + '</div>' +
       '</div>' +
       '<div class="cell-product">' +
         '<div class="name">' + s.phoneName + (s.storage ? ' · ' + s.storage : '') + condTag + '</div>' +
@@ -9768,8 +9635,10 @@ function renderSalesPage() {
         '<div class="cell-price"><span class="ccy">$</span>' + (s.total||0).toLocaleString() + '</div>' +
         '<div style="font-size:10.5px;color:var(--success);font-family:\'JetBrains Mono\',monospace;font-weight:600;">+$' + (s.profit||0).toLocaleString() + ' (' + profitPct + '%)</div>' +
       '</div>' +
-      '<div class="row-actions">' +
-        '<button class="iconbtn" title="详情"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg></button>' +
+      '<div class="row-actions" style="display:flex;gap:4px;">' +
+        (s.status === 'returned' ?
+          '<span style="background:var(--danger-soft);color:var(--danger);padding:3px 8px;border-radius:5px;font-size:10px;font-weight:600;"><span class="zh">已退货</span><span class="en">Returned</span></span>' :
+          '<button class="btn btn-sm" style="font-size:10px;padding:3px 8px;color:var(--danger);border-color:var(--danger-soft);background:var(--danger-soft);" onclick="confirmReturn(\'' + s.id + '\')"><span class="zh">退货</span><span class="en">Return</span></button>') +
       '</div>' +
     '</div>';
   });
@@ -9878,6 +9747,486 @@ function exportInventoryCSV() {
   a.download = 'inventory_' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
   showToast('CSV 已下载 / CSV downloaded');
+}
+
+// ===== Customer Page =====
+var _custFilter = 'all';
+function setCustFilter(btn, filter) {
+  _custFilter = filter;
+  btn.parentElement.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+  renderCustomersPage();
+}
+
+function renderCustomersPage() {
+  var sales = getLocalData('pi_sales');
+  var search = (document.getElementById('custSearchInput') || {}).value || '';
+  search = search.trim().toLowerCase();
+
+  // Build customer profiles from sales
+  var custMap = {};
+  var now = new Date();
+  sales.forEach(function(s) {
+    if (s.status === 'returned') return;
+    var key = (s.customer || '').trim();
+    if (!key) return;
+    if (!custMap[key]) {
+      custMap[key] = { name: s.customer, phone: s.customerPhone || '', email: s.customerEmail || '', purchases: 0, totalSpent: 0, lastDate: null, stores: {}, items: [] };
+    }
+    var c = custMap[key];
+    c.purchases++;
+    c.totalSpent += (s.total || 0);
+    var d = new Date(s.date);
+    if (!c.lastDate || d > c.lastDate) c.lastDate = d;
+    c.stores[s.store || ''] = (c.stores[s.store || ''] || 0) + 1;
+    c.items.push(s);
+  });
+
+  var customers = Object.values(custMap);
+
+  // Calculate tiers
+  var ninety = 90 * 86400000;
+  customers.forEach(function(c) {
+    c.isVip = c.totalSpent >= 5000;
+    c.isRepeat = c.purchases >= 2;
+    c.isAtRisk = c.lastDate && (now - c.lastDate > ninety);
+    c.mainStore = Object.keys(c.stores).sort(function(a,b){ return c.stores[b] - c.stores[a]; })[0] || '';
+    // Tier label
+    c.tier = c.isVip ? 'VIP' : c.isRepeat ? 'Regular' : 'New';
+  });
+
+  // Apply filter
+  var filtered = customers;
+  if (_custFilter === 'vip') filtered = customers.filter(function(c){ return c.isVip; });
+  else if (_custFilter === 'repeat') filtered = customers.filter(function(c){ return c.isRepeat; });
+  else if (_custFilter === 'atrisk') filtered = customers.filter(function(c){ return c.isAtRisk; });
+
+  // Apply search
+  if (search) {
+    filtered = filtered.filter(function(c) {
+      return c.name.toLowerCase().indexOf(search) >= 0 || c.phone.toLowerCase().indexOf(search) >= 0 || c.email.toLowerCase().indexOf(search) >= 0;
+    });
+  }
+
+  // Sort by total spent descending
+  filtered.sort(function(a,b){ return b.totalSpent - a.totalSpent; });
+
+  // Update KPIs
+  var vipCount = customers.filter(function(c){ return c.isVip; }).length;
+  var repeatCount = customers.filter(function(c){ return c.isRepeat; }).length;
+  var atRiskCount = customers.filter(function(c){ return c.isAtRisk; }).length;
+  var avgLtv = customers.length > 0 ? Math.round(customers.reduce(function(a,c){ return a + c.totalSpent; }, 0) / customers.length) : 0;
+
+  var el = function(id){ return document.getElementById(id); };
+  if (el('custKpiTotal')) el('custKpiTotal').textContent = customers.length;
+  if (el('custKpiTotalMeta')) el('custKpiTotalMeta').innerHTML = '<span class="zh">来自 ' + sales.length + ' 笔交易</span><span class="en">from ' + sales.length + ' sales</span>';
+  if (el('custKpiVip')) el('custKpiVip').textContent = vipCount;
+  if (el('custKpiRepeat')) el('custKpiRepeat').textContent = repeatCount;
+  if (el('custKpiRepeatMeta')) {
+    var rate = customers.length > 0 ? Math.round(repeatCount / customers.length * 100) : 0;
+    el('custKpiRepeatMeta').innerHTML = rate + '% <span class="zh">复购率</span><span class="en">repeat rate</span>';
+  }
+  if (el('custKpiLtv')) el('custKpiLtv').innerHTML = '<span class="ccy">$</span>' + avgLtv.toLocaleString();
+  if (el('custKpiAtRisk')) el('custKpiAtRisk').textContent = atRiskCount;
+
+  // Update chip counts
+  if (el('custChipAll')) el('custChipAll').textContent = customers.length;
+  if (el('custChipVip')) el('custChipVip').textContent = vipCount;
+  if (el('custChipRepeat')) el('custChipRepeat').textContent = repeatCount;
+  if (el('custChipAtRisk')) el('custChipAtRisk').textContent = atRiskCount;
+
+  // Render VIP section
+  var vipList = el('custVipList');
+  if (vipList) {
+    var vips = customers.filter(function(c){ return c.isVip; }).slice(0, 5);
+    if (vips.length === 0) {
+      vipList.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;"><span class="zh">暂无 VIP 客户数据</span><span class="en">No VIP customers yet</span></div>';
+    } else {
+      var vh = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">';
+      vips.forEach(function(c) {
+        var initials = c.name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+        vh += '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--gold-soft);border-radius:8px;border:1px solid var(--gold);">' +
+          '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">' + initials + '</div>' +
+          '<div><div style="font-weight:600;font-size:12.5px;">' + c.name + '</div>' +
+          '<div style="font-size:10.5px;color:var(--gold-deep);">$' + c.totalSpent.toLocaleString() + ' · ' + c.purchases + ' <span class="zh">次</span><span class="en">orders</span></div></div></div>';
+      });
+      vh += '</div>';
+      vipList.innerHTML = vh;
+    }
+  }
+
+  // Render table
+  var container = el('custTableBody');
+  if (!container) return;
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">' +
+      (customers.length === 0 ? '<span class="zh">客户数据将从销售记录自动生成</span><span class="en">Customer data will be auto-generated from sales records</span>' :
+       '<span class="zh">未找到匹配的客户</span><span class="en">No matching customers</span>') + '</div>';
+    return;
+  }
+
+  var html = '';
+  filtered.forEach(function(c, idx) {
+    var initials = c.name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+    var lastDateStr = c.lastDate ? (c.lastDate.getMonth()+1) + '/' + c.lastDate.getDate() + '/' + c.lastDate.getFullYear() : '—';
+    var lastItem = c.items[c.items.length > 0 ? 0 : 0];
+    var tierBadge = c.tier === 'VIP' ? '<span style="background:var(--gold-soft);color:var(--gold-deep);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;">⭐ VIP</span>' :
+      c.tier === 'Regular' ? '<span style="background:var(--brand-soft);color:var(--brand);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">Regular</span>' :
+      '<span style="background:var(--bg-tinted);color:var(--text-muted);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">New</span>';
+    html += '<div class="table-row body" style="grid-template-columns: 36px 1.4fr 1.2fr 100px 90px 110px 80px;">' +
+      '<div style="display:flex;align-items:center;justify-content:center;"><div style="width:28px;height:28px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">' + initials + '</div></div>' +
+      '<div><div style="font-weight:600;font-size:12.5px;">' + c.name + '</div><div style="font-size:10.5px;color:var(--text-muted);">' + (c.phone || c.email || '—') + '</div></div>' +
+      '<div><div style="font-size:12px;">' + (lastItem ? lastItem.phoneName : '—') + '</div><div style="font-size:10.5px;color:var(--text-muted);">' + lastDateStr + '</div></div>' +
+      '<div style="font-weight:600;text-align:center;">' + c.purchases + '</div>' +
+      '<div style="font-weight:700;font-family:\'JetBrains Mono\',monospace;font-size:12px;">$' + c.totalSpent.toLocaleString() + '</div>' +
+      '<div style="font-size:11.5px;">' + c.mainStore + '</div>' +
+      '<div>' + tierBadge + '</div>' +
+    '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function exportCustomersCSV() {
+  var sales = getLocalData('pi_sales');
+  if (sales.length === 0) { showToast('暂无客户数据 / No customer data'); return; }
+  var custMap = {};
+  sales.forEach(function(s) {
+    if (s.status === 'returned') return;
+    var key = (s.customer || '').trim();
+    if (!key) return;
+    if (!custMap[key]) custMap[key] = { name: s.customer, phone: s.customerPhone||'', email: s.customerEmail||'', purchases:0, total:0 };
+    custMap[key].purchases++;
+    custMap[key].total += (s.total||0);
+  });
+  var csv = 'Name,Phone,Email,Purchases,Total Spent\n';
+  Object.values(custMap).forEach(function(c) {
+    csv += ['"'+c.name+'"', c.phone, c.email, c.purchases, c.total].join(',') + '\n';
+  });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'customers_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('CSV 已下载 / CSV downloaded');
+}
+
+function openAddCustomerModal() {
+  showToast('客户会在销售时自动创建 / Customers auto-created from sales');
+}
+
+// ===== Staff Page =====
+var _staffFilter = 'all';
+function setStaffFilter(btn, filter) {
+  _staffFilter = filter;
+  btn.parentElement.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+  renderStaffPage();
+}
+
+function renderStaffPage() {
+  var sales = getLocalData('pi_sales');
+  var returns = getLocalData('pi_returns');
+  var accounts = window.LOGIN_ACCOUNTS || {};
+  var monthStart = new Date(); monthStart.setHours(0,0,0,0); monthStart.setDate(1);
+
+  // Build staff list from accounts
+  var staffList = [];
+  for (var email in accounts) {
+    var a = accounts[email];
+    if (a.role === 'admin') continue;
+    staffList.push({ email: email, name: a.name, store: a.store, role: 'staff', newSold: 0, usedSold: 0, points: 0, revenue: 0, goal: 20 });
+  }
+
+  // Calculate sales stats for each staff (current month only)
+  sales.forEach(function(s) {
+    if (s.status === 'returned') return;
+    var d = new Date(s.date);
+    if (d < monthStart) return;
+    var staff = staffList.find(function(st){ return st.name === s.seller; });
+    if (!staff) return;
+    if (s.cond === 'new') { staff.newSold++; staff.points += 15; }
+    else { staff.usedSold++; staff.points += 10; }
+    staff.revenue += (s.total || 0);
+  });
+
+  // Deduct points for returns
+  returns.forEach(function(r) {
+    var d = new Date(r.date);
+    if (d < monthStart) return;
+    var staff = staffList.find(function(st){ return st.name === r.seller; });
+    if (staff) staff.points -= (r.pointsDeducted || 0);
+  });
+
+  // Sort by total units descending
+  staffList.sort(function(a,b){ return (b.newSold + b.usedSold) - (a.newSold + a.usedSold) || b.points - a.points; });
+
+  // Apply store filter
+  var filtered = staffList;
+  if (_staffFilter !== 'all') {
+    filtered = staffList.filter(function(st){ return st.store === _staffFilter; });
+  }
+
+  // Update KPIs
+  var totalUnits = staffList.reduce(function(a,s){ return a + s.newSold + s.usedSold; }, 0);
+  var totalPoints = staffList.reduce(function(a,s){ return a + s.points; }, 0);
+  var activeCount = staffList.filter(function(s){ return s.newSold + s.usedSold > 0; }).length;
+  var topSeller = staffList[0] || {};
+  var topUnits = (topSeller.newSold||0) + (topSeller.usedSold||0);
+
+  var el = function(id){ return document.getElementById(id); };
+  if (el('staffKpiUnits')) el('staffKpiUnits').textContent = totalUnits;
+  if (el('staffKpiUnitsMeta')) {
+    var newTotal = staffList.reduce(function(a,s){ return a + s.newSold; }, 0);
+    var usedTotal = staffList.reduce(function(a,s){ return a + s.usedSold; }, 0);
+    el('staffKpiUnitsMeta').textContent = newTotal + ' NEW · ' + usedTotal + ' USED';
+  }
+  if (el('staffKpiPoints')) el('staffKpiPoints').innerHTML = totalPoints + '<span style="font-size:14px;color:var(--text-muted);font-weight:600;margin-left:3px;">P</span>';
+  if (el('staffKpiPointsMeta')) el('staffKpiPointsMeta').textContent = '= $' + totalPoints;
+  if (el('staffKpiTop')) el('staffKpiTop').textContent = topSeller.name || '—';
+  if (el('staffKpiTopMeta')) el('staffKpiTopMeta').textContent = topUnits > 0 ? topUnits + ' <span class="zh">台</span><span class="en">units</span>' : '—';
+  if (el('staffKpiActive')) el('staffKpiActive').textContent = activeCount;
+  if (el('staffKpiActiveMeta')) el('staffKpiActiveMeta').textContent = '/ ' + staffList.length + ' total';
+
+  // Render staff cards
+  var container = el('staffGridBody');
+  if (!container) return;
+  if (filtered.length === 0) {
+    container.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;"><span class="zh">暂无员工数据</span><span class="en">No staff data</span></div>';
+    return;
+  }
+
+  var html = '';
+  filtered.forEach(function(st, idx) {
+    var initials = st.name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
+    var totalUnits = st.newSold + st.usedSold;
+    var pct = st.goal > 0 ? Math.min(100, Math.round(totalUnits / st.goal * 100)) : 0;
+    var rank = staffList.indexOf(st) + 1;
+    var rankBadge = rank === 1 && totalUnits > 0 ? '<span class="rank-badge gold">&#x1F3C6; #1</span>' :
+      rank === 2 && totalUnits > 0 ? '<span class="rank-badge silver">#2</span>' :
+      rank === 3 && totalUnits > 0 ? '<span class="rank-badge bronze">#3</span>' :
+      '<span class="rank-badge normal">#' + rank + '</span>';
+    var isTop = rank === 1 && totalUnits > 0;
+    var avatarStyle = isTop ? 'background:linear-gradient(135deg,#b8964a,#8c6e2f);' : '';
+
+    html += '<div class="staff-card' + (isTop ? ' top' : '') + '">' +
+      '<div class="staff-head">' +
+        '<div class="avatar" style="' + avatarStyle + '">' + initials + '</div>' +
+        '<div class="info">' +
+          '<div class="name">' + st.name + ' ' + rankBadge + '</div>' +
+          '<div class="meta">' + st.store + ' · Staff</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="staff-stats">' +
+        '<div class="stat-block">' +
+          '<div class="stat-label"><span class="zh">销售台数</span><span class="en">Units</span></div>' +
+          '<div class="stat-val">' + totalUnits + '</div>' +
+          '<div class="stat-meta">' + st.newSold + ' NEW · ' + st.usedSold + ' USED</div>' +
+        '</div>' +
+        '<div class="stat-block">' +
+          '<div class="stat-label"><span class="zh">本月积分</span><span class="en">Points MTD</span></div>' +
+          '<div class="stat-val" style="color:var(--purple);">' + st.points + '<span style="font-size:13px;color:var(--text-muted);font-weight:600;margin-left:2px;">P</span></div>' +
+          '<div class="stat-meta">' + (st.newSold * 15) + ' + ' + (st.usedSold * 10) + ' P</div>' +
+        '</div>' +
+      '</div>' +
+      '<div>' +
+        '<div class="staff-progress">' +
+          '<span><span class="zh">月度目标 ' + st.goal + ' 台</span><span class="en">Goal ' + st.goal + ' units</span></span>' +
+          '<span style="color:var(--brand);font-weight:600;">' + pct + '%</span>' +
+        '</div>' +
+        '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%;"></div></div>' +
+      '</div>' +
+    '</div>';
+  });
+  container.innerHTML = html;
+}
+
+function exportStaffCSV() {
+  var sales = getLocalData('pi_sales');
+  var accounts = window.LOGIN_ACCOUNTS || {};
+  var monthStart = new Date(); monthStart.setHours(0,0,0,0); monthStart.setDate(1);
+  var staffMap = {};
+  for (var email in accounts) {
+    var a = accounts[email];
+    if (a.role === 'admin') continue;
+    staffMap[a.name] = { name: a.name, store: a.store, newSold: 0, usedSold: 0, points: 0, revenue: 0 };
+  }
+  sales.forEach(function(s) {
+    if (s.status === 'returned') return;
+    var d = new Date(s.date);
+    if (d < monthStart) return;
+    var st = staffMap[s.seller];
+    if (!st) return;
+    if (s.cond === 'new') { st.newSold++; st.points += 15; } else { st.usedSold++; st.points += 10; }
+    st.revenue += (s.total || 0);
+  });
+  var csv = 'Name,Store,New Sold,Used Sold,Total Units,Points,Revenue\n';
+  Object.values(staffMap).forEach(function(s) {
+    csv += ['"'+s.name+'"', '"'+s.store+'"', s.newSold, s.usedSold, s.newSold+s.usedSold, s.points, s.revenue].join(',') + '\n';
+  });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'staff_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('CSV 已下载 / CSV downloaded');
+}
+
+function processMonthlyPayout() {
+  var sales = getLocalData('pi_sales');
+  var accounts = window.LOGIN_ACCOUNTS || {};
+  var monthStart = new Date(); monthStart.setHours(0,0,0,0); monthStart.setDate(1);
+  var totalPoints = 0;
+  var staffCount = 0;
+  var staffMap = {};
+
+  for (var email in accounts) {
+    if (accounts[email].role === 'admin') continue;
+    staffMap[accounts[email].name] = 0;
+  }
+  sales.forEach(function(s) {
+    if (s.status === 'returned') return;
+    var d = new Date(s.date);
+    if (d < monthStart) return;
+    var pts = s.cond === 'new' ? 15 : 10;
+    if (staffMap[s.seller] !== undefined) staffMap[s.seller] += pts;
+    totalPoints += pts;
+  });
+  staffCount = Object.keys(staffMap).filter(function(k){ return staffMap[k] > 0; }).length;
+
+  if (totalPoints === 0) {
+    showToast('本月暂无提成可发放 / No commissions to process');
+    return;
+  }
+
+  var msg = '本月提成汇总:\n';
+  Object.keys(staffMap).forEach(function(name) {
+    if (staffMap[name] > 0) msg += name + ': ' + staffMap[name] + 'P ($' + staffMap[name] + ')\n';
+  });
+  msg += '\n总计: ' + totalPoints + 'P ($' + totalPoints + ')';
+  msg += '\n\n确认发放？';
+
+  if (confirm(msg)) {
+    // Record payout
+    var payouts = getLocalData('pi_payouts');
+    payouts.push({ date: new Date().toISOString(), totalPoints: totalPoints, staffCount: staffCount, details: staffMap });
+    setLocalData('pi_payouts', payouts);
+    showToast('提成已记录发放: ' + totalPoints + 'P / Payout recorded: $' + totalPoints);
+  }
+}
+
+// ===== Return / Refund Flow =====
+function confirmReturn(saleId) {
+  var sales = getLocalData('pi_sales');
+  var sale = sales.find(function(s){ return s.id === saleId; });
+  if (!sale) { showToast('未找到该订单 / Sale not found'); return; }
+  if (sale.status === 'returned') { showToast('该订单已退货 / Already returned'); return; }
+
+  var pointsToDeduct = sale.cond === 'new' ? 15 : 10;
+  var msg = '确认退货？\n\n';
+  msg += '订单: ' + sale.id + '\n';
+  msg += '设备: ' + sale.phoneName + '\n';
+  msg += 'IMEI: ' + sale.imei + '\n';
+  msg += '金额: $' + (sale.total||0).toLocaleString() + '\n';
+  msg += '销售员: ' + sale.seller + '\n\n';
+  msg += '退货将执行:\n';
+  msg += '1. 标记订单为已退货\n';
+  msg += '2. 手机重新上架库存\n';
+  msg += '3. 扣除销售员 ' + pointsToDeduct + ' Points 提成\n\n';
+  msg += '确认退货？';
+
+  if (confirm(msg)) {
+    processReturn(saleId);
+  }
+}
+
+function processReturn(saleId) {
+  var sales = getLocalData('pi_sales');
+  var sale = sales.find(function(s){ return s.id === saleId; });
+  if (!sale || sale.status === 'returned') return;
+
+  // 1. Mark sale as returned
+  sale.status = 'returned';
+  sale.returnDate = new Date().toISOString();
+  sale.returnedBy = (window._currentAccount || {}).name || '';
+  setLocalData('pi_sales', sales);
+
+  // 2. Restore phone to inventory
+  for (var i = 0; i < phones.length; i++) {
+    if (phones[i] && phones[i].imei === sale.imei) {
+      phones[i].status = 'available';
+      break;
+    }
+  }
+
+  // 3. Record the return with commission deduction
+  var pointsDeducted = sale.cond === 'new' ? 15 : 10;
+  var returns = getLocalData('pi_returns');
+  returns.push({
+    id: 'RT-' + new Date().getFullYear() + '-' + (returns.length + 1).toString().padStart(4, '0'),
+    saleId: sale.id,
+    date: new Date().toISOString(),
+    imei: sale.imei,
+    phoneName: sale.phoneName,
+    seller: sale.seller,
+    pointsDeducted: pointsDeducted,
+    refundAmount: sale.total || 0,
+    processedBy: (window._currentAccount || {}).name || ''
+  });
+  setLocalData('pi_returns', returns);
+
+  // 4. Refresh pages
+  renderSalesPage();
+  renderDashboard();
+  renderInventory();
+  renderStaffPage();
+
+  showToast('退货完成: ' + sale.id + ' · 扣除 ' + pointsDeducted + 'P / Return processed, ' + pointsDeducted + 'P deducted from ' + sale.seller);
+}
+
+// ===== Aged Stock Alert =====
+function showAgedStockAlert() {
+  // Only show once per session
+  if (sessionStorage.getItem('pi_aged_alert_shown')) return;
+
+  var acct = window._currentAccount || {};
+  var store = acct.store || '';
+  if (!store || store === 'all') return; // Admin sees all, skip alert
+
+  var storeKey = normalizeStoreKey(store);
+  var storePhones = phones.filter(function(p) {
+    if (!p || p.status === 'sold') return false;
+    return normalizeStoreKey(p.store || p.storeName || '') === storeKey;
+  });
+
+  if (storePhones.length === 0) return;
+
+  var now = Date.now();
+  var ages = storePhones.map(function(p) {
+    if (p.purchaseDate) return Math.max(0, Math.floor((now - new Date(p.purchaseDate).getTime()) / 86400000));
+    return 0;
+  }).filter(function(a){ return a > 0; });
+
+  if (ages.length === 0) return;
+
+  var avgAge = Math.round(ages.reduce(function(a,b){ return a+b; }, 0) / ages.length);
+  var threshold = Math.max(30, avgAge * 2); // At least 30 days or 2x average
+  var agedPhones = storePhones.filter(function(p) {
+    if (!p.purchaseDate) return false;
+    var age = Math.floor((now - new Date(p.purchaseDate).getTime()) / 86400000);
+    return age >= threshold;
+  });
+
+  if (agedPhones.length === 0) return;
+
+  sessionStorage.setItem('pi_aged_alert_shown', '1');
+
+  var names = agedPhones.slice(0, 3).map(function(p){
+    var age = Math.floor((now - new Date(p.purchaseDate).getTime()) / 86400000);
+    return p.name + ' (' + age + 'd)';
+  }).join(', ');
+  var more = agedPhones.length > 3 ? ' +' + (agedPhones.length - 3) + ' more' : '';
+
+  showToast('⚠️ 滞销提醒: ' + store + ' 有 ' + agedPhones.length + ' 台库存超过 ' + threshold + ' 天 — ' + names + more, 8000);
 }
 
 function openStoreDetail(storeKey) {
@@ -10174,11 +10523,11 @@ document.addEventListener('keydown', e => {
   }
 });
 
-function showToast(msg) {
+function showToast(msg, duration) {
   const t = document.getElementById('toast');
   t.innerText = msg;
   t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2400);
+  setTimeout(() => t.classList.remove('show'), duration || 2400);
 }
 
 // ===== Mobile sidebar toggle =====
@@ -10899,6 +11248,8 @@ function navTo(el, target) {
     if (target === 'inventory') { renderDashboard(); renderInventory(); }
     if (target === 'sale') initSalePage();
     if (target === 'reports') renderReportsPage();
+    if (target === 'customers') renderCustomersPage();
+    if (target === 'staff') renderStaffPage();
   } catch(e){}
 }
 
@@ -10907,7 +11258,6 @@ window.addEventListener('popstate', function(e) {
   var target = e.state || 'dashboard';
   var navEl = document.querySelector('.nav-item[onclick*="\'' + target + "'\"]");
   if (navEl && document.getElementById('page-' + target)) {
-    // Silently navigate without pushing another history entry
     maybeCloseMobileSidebarOnNav();
     syncBottomNav(target);
     document.querySelectorAll('.nav-item').forEach(function(i){ i.classList.remove('active'); });
@@ -10923,6 +11273,8 @@ window.addEventListener('popstate', function(e) {
       if (target === 'inventory') { renderDashboard(); renderInventory(); }
       if (target === 'sale') initSalePage();
       if (target === 'reports') renderReportsPage();
+      if (target === 'customers') renderCustomersPage();
+      if (target === 'staff') renderStaffPage();
     } catch(ex){}
   }
 });
@@ -11022,6 +11374,10 @@ if (!window.initDynamicUI) {
     try { renderTransferPage(); } catch(e){}
     try { renderInventory(); } catch(e){}
     try { initSalePage(); } catch(e){}
+    try { renderStaffPage(); } catch(e){}
+    try { renderCustomersPage(); } catch(e){}
+    // Show aged stock alert after a short delay
+    setTimeout(function(){ try { showAgedStockAlert(); } catch(e){} }, 2000);
   };
 }
 </script>
