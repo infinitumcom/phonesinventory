@@ -9393,19 +9393,20 @@ function initSalePage() {
 }
 
 function saleSearchIMEI(imei) {
+  imei = (imei || '').replace(/\s+/g, '');
   if (!imei || imei.length < 10) {
     showToast('请输入有效的 IMEI / Enter valid IMEI');
     return;
   }
   var found = null;
   for (var i = 0; i < phones.length; i++) {
-    if (phones[i] && phones[i].imei === imei && phones[i].status === 'available') {
+    if (phones[i] && phones[i].imei === imei && (phones[i].status === 'available' || !phones[i].status)) {
       found = phones[i];
       break;
     }
   }
   if (!found) {
-    showToast('未找到此 IMEI 或已售出 / IMEI not found or already sold');
+    showToast('未找到此 IMEI 或已售出 (IMEI: ' + imei + ', 库存: ' + phones.length + ' 台) / IMEI not found or already sold');
     return;
   }
   saleState.phone = found;
@@ -9667,13 +9668,14 @@ function fillReceipt(sale) {
 // ===== Transfer Functions =====
 function createTransfer(imei, targetStore, reason) {
   if (!imei) { showToast('请输入 IMEI'); return; }
+  imei = imei.replace(/\s+/g, '');
   var phone = null;
   for (var i = 0; i < phones.length; i++) {
-    if (phones[i] && phones[i].imei === imei && phones[i].status === 'available') {
+    if (phones[i] && phones[i].imei === imei && (phones[i].status === 'available' || !phones[i].status)) {
       phone = phones[i]; break;
     }
   }
-  if (!phone) { showToast('未找到可调拨的手机 / Phone not found'); return; }
+  if (!phone) { showToast('未找到可调拨的手机 (IMEI: ' + imei + ') / Phone not found'); return; }
   var acct = window._currentAccount || {};
   var transfer = {
     id: generateId('TR'),
