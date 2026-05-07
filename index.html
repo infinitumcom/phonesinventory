@@ -816,45 +816,45 @@ main {
 
 /* ===== STORE PILLS ===== */
 .stores-row {
-  padding: 11px 18px;
-  display: flex; gap: 5px; flex-wrap: wrap;
+  padding: 12px 18px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-tinted);
 }
 .store-pill {
-  padding: 5px 11px;
+  padding: 10px 12px;
   background: var(--bg-elev);
   border: 1px solid var(--border-strong);
-  border-radius: 5px;
-  font-size: 11.5px;
+  border-radius: 8px;
+  font-size: 12px;
   cursor: pointer;
-  display: flex; align-items: center; gap: 5px;
-  transition: all 0.12s;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  transition: all 0.15s;
   font-weight: 500;
+  border-left: 3px solid var(--border-strong);
 }
-.store-pill:hover { border-color: var(--text-muted); }
+.store-pill:hover { border-color: var(--text-muted); transform: translateY(-1px); }
 .store-pill.active {
-  background: var(--brand-soft);
-  border-color: var(--brand);
-  color: var(--brand);
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 .store-pill .pill-num {
   color: var(--text-muted);
   font-size: 10px;
   font-family: 'JetBrains Mono', monospace;
 }
-.store-pill.active .pill-num { color: var(--brand); }
-.store-pill .geo-dot {
-  width: 5px; height: 5px;
-  background: var(--success); border-radius: 50%;
-}
+.store-pill.active .pill-num { color: inherit; }
 
 /* ===== TABLE ===== */
 .data-table { width: 100%; }
 .table-row {
   display: grid;
-  grid-template-columns: 44px 1.6fr 1.2fr 0.9fr 1fr 0.9fr 90px 100px 80px;
+  grid-template-columns: 44px 1.6fr 0.8fr 0.8fr 0.85fr 60px 90px 120px;
   align-items: center;
   padding: 12px 18px;
   font-size: 12.5px;
@@ -1862,11 +1862,50 @@ body[data-role="admin"] .staff-only { display: none !important; }
 .status.st-pending { background: var(--purple); color: white; }
 .status.st-pending .dot { background: rgba(255,255,255,0.8); }
 
-/* ============= STORE PILLS — Color-coded by region ============= */
-.store-pill.ca { border-left: 3px solid var(--brand); }
-.store-pill.nv { border-left: 3px solid var(--gold-deep); }
-.store-pill.ca.active { background: var(--brand-soft); border-color: var(--brand); }
-.store-pill.nv.active { background: var(--gold-soft); border-color: var(--gold-deep); color: var(--gold-deep); }
+/* ============= STORE PILLS — Each store has its own muted color ============= */
+/* "All Stores" pill */
+.store-pill[data-store="all"]        { border-left-color: #6b7280; background: #f3f4f6; }
+.store-pill[data-store="all"].active { background: #e5e7eb; border-color: #6b7280; color: #374151; }
+
+/* Alhambra — soft teal */
+.store-pill[data-store="alhambra"]        { border-left-color: #0d9488; background: #f0fdfa; }
+.store-pill[data-store="alhambra"].active { background: #ccfbf1; border-color: #0d9488; color: #0d9488; }
+
+/* Monterey Park — soft blue */
+.store-pill[data-store="monterey-park"]        { border-left-color: #3b82f6; background: #eff6ff; }
+.store-pill[data-store="monterey-park"].active { background: #dbeafe; border-color: #3b82f6; color: #2563eb; }
+
+/* San Gabriel — soft indigo */
+.store-pill[data-store="san-gabriel"]        { border-left-color: #6366f1; background: #eef2ff; }
+.store-pill[data-store="san-gabriel"].active { background: #e0e7ff; border-color: #6366f1; color: #4f46e5; }
+
+/* Rowland Heights — soft violet */
+.store-pill[data-store="rowland-heights"]        { border-left-color: #8b5cf6; background: #f5f3ff; }
+.store-pill[data-store="rowland-heights"].active { background: #ede9fe; border-color: #8b5cf6; color: #7c3aed; }
+
+/* Arcadia 1 — soft emerald */
+.store-pill[data-store="arcadia-1"]        { border-left-color: #10b981; background: #ecfdf5; }
+.store-pill[data-store="arcadia-1"].active { background: #d1fae5; border-color: #10b981; color: #059669; }
+
+/* Arcadia 2 — soft cyan */
+.store-pill[data-store="arcadia-2"]        { border-left-color: #06b6d4; background: #ecfeff; }
+.store-pill[data-store="arcadia-2"].active { background: #cffafe; border-color: #06b6d4; color: #0891b2; }
+
+/* Irvine — soft rose */
+.store-pill[data-store="irvine"]        { border-left-color: #f43f5e; background: #fff1f2; }
+.store-pill[data-store="irvine"].active { background: #ffe4e6; border-color: #f43f5e; color: #e11d48; }
+
+/* Rancho Cucamonga — soft amber */
+.store-pill[data-store="rancho-cucamonga"]        { border-left-color: #f59e0b; background: #fffbeb; }
+.store-pill[data-store="rancho-cucamonga"].active { background: #fef3c7; border-color: #f59e0b; color: #d97706; }
+
+/* Las Vegas — soft orange */
+.store-pill[data-store="las-vegas"]        { border-left-color: #ea580c; background: #fff7ed; }
+.store-pill[data-store="las-vegas"].active { background: #ffedd5; border-color: #ea580c; color: #ea580c; }
+
+/* HQ Warehouse — soft slate */
+.store-pill[data-store="hq-warehouse"]        { border-left-color: #64748b; background: #f8fafc; border-style: dashed; }
+.store-pill[data-store="hq-warehouse"].active { background: #e2e8f0; border-color: #64748b; color: #475569; border-style: dashed; }
 
 /* ============= INVENTORY HERO — User Welcome Card (Staff version) ============= */
 .staff-hero {
@@ -2060,7 +2099,7 @@ body[data-role="admin"] .staff-only { display: none !important; }
 /* Inventory table — Larger fonts */
 .inv-table .table-row {
   display: grid;
-  grid-template-columns: 60px 2.4fr 1.1fr 1.1fr 1.1fr 80px 110px 70px;
+  grid-template-columns: 50px 2.2fr 0.8fr 0.9fr 0.9fr 55px 100px 110px;
   align-items: center;
   padding: 16px 20px;
   border-bottom: 1px solid var(--border-soft);
@@ -2467,37 +2506,16 @@ body[data-role="admin"] .staff-only { display: none !important; }
 body[data-inv-mode="used"] .inv-accent-bg { background: var(--warn-soft); border-color: var(--warn); color: var(--warn); }
 body[data-inv-mode="new"] .inv-accent-bg { background: var(--brand-soft); border-color: var(--brand); color: var(--brand); }
 
-/* Store pill — now shows TWO numbers (NEW/USED) when in "all stores" view */
-.store-pill {
-  padding: 8px 12px;
-  background: var(--bg-elev);
-  border: 1px solid var(--border-strong);
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: all 0.12s;
-  font-weight: 500;
-  flex-direction: column;
-  align-items: stretch;
-  min-width: 110px;
-}
-.store-pill:hover { border-color: var(--text-muted); }
-.store-pill.active {
-  background: var(--brand-soft);
-  border-color: var(--brand);
-  color: var(--brand);
-  font-weight: 600;
-}
+/* Store pill — detail styles (pill-name, pill-counts) */
 .store-pill .pill-name {
   font-size: 12.5px;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 5px;
-  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .store-pill .pill-counts {
   display: flex;
@@ -2521,13 +2539,6 @@ body[data-inv-mode="new"] .inv-accent-bg { background: var(--brand-soft); border
 }
 .store-pill.active .pill-counts .new-c { background: rgba(13,79,60,0.2); color: var(--brand); }
 .store-pill.active .pill-counts .used-c { background: rgba(196,122,30,0.18); color: var(--warn); }
-
-/* Highlight active store color based on mode */
-body[data-inv-mode="used"] .store-pill.active {
-  background: var(--warn-soft);
-  border-color: var(--warn);
-  color: var(--warn);
-}
 
 /* Mode-aware filter chips */
 body[data-inv-mode="new"] .inv-mode-filters .chip.mode-color.active {
@@ -3165,22 +3176,44 @@ body[data-inv-mode="used"] .mode-context-bar .mc-icon { background: var(--warn);
 .store-cell.tint-8 { background: linear-gradient(180deg, #eff5f3 0%, var(--bg-elev) 100%); border-color: rgba(13, 79, 60, 0.15); }
 .store-cell.tint-9 { background: linear-gradient(180deg, #faf6ec 0%, var(--bg-elev) 100%); border-color: rgba(140, 110, 47, 0.25); }
 
-/* "Report Defective" button in inventory rows */
-.report-btn {
-  width: 26px; height: 26px;
-  border: 1px solid var(--border);
-  background: var(--bg-elev);
-  border-radius: 5px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: all 0.12s;
-  flex-shrink: 0;
+/* Inventory action buttons — vertical card style */
+.inv-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: stretch;
 }
-.report-btn:hover {
-  border-color: var(--danger);
-  color: var(--danger);
-  background: var(--danger-soft);
+.inv-action-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.inv-action-card.act-report {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+.inv-action-card.act-report:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+}
+.inv-action-card.act-sell {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+.inv-action-card.act-sell:hover {
+  background: #dbeafe;
+  border-color: #60a5fa;
 }
 
 /* Toast variants */
@@ -4226,7 +4259,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
   /* Inventory table — collapse some columns */
   .inv-table .table-row {
-    grid-template-columns: 56px 2.4fr 1.1fr 1.1fr 80px 100px 70px;
+    grid-template-columns: 50px 2fr 0.8fr 0.85fr 55px 95px 100px;
   }
   .inv-table .table-row > div:nth-child(4) { display: none; } /* hide IMEI on tablet */
 
@@ -4418,15 +4451,15 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     justify-content: space-around;
   }
 
-  /* Stores row: horizontal scroll */
+  /* Stores row: 2-column grid on mobile, horizontal scroll fallback */
   .stores-row {
+    grid-template-columns: repeat(2, 1fr);
     overflow-x: auto;
-    flex-wrap: nowrap;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 8px;
     scrollbar-width: thin;
   }
-  .store-pill { flex-shrink: 0; min-width: 96px; }
+  .store-pill { min-width: 0; }
 
   /* Region filter: scrolls horizontally too */
   .region-filter-row {
@@ -4479,6 +4512,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     grid-area: actions;
     justify-content: flex-end !important;
   }
+  .inv-actions { flex-direction: row; }
+  .inv-action-card { padding: 5px 8px; font-size: 10px; }
 
   .inv-product-name { font-size: 14.5px; }
   .inv-spec-line { gap: 4px; }
@@ -6784,55 +6819,50 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
           </div>
 
-          <!-- Store selector with NEW/USED counts per store -->
+          <!-- Store selector with NEW/USED counts per store — 5×2 grid -->
           <div class="stores-row">
             <button class="store-pill active" data-store="all" onclick="setActiveStore(this)">
-              <div class="pill-name">
-                🏠 <span class="zh">所有门店</span><span class="en">All Stores</span>
-              </div>
-              <div class="pill-counts">
-                <span class="new-c">NEW <span id="allNewC">0</span></span>
-                <span class="used-c">USED <span id="allUsedC">0</span></span>
-              </div>
+              <div class="pill-name">🏠 <span class="zh">所有门店</span><span class="en">All Stores</span></div>
+              <div class="pill-counts"><span class="new-c">NEW <span id="allNewC">0</span></span><span class="used-c">USED <span id="allUsedC">0</span></span></div>
             </button>
-            <button class="store-pill ca" data-store="alhambra" onclick="setActiveStore(this)">
-              <div class="pill-name"><span class="geo-dot"></span>Alhambra</div>
+            <button class="store-pill" data-store="alhambra" onclick="setActiveStore(this)">
+              <div class="pill-name">Alhambra</div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" data-store="monterey-park" onclick="setActiveStore(this)">
-              <div class="pill-name"><span class="geo-dot"></span>Monterey Park</div>
+            <button class="store-pill" data-store="monterey-park" onclick="setActiveStore(this)">
+              <div class="pill-name">Monterey Park</div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" data-store="san-gabriel" onclick="setActiveStore(this)">
-              <div class="pill-name"><span class="geo-dot"></span>San Gabriel</div>
+            <button class="store-pill" data-store="san-gabriel" onclick="setActiveStore(this)">
+              <div class="pill-name">San Gabriel</div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" data-store="rowland-heights" onclick="setActiveStore(this)">
-              <div class="pill-name"><span class="geo-dot"></span>Rowland Hts</div>
+            <button class="store-pill" data-store="rowland-heights" onclick="setActiveStore(this)">
+              <div class="pill-name">Rowland Hts</div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" data-store="arcadia-1" onclick="setActiveStore(this)">
-              <div class="pill-name"><span class="geo-dot"></span>Arcadia 1</div>
+            <button class="store-pill" data-store="arcadia-1" onclick="setActiveStore(this)">
+              <div class="pill-name">Arcadia 1</div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" data-store="arcadia-2" onclick="setActiveStore(this)">
-              <div class="pill-name"><span class="geo-dot"></span>Arcadia 2</div>
+            <button class="store-pill" data-store="arcadia-2" onclick="setActiveStore(this)">
+              <div class="pill-name">Arcadia 2</div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill ca" data-store="irvine" onclick="setActiveStore(this)">
-              <div class="pill-name"><span class="geo-dot"></span>Irvine</div>
+            <button class="store-pill" data-store="irvine" onclick="setActiveStore(this)">
+              <div class="pill-name">Irvine</div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill nv" data-store="rancho-cucamonga" onclick="setActiveStore(this)">
-              <div class="pill-name"><span class="geo-dot" style="background:var(--gold-deep);"></span>Rancho Cucamonga</div>
+            <button class="store-pill" data-store="rancho-cucamonga" onclick="setActiveStore(this)">
+              <div class="pill-name">Rancho Cucamonga</div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill nv" data-store="las-vegas" onclick="setActiveStore(this)">
-              <div class="pill-name"><span class="geo-dot" style="background:var(--gold-deep);"></span>Las Vegas</div>
+            <button class="store-pill" data-store="las-vegas" onclick="setActiveStore(this)">
+              <div class="pill-name">Las Vegas</div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
-            <button class="store-pill hq" data-store="hq-warehouse" onclick="setActiveStore(this)" style="border-style:dashed;">
-              <div class="pill-name"><span class="geo-dot" style="background:var(--text-muted);"></span>🏢 <span class="zh">HQ 总仓</span><span class="en">HQ Warehouse</span></div>
+            <button class="store-pill" data-store="hq-warehouse" onclick="setActiveStore(this)">
+              <div class="pill-name">🏢 <span class="zh">HQ 总仓</span><span class="en">HQ Warehouse</span></div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
           </div>
@@ -6882,7 +6912,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="zh">建议零售价 + 提成</span>
                 <span class="en">MSRP + Points</span>
               </div>
-              <div></div>
+              <div style="text-align:center;"><span class="zh">操作</span><span class="en">Actions</span></div>
             </div>
             <div id="invTableBody"></div>
           </div>
@@ -7075,43 +7105,43 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                   </label>
                   <div class="pay-methods-grid">
                     <button class="pay-method-btn selected" type="button">
-                      <span class="pm-icon">💵</span>
+                      <span class="pm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 12h.01M18 12h.01"/></svg></span>
                       <span class="pm-label"><span class="zh">现金</span><span class="en">Cash</span></span>
                     </button>
                     <button class="pay-method-btn" type="button">
-                      <span class="pm-icon">💳</span>
+                      <span class="pm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg></span>
                       <span class="pm-label"><span class="zh">刷卡</span><span class="en">Card</span></span>
                     </button>
                     <button class="pay-method-btn" type="button">
-                      <span class="pm-icon">📱</span>
+                      <span class="pm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="4" fill="#6D1ED4"/><path d="M7 7h10v2.5l-7 5H17v2.5H7v-2.5l7-5H7V7z" fill="#fff"/></svg></span>
                       <span class="pm-label">Zelle</span>
                     </button>
                     <button class="pay-method-btn" type="button">
-                      <span class="pm-icon">💸</span>
+                      <span class="pm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="4" fill="#008CFF"/><path d="M16.5 6c.6 1 .9 2.1.9 3.4 0 4.2-3.6 9.6-6.5 13.1H6.2L4.5 7.3l4.1-.4.9 7.5c.9-1.4 1.9-3.7 1.9-5.2 0-1.3-.2-2.1-.5-2.8L16.5 6z" fill="#fff"/></svg></span>
                       <span class="pm-label">Venmo</span>
                     </button>
                     <button class="pay-method-btn" type="button">
-                      <span class="pm-icon">🏦</span>
+                      <span class="pm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0369a1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 10h18M12 3l9 7H3l9-7z"/><path d="M6 10v8M10 10v8M14 10v8M18 10v8"/></svg></span>
                       <span class="pm-label"><span class="zh">转账</span><span class="en">Transfer</span></span>
                     </button>
                     <button class="pay-method-btn" type="button">
-                      <span class="pm-icon">💰</span>
-                      <span class="pm-label">微信</span>
+                      <span class="pm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="4" fill="#07C160"/><path d="M9.5 7C6.5 7 4 9 4 11.5c0 1.4.8 2.6 2 3.4l-.5 1.5 1.8-1c.7.2 1.4.3 2.2.3.2 0 .3 0 .5 0-.1-.4-.2-.8-.2-1.2 0-2.5 2.3-4.5 5.2-4.5.2 0 .4 0 .5 0C15 8.2 12.5 7 9.5 7z" fill="#fff"/><path d="M20 14c0-2-2-3.7-4.5-3.7S11 12 11 14s2 3.7 4.5 3.7c.6 0 1.1-.1 1.6-.2l1.4.7-.4-1.2c1.2-.7 1.9-1.8 1.9-3z" fill="#fff" opacity=".85"/></svg></span>
+                      <span class="pm-label"><span class="zh">微信</span><span class="en">WeChat</span></span>
                     </button>
                     <button class="pay-method-btn" type="button">
-                      <span class="pm-icon">🇨🇳</span>
-                      <span class="pm-label">支付宝</span>
+                      <span class="pm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="4" fill="#1677FF"/><path d="M18.5 15.2c-1.8-.7-3.4-1.5-4.8-2.3.6-1 1-2.2 1.2-3.4H12V8.2h3.5V7.5h-3.5V5.5H10.5v2h-3.5v.7h3.5v1.3H7v.7h5.8c-.2.9-.5 1.7-1 2.4-1.2-.8-2.2-1.3-2.2-1.3l-.6.7s1 .6 2.1 1.4c-1.1 1.2-2.6 2.1-4.6 2.7l.4.8c2.1-.7 3.7-1.7 4.9-3 1.5.9 3.2 1.8 5.2 2.6l1.5-1.3z" fill="#fff"/></svg></span>
+                      <span class="pm-label"><span class="zh">支付宝</span><span class="en">Alipay</span></span>
                     </button>
                     <button class="pay-method-btn" type="button">
-                      <span class="pm-icon">🍎</span>
+                      <span class="pm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="4" fill="#000"/><path d="M15.2 5.8c-.7.8-1.8 1.4-2.9 1.3-.1-1.1.4-2.3 1.1-3 .7-.8 1.9-1.4 2.8-1.4.1 1.2-.4 2.3-1 3.1zM15.1 7.3c-1.6-.1-3 .9-3.7.9-.8 0-1.9-.9-3.2-.8-1.6 0-3.1 1-4 2.4-1.7 2.9-.4 7.3 1.2 9.7.8 1.2 1.8 2.5 3.1 2.4 1.2 0 1.7-.8 3.2-.8 1.4 0 1.9.8 3.2.8 1.3 0 2.2-1.2 3-2.4.9-1.4 1.3-2.7 1.3-2.8-1.4-.5-2.5-2-2.5-3.8 0-1.5.9-2.8 2.2-3.4-.9-1.2-2.1-2-3.8-2.2z" fill="#fff"/></svg></span>
                       <span class="pm-label">Apple Pay</span>
                     </button>
                     <button class="pay-method-btn" type="button">
-                      <span class="pm-icon">🔄</span>
+                      <span class="pm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></span>
                       <span class="pm-label"><span class="zh">分期</span><span class="en">Financing</span></span>
                     </button>
                     <button class="pay-method-btn" type="button">
-                      <span class="pm-icon">📋</span>
+                      <span class="pm-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.5"><circle cx="6" cy="12" r="1.5" fill="#6b7280"/><circle cx="12" cy="12" r="1.5" fill="#6b7280"/><circle cx="18" cy="12" r="1.5" fill="#6b7280"/></svg></span>
                       <span class="pm-label"><span class="zh">其他</span><span class="en">Other</span></span>
                     </button>
                   </div>
@@ -10370,11 +10400,18 @@ function renderInventory() {
         '<div class="msrp"><span class="ccy">$</span>' + p.price.toLocaleString() + '</div>' +
         '<div class="points-row"><span class="points-tag">' + (p.cond === 'new' ? '20' : '15') + ' P</span></div>' +
       '</div>' +
-      '<div style="display:flex;gap:3px;justify-content:flex-end;">' +
-        '<button class="report-btn" onclick="event.stopPropagation();openReportModal(this)" title="Report Defective">' +
-          '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2v6M8 11v.5"/><circle cx="8" cy="8" r="6.5"/></svg>' +
+      '<div class="inv-actions">' +
+        '<button class="inv-action-card act-report" onclick="event.stopPropagation();openReportModal(this)" title="Report Defective">' +
+          '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 2v6M8 11v.5"/><circle cx="8" cy="8" r="6.5"/></svg>' +
+          '<span class="zh">报修</span><span class="en">Report</span>' +
         '</button>' +
-        statusHtml +
+        (p.status === 'reserved' ? '<span class="status st-reserved" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">预留</span><span class="en">Resv</span></span>' :
+         p.status === 'transit' ? '<span class="status st-transit" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">在途</span><span class="en">Transit</span></span>' :
+         p.status === 'sold' ? '<span class="status st-sold" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">已售</span><span class="en">Sold</span></span>' :
+        '<button class="inv-action-card act-sell" onclick="event.stopPropagation();navByName(\'sale\');setTimeout(function(){var inp=document.getElementById(\'saleImeiInput\');if(inp){inp.value=\'' + p.imei + '\';saleSearchIMEI(\'' + p.imei + '\');}},200);">' +
+          '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3l1.5 9h7L13 5H4"/></svg>' +
+          '<span class="zh">开单</span><span class="en">Sell</span>' +
+        '</button>') +
       '</div>' +
     '</div>';
   });
