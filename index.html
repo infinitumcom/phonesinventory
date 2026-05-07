@@ -2099,10 +2099,10 @@ body[data-role="admin"] .staff-only { display: none !important; }
 /* Inventory table — Larger fonts */
 .inv-table .table-row {
   display: grid;
-  grid-template-columns: 50px 1.2fr 0.6fr 0.9fr 0.75fr 50px 130px 100px;
+  grid-template-columns: 50px 1.1fr 0.55fr 0.75fr 0.55fr 48px 125px 95px;
   align-items: center;
   padding: 16px 20px;
-  gap: 0 14px;
+  gap: 0 16px;
   border-bottom: 1px solid var(--border-soft);
   transition: background 0.1s;
 }
@@ -3182,7 +3182,9 @@ body[data-inv-mode="used"] .mode-context-bar .mc-icon { background: var(--warn);
   display: flex;
   flex-direction: column;
   gap: 5px;
-  align-items: flex-start;
+  align-items: center;
+  padding-left: 6px;
+  border-left: 1px solid var(--border-soft);
 }
 .inv-action-card {
   display: inline-flex;
@@ -4260,7 +4262,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
   /* Inventory table — collapse some columns */
   .inv-table .table-row {
-    grid-template-columns: 50px 1.1fr 0.6fr 0.7fr 50px 120px 90px;
+    grid-template-columns: 50px 1fr 0.55fr 0.6fr 45px 110px 85px;
   }
   .inv-table .table-row > div:nth-child(4) { display: none; } /* hide IMEI on tablet */
 
@@ -6855,7 +6857,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="zh">建议零售价 + 提成</span>
                 <span class="en">MSRP + Points</span>
               </div>
-              <div style="text-align:center;"><span class="zh">操作</span><span class="en">Actions</span></div>
+              <div style="text-align:center;padding-left:6px;border-left:1px solid var(--border-soft);"><span class="zh">操作</span><span class="en">Actions</span></div>
             </div>
             <div id="invTableBody"></div>
           </div>
