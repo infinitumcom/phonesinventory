@@ -11081,7 +11081,8 @@ function renderInventory() {
       '</div>' +
       (function(){
         var phoneStore = normalizeStoreKey(p.store || p.storeName || '');
-        var myStore = (window._currentAccount && window._currentAccount.store) || 'all';
+        var myStoreRaw = (window._currentAccount && window._currentAccount.store) || 'all';
+        var myStore = myStoreRaw === 'all' ? 'all' : normalizeStoreKey(myStoreRaw);
         var isMyStore = (myStore === 'all') || (phoneStore === myStore);
         var statusBusy = (p.status === 'reserved' || p.status === 'transit' || p.status === 'sold');
         var statusBadgeHtml = p.status === 'reserved' ? '<span class="status st-reserved" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">预留</span><span class="en">Resv</span></span>' :
@@ -11120,17 +11121,23 @@ function renderInventory() {
 }
 
 function updateFilterCounts() {
-  const allNew = phones.filter(p => p && p.cond === 'new');
-  const allUsed = phones.filter(p => p && p.cond === 'used');
+  // Base set: respect current store filter
+  const storeBase = phones.filter(p => {
+    if (!p) return false;
+    if (INV_FILTERS.store !== 'all' && normalizeStoreKey(p.store || p.storeName || '') !== INV_FILTERS.store) return false;
+    return true;
+  });
+  const allNew = storeBase.filter(p => p.cond === 'new');
+  const allUsed = storeBase.filter(p => p.cond === 'used');
   const filtered = getFilteredPhones();
   const isNew = INV_FILTERS.mode === 'new';
-  const modePhones = phones.filter(p => p && p.cond === INV_FILTERS.mode);
+  const modePhones = storeBase.filter(p => p.cond === INV_FILTERS.mode);
 
-  // Update sidebar nav badge
+  // Update sidebar nav badge (total across all stores)
   const navBadge = document.getElementById('navBadgeInventory');
   if (navBadge) navBadge.textContent = phones.filter(p => p).length;
 
-  // Update tab counts
+  // Update tab counts (filtered by store)
   const tabNew = document.getElementById('tabCountNew');
   const tabUsed = document.getElementById('tabCountUsed');
   if (tabNew) tabNew.textContent = allNew.length;
@@ -11180,18 +11187,24 @@ function updateFilterCounts() {
   const modeSubEn = document.getElementById('modeSubEn');
   if (modeSubEn) modeSubEn.textContent = filtered.length + (isNew ? ' new phones' : ' used phones') + (INV_FILTERS.brand !== 'all' ? ' · ' + INV_FILTERS.brand.charAt(0).toUpperCase() + INV_FILTERS.brand.slice(1) : '');
 
-  // Update region filter counts
-  var usCount = phones.filter(function(p){ return p && p.region === 'us'; }).length;
-  var hkCount = phones.filter(function(p){ return p && p.region === 'hk'; }).length;
-  var cnCount = phones.filter(function(p){ return p && p.region === 'cn'; }).length;
+  // Update region filter counts (respect store filter)
+  var storeFiltered = phones.filter(function(p) {
+    if (!p) return false;
+    if (INV_FILTERS.store !== 'all' && normalizeStoreKey(p.store || p.storeName || '') !== INV_FILTERS.store) return false;
+    if (INV_FILTERS.mode && p.cond !== INV_FILTERS.mode) return false;
+    return true;
+  });
+  var usCount = storeFiltered.filter(function(p){ return p.region === 'us'; }).length;
+  var hkCount = storeFiltered.filter(function(p){ return p.region === 'hk'; }).length;
+  var cnCount = storeFiltered.filter(function(p){ return p.region === 'cn'; }).length;
   var rcUS = document.getElementById('regionCountUS'); if (rcUS) rcUS.textContent = usCount;
   var rcHK = document.getElementById('regionCountHK'); if (rcHK) rcHK.textContent = hkCount;
   var rcCN = document.getElementById('regionCountCN'); if (rcCN) rcCN.textContent = cnCount;
   // Update "All" region pill count
   var rcAll = document.getElementById('regionCountAll');
-  if (rcAll) rcAll.textContent = phones.length;
+  if (rcAll) rcAll.textContent = storeFiltered.length;
   // Update aged stock badge
-  var agedCount = phones.filter(function(p){ return p && p.ageDays > 60; }).length;
+  var agedCount = storeFiltered.filter(function(p){ return p.ageDays > 60; }).length;
   var agedBadge = document.getElementById('agedStockBadge');
   if (agedBadge) agedBadge.textContent = agedCount;
 
