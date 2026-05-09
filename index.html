@@ -9203,6 +9203,13 @@ function saleSearchIMEI(imei) {
     showToast('请输入有效的 IMEI / Enter valid IMEI');
     return;
   }
+  // Check if already sold in sales records
+  var sales = getLocalData('pi_sales');
+  var existingSale = sales.find(function(s) { return s.imei === imei && s.status === 'completed'; });
+  if (existingSale) {
+    showToast('此手机已售出 (订单: ' + existingSale.id + ', 客户: ' + existingSale.customer + ') / Already sold');
+    return;
+  }
   var found = null;
   for (var i = 0; i < phones.length; i++) {
     if (phones[i] && phones[i].imei === imei && (phones[i].status === 'available' || !phones[i].status)) {
@@ -9211,7 +9218,7 @@ function saleSearchIMEI(imei) {
     }
   }
   if (!found) {
-    showToast('未找到此 IMEI 或已售出 (IMEI: ' + imei + ', 库存: ' + phones.length + ' 台) / IMEI not found or already sold');
+    showToast('未找到此 IMEI 或已售出 / IMEI not found or already sold');
     return;
   }
   saleState.phone = found;
@@ -9323,6 +9330,10 @@ function updateSaleSummary() {
 
 function completeSale() {
   if (!saleState.phone) { showToast('请先扫描 IMEI / Scan IMEI first'); return; }
+  // Double-check: prevent duplicate sale
+  var sales = getLocalData('pi_sales');
+  var dup = sales.find(function(s) { return s.imei === saleState.phone.imei && s.status === 'completed'; });
+  if (dup) { showToast('此手机已售出 (订单: ' + dup.id + ') / Already sold'); return; }
   // Get customer info from form
   var custInputs = document.querySelectorAll('#page-sale .form-input');
   var custName = custInputs[0] ? custInputs[0].value.trim() : '';
@@ -10944,6 +10955,8 @@ var INV_PER_PAGE = 20;
 function getFilteredPhones() {
   return phones.filter(p => {
     if (!p) return false;
+    // Always hide sold phones from inventory (view in sales history instead)
+    if (p.status === 'sold') return false;
     if (INV_FILTERS.mode && p.cond !== INV_FILTERS.mode) return false;
     if (INV_FILTERS.brand !== 'all' && p.brand !== INV_FILTERS.brand) return false;
     if (INV_FILTERS.store !== 'all' && normalizeStoreKey(p.store || p.storeName || '') !== INV_FILTERS.store) return false;
@@ -11775,7 +11788,22 @@ document.addEventListener('keydown', e => {
 // LOGIN_ACCOUNTS already defined in the standalone login script above
 // initDynamicUI defined there too, but add alias in case main script calls it
 if (!window.initDynamicUI) {
+  // Sync sold statuses from localStorage sales records into phones array
+  window.syncSoldStatus = function() {
+    var sales = getLocalData('pi_sales');
+    var soldIMEIs = {};
+    sales.forEach(function(s) {
+      if (s.imei && s.status === 'completed') soldIMEIs[s.imei] = true;
+    });
+    phones.forEach(function(p) {
+      if (p && p.imei && soldIMEIs[p.imei]) p.status = 'sold';
+    });
+  };
+
   window.initDynamicUI = function(account) {
+    // Sync sold phones from localStorage before rendering
+    try { syncSoldStatus(); } catch(e){}
+
     var h = new Date().getHours();
     var gZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';
     var dateStr = new Date().toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' });
