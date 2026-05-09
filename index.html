@@ -8671,8 +8671,8 @@ function openDrawer(idx) {
       </div>
       <div class="device-foot">
         <div>
-          <div class="device-price-label">${isZh?'售价 / 利润':'Price / Profit'}</div>
-          <div class="device-price"><span class="ccy">$</span>${p.price.toLocaleString()}<span style="font-size:13px;color:var(--success);font-weight:600;margin-left:8px;">+$${(p.price-p.cost).toLocaleString()}</span></div>
+          <div class="device-price-label">${isZh?'售价':'Price'}</div>
+          <div class="device-price">${p.price > 0 ? '<span class="ccy">$</span>' + p.price.toLocaleString() : '<span style="color:var(--text-muted);">待定价</span>'}</div>
         </div>
         <span class="status ${s.cls}"><span class="dot"></span>${isZh?s.zh:s.en}</span>
       </div>
@@ -8699,8 +8699,8 @@ function openDrawer(idx) {
         <div class="info-cell"><div class="info-label">${isZh?'货位':'Shelf'}</div><div class="info-value mono">${p.shelf}</div></div>
         <div class="info-cell"><div class="info-label">${isZh?'入库日期':'Received'}</div><div class="info-value mono">${p.purchaseDate}</div></div>
         <div class="info-cell"><div class="info-label">${isZh?'来源':'Supplier'}</div><div class="info-value" style="font-size:12.5px;">${isZh?p.supplier:(p.supplierEn||p.supplier)}</div></div>
-        <div class="info-cell"><div class="info-label">${isZh?'进价':'Cost'}</div><div class="info-value mono">$${p.cost}</div></div>
-        <div class="info-cell"><div class="info-label">${isZh?'毛利':'Profit'}</div><div class="info-value mono" style="color:var(--success);">+$${p.price-p.cost} (${Math.round((p.price-p.cost)/p.price*100)}%)</div></div>
+        <div class="info-cell"><div class="info-label">${isZh?'进价':'Cost'}</div><div class="info-value mono">${p.cost > 0 ? '$' + p.cost : '—'}</div></div>
+        <div class="info-cell"><div class="info-label">${isZh?'毛利':'Profit'}</div><div class="info-value mono" style="color:var(--success);">${(p.price > 0 && p.cost > 0) ? '+$' + (p.price-p.cost) + ' (' + Math.round((p.price-p.cost)/p.price*100) + '%)' : '—'}</div></div>
       </div>
     </div>
 
@@ -9000,9 +9000,9 @@ function renderDashboard() {
   var totalMargin = totalMSRP > 0 ? Math.round(totalProfit / totalMSRP * 100) : 0;
 
   var finCards = document.querySelectorAll('#page-dashboard .fin-card-value');
-  if (finCards[0]) finCards[0].innerHTML = '<span class="ccy">$</span>' + totalCost.toLocaleString();
-  if (finCards[1]) finCards[1].innerHTML = '<span class="ccy">$</span>' + totalMSRP.toLocaleString();
-  if (finCards[2]) finCards[2].innerHTML = '<span class="ccy">$</span>' + totalProfit.toLocaleString();
+  if (finCards[0]) finCards[0].innerHTML = totalCost > 0 ? '<span class="ccy">$</span>' + totalCost.toLocaleString() : '—';
+  if (finCards[1]) finCards[1].innerHTML = totalMSRP > 0 ? '<span class="ccy">$</span>' + totalMSRP.toLocaleString() : '—';
+  if (finCards[2]) finCards[2].innerHTML = (totalCost > 0 || totalMSRP > 0) ? '<span class="ccy">$</span>' + totalProfit.toLocaleString() : '—';
   // Update cost meta
   var finMetas = document.querySelectorAll('#page-dashboard .fin-card-meta');
   if (finMetas[0]) {
@@ -11075,9 +11075,9 @@ function renderInventory() {
       '<div class="inv-store">' + p.storeName + '<span class="shelf">' + p.shelf + '</span></div>' +
       '<div class="inv-age ' + ageClass + '">' + ageDays + 'd</div>' +
       '<div class="inv-price-block">' +
-        '<div class="msrp-label"><span class="zh">建议零售价</span><span class="en">MSRP</span></div>' +
-        '<div class="msrp"><span class="ccy">$</span>' + p.price.toLocaleString() + '</div>' +
-        '<div class="points-row"><span class="points-tag">' + (p.cond === 'new' ? '15' : '10') + ' P</span></div>' +
+        '<div class="msrp-label"><span class="zh">售价</span><span class="en">Price</span></div>' +
+        '<div class="msrp">' + (p.price > 0 ? '<span class="ccy">$</span>' + p.price.toLocaleString() : '<span style="color:var(--text-muted);font-size:12px;">待定价</span>') + '</div>' +
+        (p.cost > 0 ? '<div class="points-row" style="font-size:10px;color:var(--text-muted);">成本 $' + p.cost.toLocaleString() + '</div>' : '') +
       '</div>' +
       (function(){
         var phoneStore = normalizeStoreKey(p.store || p.storeName || '');
