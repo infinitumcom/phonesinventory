@@ -8861,7 +8861,17 @@ function normalizeStoreKey(raw) {
   return key.replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '');
 }
 
-// 1.2 localStorage data layer
+// 1.2 Server API + localStorage data layer
+var API_BASE = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+  ? 'http://localhost:8580' : '/api';
+
+function apiCall(method, path, data) {
+  var url = (API_BASE === '/api') ? '/api' + path : API_BASE + path;
+  var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
+  if (data && method !== 'GET') opts.body = JSON.stringify(data);
+  return fetch(url, opts).then(function(r) { return r.json(); });
+}
+
 function getLocalData(key) {
   try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch(e) { return []; }
 }
@@ -9203,11 +9213,11 @@ function saleSearchIMEI(imei) {
     showToast('请输入有效的 IMEI / Enter valid IMEI');
     return;
   }
-  // Check if already sold in sales records
+  // Check if already sold (local check first, server check happens at submit)
   var sales = getLocalData('pi_sales');
   var existingSale = sales.find(function(s) { return s.imei === imei && s.status === 'completed'; });
   if (existingSale) {
-    showToast('此手机已售出 (订单: ' + existingSale.id + ', 客户: ' + existingSale.customer + ') / Already sold');
+    showToast('此手机已售出 (订单: ' + existingSale.id + ') / Already sold');
     return;
   }
   var found = null;
@@ -9388,23 +9398,45 @@ function completeSale() {
     status: 'completed'
   };
 
-  // Save sale
-  var sales = getLocalData('pi_sales');
-  sales.unshift(sale);
-  setLocalData('pi_sales', sales);
+  // Save sale to server API (primary) + localStorage (backup)
+  apiCall('POST', '/sale', sale).then(function(res) {
+    if (res.duplicate) {
+      showToast('此手机已售出 (订单: ' + res.existing_id + ') / Already sold');
+      return;
+    }
+    if (res.error) {
+      showToast('服务器错误: ' + res.error);
+      return;
+    }
+    // Success — save locally too
+    var sales = getLocalData('pi_sales');
+    sales.unshift(sale);
+    setLocalData('pi_sales', sales);
 
-  // Mark phone as sold
-  saleState.phone.status = 'sold';
+    // Mark phone as sold
+    saleState.phone.status = 'sold';
 
-  // Build receipt and show
-  fillReceipt(sale);
-  openReceiptModal();
+    // Build receipt and show
+    fillReceipt(sale);
+    openReceiptModal();
 
-  // Refresh dashboard
-  renderDashboard();
-  renderInventory();
-
-  showToast('销售完成: ' + sale.id + ' / Sale completed');
+    // Refresh
+    renderDashboard();
+    renderInventory();
+    showToast('销售完成: ' + sale.id + ' / Sale completed');
+  }).catch(function(e) {
+    console.log('API failed, saving locally only', e);
+    // Fallback: save locally
+    var sales = getLocalData('pi_sales');
+    sales.unshift(sale);
+    setLocalData('pi_sales', sales);
+    saleState.phone.status = 'sold';
+    fillReceipt(sale);
+    openReceiptModal();
+    renderDashboard();
+    renderInventory();
+    showToast('销售完成 (离线模式): ' + sale.id);
+  });
 }
 
 function fillReceipt(sale) {
@@ -9509,41 +9541,71 @@ function createTransfer(imei, targetStore, reason) {
     requestedBy: acct.name || '',
     status: 'pending'
   };
-  var transfers = getLocalData('pi_transfers');
-  transfers.unshift(transfer);
-  setLocalData('pi_transfers', transfers);
-  phone.status = 'reserved';
-  renderDashboard();
-  showToast('调拨已创建: ' + transfer.id + ' / Transfer created');
+  // Save to server API
+  apiCall('POST', '/transfer', transfer).then(function(res) {
+    if (res.error) { showToast('错误: ' + res.error); return; }
+    var transfers = getLocalData('pi_transfers');
+    transfers.unshift(transfer);
+    setLocalData('pi_transfers', transfers);
+    phone.status = 'reserved';
+    renderDashboard();
+    try { renderTransferPage(); } catch(e){}
+    showToast('调拨已创建: ' + transfer.id + ' / Transfer created');
+  }).catch(function(e) {
+    // Fallback: save locally
+    var transfers = getLocalData('pi_transfers');
+    transfers.unshift(transfer);
+    setLocalData('pi_transfers', transfers);
+    phone.status = 'reserved';
+    renderDashboard();
+    showToast('调拨已创建 (离线): ' + transfer.id);
+  });
   return transfer;
 }
 
 function approveTransfer(transferId) {
-  var transfers = getLocalData('pi_transfers');
-  var t = transfers.find(function(x){ return x.id === transferId; });
-  if (!t) return;
-  t.status = 'transit';
-  t.approvedBy = (window._currentAccount || {}).name || '';
-  t.approvedDate = new Date().toISOString();
-  setLocalData('pi_transfers', transfers);
-  renderDashboard();
-  renderTransferPage();
-  showToast('调拨已批准 / Transfer approved: ' + transferId);
+  var acctName = (window._currentAccount || {}).name || '';
+  apiCall('PUT', '/transfer/' + transferId, { status: 'approved', approvedBy: acctName }).then(function() {
+    var transfers = getLocalData('pi_transfers');
+    var t = transfers.find(function(x){ return x.id === transferId; });
+    if (t) { t.status = 'transit'; t.approvedBy = acctName; }
+    setLocalData('pi_transfers', transfers);
+    renderDashboard();
+    renderTransferPage();
+    showToast('调拨已批准 / Transfer approved: ' + transferId);
+  }).catch(function() {
+    var transfers = getLocalData('pi_transfers');
+    var t = transfers.find(function(x){ return x.id === transferId; });
+    if (t) { t.status = 'transit'; t.approvedBy = acctName; }
+    setLocalData('pi_transfers', transfers);
+    renderDashboard();
+    renderTransferPage();
+    showToast('调拨已批准 (离线): ' + transferId);
+  });
 }
 
 function rejectTransfer(transferId) {
-  var transfers = getLocalData('pi_transfers');
-  var t = transfers.find(function(x){ return x.id === transferId; });
-  if (!t) return;
-  t.status = 'rejected';
-  t.rejectedBy = (window._currentAccount || {}).name || '';
-  setLocalData('pi_transfers', transfers);
-  // Restore phone status
-  for (var i = 0; i < phones.length; i++) {
-    if (phones[i] && phones[i].imei === t.imei && phones[i].status === 'reserved') {
-      phones[i].status = 'available'; break;
+  var acctName = (window._currentAccount || {}).name || '';
+  apiCall('PUT', '/transfer/' + transferId, { status: 'rejected', rejectedBy: acctName }).then(function() {
+    var transfers = getLocalData('pi_transfers');
+    var t = transfers.find(function(x){ return x.id === transferId; });
+    if (t) { t.status = 'rejected'; t.rejectedBy = acctName; }
+    setLocalData('pi_transfers', transfers);
+    for (var i = 0; i < phones.length; i++) {
+      if (phones[i] && phones[i].imei === (t||{}).imei && phones[i].status === 'reserved') {
+        phones[i].status = 'available'; break;
+      }
     }
-  }
+    renderDashboard();
+    renderTransferPage();
+    showToast('调拨已拒绝 / Transfer rejected');
+  }).catch(function() {
+    var transfers = getLocalData('pi_transfers');
+    var t = transfers.find(function(x){ return x.id === transferId; });
+    if (t) { t.status = 'rejected'; t.rejectedBy = acctName; }
+    setLocalData('pi_transfers', transfers);
+    renderDashboard();
+  });
   renderDashboard();
   renderTransferPage();
   showToast('调拨已驳回 / Transfer rejected: ' + transferId);
@@ -11788,21 +11850,59 @@ document.addEventListener('keydown', e => {
 // LOGIN_ACCOUNTS already defined in the standalone login script above
 // initDynamicUI defined there too, but add alias in case main script calls it
 if (!window.initDynamicUI) {
-  // Sync sold statuses from localStorage sales records into phones array
+  // Sync sold statuses from server API into phones array
   window.syncSoldStatus = function() {
-    var sales = getLocalData('pi_sales');
-    var soldIMEIs = {};
-    sales.forEach(function(s) {
-      if (s.imei && s.status === 'completed') soldIMEIs[s.imei] = true;
-    });
-    phones.forEach(function(p) {
-      if (p && p.imei && soldIMEIs[p.imei]) p.status = 'sold';
+    // Fetch sold IMEIs from server
+    apiCall('GET', '/sold-imeis').then(function(res) {
+      if (res && res.imeis) {
+        var soldSet = {};
+        res.imeis.forEach(function(imei) { soldSet[imei] = true; });
+        phones.forEach(function(p) {
+          if (p && p.imei && soldSet[p.imei]) p.status = 'sold';
+        });
+        // Re-render after sync
+        try { renderInventory(); } catch(e){}
+        try { renderDashboard(); } catch(e){}
+      }
+    }).catch(function(e) {
+      console.log('API sync failed, falling back to localStorage', e);
+      // Fallback: use localStorage
+      var sales = getLocalData('pi_sales');
+      var soldIMEIs = {};
+      sales.forEach(function(s) {
+        if (s.imei && s.status === 'completed') soldIMEIs[s.imei] = true;
+      });
+      phones.forEach(function(p) {
+        if (p && p.imei && soldIMEIs[p.imei]) p.status = 'sold';
+      });
     });
   };
 
+  // Load sales from server
+  window.loadServerSales = function() {
+    apiCall('GET', '/sales').then(function(res) {
+      if (res && res.sales) {
+        setLocalData('pi_sales', res.sales);
+        try { renderSalesPage(); } catch(e){}
+      }
+    }).catch(function(e) { console.log('Failed to load sales from server', e); });
+  };
+
+  // Load transfers from server
+  window.loadServerTransfers = function() {
+    apiCall('GET', '/transfers').then(function(res) {
+      if (res && res.transfers) {
+        setLocalData('pi_transfers', res.transfers);
+        try { renderTransferPage(); } catch(e){}
+      }
+    }).catch(function(e) { console.log('Failed to load transfers from server', e); });
+  };
+
   window.initDynamicUI = function(account) {
-    // Sync sold phones from localStorage before rendering
+    // Sync data from server
     try { syncSoldStatus(); } catch(e){}
+    try { loadServerSales(); } catch(e){}
+    try { loadServerTransfers(); } catch(e){}
 
     var h = new Date().getHours();
     var gZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';

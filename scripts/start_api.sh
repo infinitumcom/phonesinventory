@@ -1,15 +1,14 @@
 #!/bin/bash
-# Start upload bot + API server
+# Start API server for cross-device data sync
 DEPLOY_DIR="/opt/phonesinventory"
 cd "$DEPLOY_DIR"
 
-# Load .env if exists
+# Load .env
 if [ -f "$DEPLOY_DIR/.env" ]; then
     export $(grep -v '^#' "$DEPLOY_DIR/.env" | xargs)
 fi
 
-# Kill existing processes
-pkill -f "inventory_bot.py" 2>/dev/null
+# Kill existing API server
 pkill -f "api_server.py" 2>/dev/null
 sleep 1
 
@@ -17,8 +16,3 @@ sleep 1
 echo "$(date) Starting API server..."
 nohup python3 scripts/api_server.py >> /tmp/phonesinventory-api.log 2>&1 &
 echo "$(date) API server started, PID: $!"
-
-# Start upload bot
-echo "$(date) Starting upload bot (@PhoneInventoryUpload_bot)..."
-nohup python3 scripts/inventory_bot.py >> /tmp/upload-bot.log 2>&1 &
-echo "$(date) Upload bot started, PID: $!"
