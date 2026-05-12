@@ -4979,11 +4979,34 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     'grace@ifixforu.com':    { pin:'888888', name:'Grace',       role:'staff', store:'Las Vegas' },
     'bobby@ifixforu.com':    { pin:'888888', name:'Bobby',       role:'staff', store:'Monterey Park' }
   };
-  // Restore changed PINs from localStorage
+  // Restore changed PINs from localStorage first (fast, offline fallback)
   try {
     var saved = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
     for (var email in saved) { if (ACCOUNTS[email]) ACCOUNTS[email].pin = saved[email]; }
   } catch(e){}
+  // Then fetch from server (source of truth) and override
+  (function() {
+    var apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+      ? 'http://localhost:8580' : '';
+    try {
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', apiBase + '/api/user-pins', false); // synchronous to block login
+      xhr.timeout = 3000;
+      xhr.send();
+      if (xhr.status === 200) {
+        var resp = JSON.parse(xhr.responseText);
+        if (resp && resp.pins) {
+          for (var em in resp.pins) {
+            if (ACCOUNTS[em]) ACCOUNTS[em].pin = resp.pins[em];
+          }
+          // Also update localStorage cache
+          var merged = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+          for (var em2 in resp.pins) { merged[em2] = resp.pins[em2]; }
+          localStorage.setItem('pi_changed_pins', JSON.stringify(merged));
+        }
+      }
+    } catch(e) { console.log('Failed to fetch PINs from server, using localStorage fallback'); }
+  })();
   // Make accessible globally
   window.LOGIN_ACCOUNTS = ACCOUNTS;
 
@@ -5120,6 +5143,21 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 if (navEl) { navTo(navEl, lastPage); }
               }
             } catch(e){}
+            // Force change PIN if still default (auto-login path)
+            try {
+              var changed = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+              if (s.email && !changed[s.email]) {
+                window._pendLogin = { email: s.email, account: sa };
+                setTimeout(function() {
+                  var overlay = document.getElementById('changePinOverlay');
+                  if (overlay) overlay.classList.add('show');
+                  var np1 = document.getElementById('newPin1');
+                  if (np1) { np1.value = ''; np1.focus(); }
+                  var np2 = document.getElementById('newPin2');
+                  if (np2) np2.value = '';
+                }, 600);
+              }
+            } catch(e){}
           }, 100);
         });
       }
@@ -5164,12 +5202,21 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       pend.account.pin = p1;
     }
 
-    // Save to localStorage
+    // Save to localStorage (fallback)
     if (email) {
       try {
         var ch = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
         ch[email] = p1;
         localStorage.setItem('pi_changed_pins', JSON.stringify(ch));
+      } catch(e){}
+    }
+
+    // Save to server (source of truth)
+    if (email) {
+      try {
+        apiCall('POST', '/change-pin', { email: email, pin: p1 })
+          .then(function(res) { if (res && res.ok) console.log('PIN saved to server'); })
+          .catch(function(e) { console.log('Failed to save PIN to server', e); });
       } catch(e){}
     }
 

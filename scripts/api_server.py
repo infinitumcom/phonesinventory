@@ -75,6 +75,12 @@ def init_api_tables():
             updated_at TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_transfers_status ON transfers(status);
+
+        CREATE TABLE IF NOT EXISTS user_pins (
+            email TEXT PRIMARY KEY,
+            pin TEXT NOT NULL,
+            changed_at TEXT
+        );
     """)
     conn.commit()
     conn.close()
@@ -120,6 +126,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.get_transfers(params)
         elif path == '/api/sold-imeis':
             return self.get_sold_imeis()
+        elif path == '/api/user-pins':
+            return self.get_user_pins()
         elif path == '/api/health':
             return json_response(self, {'status': 'ok'})
         else:
@@ -132,6 +140,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.create_sale()
         elif path == '/api/transfer':
             return self.create_transfer()
+        elif path == '/api/change-pin':
+            return self.change_pin()
         else:
             json_response(self, {'error': 'Not found'}, 404)
 
@@ -334,6 +344,47 @@ class APIHandler(BaseHTTPRequestHandler):
                 conn.close()
             return json_response(self, {'ok': True})
         except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+
+    # ─── User PINs ───
+
+    def get_user_pins(self):
+        """Return all changed PINs so frontend can merge with hardcoded defaults"""
+        try:
+            conn = get_db()
+            rows = conn.execute("SELECT email, pin FROM user_pins").fetchall()
+            conn.close()
+            pins = {}
+            for r in rows:
+                pins[r['email']] = r['pin']
+            return json_response(self, {'pins': pins})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def change_pin(self):
+        """Save a changed PIN to the database"""
+        try:
+            data = self.read_body()
+            email = data.get('email', '').strip().lower()
+            pin = data.get('pin', '').strip()
+            if not email or not pin:
+                return json_response(self, {'error': 'Email and PIN required'}, 400)
+            if len(pin) != 6 or not pin.isdigit():
+                return json_response(self, {'error': 'PIN must be 6 digits'}, 400)
+
+            now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+            with db_lock:
+                conn = get_db()
+                conn.execute(
+                    "INSERT OR REPLACE INTO user_pins (email, pin, changed_at) VALUES (?, ?, ?)",
+                    (email, pin, now)
+                )
+                conn.commit()
+                conn.close()
+            return json_response(self, {'ok': True})
+        except Exception as e:
+            print(f"[API] Error changing PIN: {e}")
             return json_response(self, {'error': str(e)}, 500)
 
 
