@@ -335,6 +335,11 @@ class APIHandler(BaseHTTPRequestHandler):
                         "UPDATE transfers SET status='rejected', rejected_by=?, updated_at=? WHERE id=?",
                         (data.get('rejectedBy', ''), now, transfer_id)
                     )
+                    # Restore phone status from reserved to available
+                    row = conn.execute("SELECT imei FROM transfers WHERE id=?", (transfer_id,)).fetchone()
+                    if row:
+                        conn.execute("UPDATE inventory SET status='available' WHERE imei=? AND status='reserved'",
+                                     (row['imei'],))
                 elif status == 'completed':
                     conn.execute(
                         "UPDATE transfers SET status='completed', updated_at=? WHERE id=?",

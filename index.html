@@ -9638,6 +9638,7 @@ function rejectTransfer(transferId) {
     var t = transfers.find(function(x){ return x.id === transferId; });
     if (t) { t.status = 'rejected'; t.rejectedBy = acctName; }
     setLocalData('pi_transfers', transfers);
+    // Restore phone status from reserved to available
     for (var i = 0; i < phones.length; i++) {
       if (phones[i] && phones[i].imei === (t||{}).imei && phones[i].status === 'reserved') {
         phones[i].status = 'available'; break;
@@ -9647,15 +9648,20 @@ function rejectTransfer(transferId) {
     renderTransferPage();
     showToast('调拨已拒绝 / Transfer rejected');
   }).catch(function() {
+    // Offline fallback — also restore phone status
     var transfers = getLocalData('pi_transfers');
     var t = transfers.find(function(x){ return x.id === transferId; });
     if (t) { t.status = 'rejected'; t.rejectedBy = acctName; }
     setLocalData('pi_transfers', transfers);
+    for (var i = 0; i < phones.length; i++) {
+      if (phones[i] && phones[i].imei === (t||{}).imei && phones[i].status === 'reserved') {
+        phones[i].status = 'available'; break;
+      }
+    }
     renderDashboard();
+    renderTransferPage();
+    showToast('调拨已拒绝 (离线) / Transfer rejected');
   });
-  renderDashboard();
-  renderTransferPage();
-  showToast('调拨已驳回 / Transfer rejected: ' + transferId);
 }
 
 // ===== Render Transfer Page =====
@@ -11939,6 +11945,10 @@ if (!window.initDynamicUI) {
   window.loadServerTransfers = function() {
     apiCall('GET', '/transfers').then(function(res) {
       if (res && res.transfers) {
+        // Map server status 'approved' → 'transit' for frontend consistency
+        res.transfers.forEach(function(t) {
+          if (t.status === 'approved') t.status = 'transit';
+        });
         setLocalData('pi_transfers', res.transfers);
         try { renderTransferPage(); } catch(e){}
       }
