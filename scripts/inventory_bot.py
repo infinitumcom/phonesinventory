@@ -465,6 +465,11 @@ def handle_photo(msg):
             skipped.append({"entry": entry, "dup_id": None, "dup_model": None, "dup_time": None, "reason": "no_imei"})
             continue
 
+        # Reject entries without store
+        if not entry.get("store"):
+            skipped.append({"entry": entry, "dup_id": None, "dup_model": None, "dup_time": None, "reason": "no_store"})
+            continue
+
         # Save to DB
         rid = save_entry(entry, raw_ocr=raw, scanned_by=username)
         saved.append({"entry": entry, "id": rid})
@@ -504,6 +509,13 @@ def handle_photo(msg):
             reply_parts.append(
                 f"❌ *IMEI 识别失败* — {entry.get('brand', '?')} {entry.get('model', '?')}\n"
                 f"未能从照片中识别有效 IMEI，请重新拍摄清晰的 IMEI 条码照片"
+            )
+        elif item.get("reason") == "no_store":
+            reply_parts.append(
+                f"❌ *缺少门店信息* — {entry.get('brand', '?')} {entry.get('model', '?')}\n"
+                f"IMEI: `{entry.get('imei', '?')}`\n"
+                f"请重新发送照片并在备注中标注门店名称\n"
+                f"例如: `Las Vegas` 或 `San Gabriel` 或 `Monterey Park`"
             )
         else:
             reply_parts.append(
