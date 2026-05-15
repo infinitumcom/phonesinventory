@@ -457,6 +457,11 @@ def handle_photo(msg):
                 skipped.append({"entry": entry, "dup_id": dup[0], "dup_model": dup[1], "dup_time": dup[2]})
                 continue
 
+        # Reject entries without valid IMEI
+        if not imei:
+            skipped.append({"entry": entry, "dup_id": None, "dup_model": None, "dup_time": None, "reason": "no_imei"})
+            continue
+
         # Save to DB
         rid = save_entry(entry, raw_ocr=raw, scanned_by=username)
         saved.append({"entry": entry, "id": rid})
@@ -492,11 +497,17 @@ def handle_photo(msg):
 
     for item in skipped:
         entry = item["entry"]
-        reply_parts.append(
-            f"⚠️ *重复跳过* — {entry.get('brand', '?')} {entry.get('model', '?')}\n"
-            f"IMEI: `{entry.get('imei', '?')}`\n"
-            f"已在 #{item['dup_id']} 录入 ({item['dup_time']})"
-        )
+        if item.get("reason") == "no_imei":
+            reply_parts.append(
+                f"❌ *IMEI 识别失败* — {entry.get('brand', '?')} {entry.get('model', '?')}\n"
+                f"未能从照片中识别有效 IMEI，请重新拍摄清晰的 IMEI 条码照片"
+            )
+        else:
+            reply_parts.append(
+                f"⚠️ *重复跳过* — {entry.get('brand', '?')} {entry.get('model', '?')}\n"
+                f"IMEI: `{entry.get('imei', '?')}`\n"
+                f"已在 #{item['dup_id']} 录入 ({item['dup_time']})"
+            )
 
     summary = f"📋 操作人: {username} · {datetime.now(PST).strftime('%Y-%m-%d %H:%M PST')}"
     if len(saved) > 1:
