@@ -11248,9 +11248,10 @@ function renderInventory() {
 }
 
 function updateFilterCounts() {
-  // Base set: respect current store filter
+  // Base set: respect current store filter, always exclude sold phones
   const storeBase = phones.filter(p => {
     if (!p) return false;
+    if (p.status === 'sold') return false;
     if (INV_FILTERS.store !== 'all' && normalizeStoreKey(p.store || p.storeName || '') !== INV_FILTERS.store) return false;
     return true;
   });
@@ -11260,9 +11261,9 @@ function updateFilterCounts() {
   const isNew = INV_FILTERS.mode === 'new';
   const modePhones = storeBase.filter(p => p.cond === INV_FILTERS.mode);
 
-  // Update sidebar nav badge (total across all stores)
+  // Update sidebar nav badge (total across all stores, exclude sold)
   const navBadge = document.getElementById('navBadgeInventory');
-  if (navBadge) navBadge.textContent = phones.filter(p => p).length;
+  if (navBadge) navBadge.textContent = phones.filter(p => p && p.status !== 'sold').length;
 
   // Update tab counts (filtered by store)
   const tabNew = document.getElementById('tabCountNew');
@@ -11280,8 +11281,8 @@ function updateFilterCounts() {
       if (newC) newC.innerHTML = 'NEW ' + allNew.length;
       if (usedC) usedC.innerHTML = 'USED ' + allUsed.length;
     } else {
-      const sNew = phones.filter(p => p && p.cond === 'new' && normalizeStoreKey(p.store || p.storeName || '') === storeKey).length;
-      const sUsed = phones.filter(p => p && p.cond === 'used' && normalizeStoreKey(p.store || p.storeName || '') === storeKey).length;
+      const sNew = phones.filter(p => p && p.status !== 'sold' && p.cond === 'new' && normalizeStoreKey(p.store || p.storeName || '') === storeKey).length;
+      const sUsed = phones.filter(p => p && p.status !== 'sold' && p.cond === 'used' && normalizeStoreKey(p.store || p.storeName || '') === storeKey).length;
       if (newC) newC.innerHTML = 'NEW ' + sNew;
       if (usedC) usedC.innerHTML = 'USED ' + sUsed;
     }
@@ -11314,9 +11315,10 @@ function updateFilterCounts() {
   const modeSubEn = document.getElementById('modeSubEn');
   if (modeSubEn) modeSubEn.textContent = filtered.length + (isNew ? ' new phones' : ' used phones') + (INV_FILTERS.brand !== 'all' ? ' · ' + INV_FILTERS.brand.charAt(0).toUpperCase() + INV_FILTERS.brand.slice(1) : '');
 
-  // Update region filter counts (respect store filter)
+  // Update region filter counts (respect store filter, exclude sold)
   var storeFiltered = phones.filter(function(p) {
     if (!p) return false;
+    if (p.status === 'sold') return false;
     if (INV_FILTERS.store !== 'all' && normalizeStoreKey(p.store || p.storeName || '') !== INV_FILTERS.store) return false;
     if (INV_FILTERS.mode && p.cond !== INV_FILTERS.mode) return false;
     return true;
