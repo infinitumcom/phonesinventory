@@ -429,8 +429,26 @@ def handle_photo(msg):
                     entry["store"] = name
                     break
 
-        # IMEI duplicate check
+        # IMEI validation — must be 14-16 digits, reject ICCID (SIM card numbers starting with 8904)
         imei = entry.get("imei", "").strip()
+        # Strip non-digit characters
+        imei = ''.join(c for c in imei if c.isdigit())
+        if imei and imei.startswith("8904"):
+            # This is an ICCID (SIM card number), not an IMEI — try to extract IMEI from it
+            # ICCID is typically 19-20 digits; if longer, IMEI may be concatenated
+            imei = ""  # discard, OCR mixed up SIM card number
+        if imei and (len(imei) < 14 or len(imei) > 16):
+            # Invalid length — skip or truncate
+            if len(imei) > 16:
+                # Might be ICCID+IMEI concatenated, try last 15 digits
+                candidate = imei[-15:]
+                if candidate[:2] in ("35", "86", "01", "00"):
+                    imei = candidate
+                else:
+                    imei = ""  # discard invalid
+            else:
+                imei = ""  # too short
+        entry["imei"] = imei
         if imei and len(imei) >= 14:
             conn = sqlite3.connect(DB_PATH)
             dup = conn.execute("SELECT id, model, scanned_at FROM inventory WHERE imei = ?", (imei,)).fetchone()

@@ -11183,7 +11183,7 @@ function renderInventory() {
     const regionLabel = p.region.toUpperCase();
     const regionCls = 'region-' + p.region;
     const dualSim = (p.region === 'hk' || p.region === 'cn') ? '<span class="dual-sim-chip"><span class="zh">双卡</span><span class="en">Dual SIM</span></span>' : '';
-    const imeiShort = p.imei.substring(0,6) + '··· ····' + p.imei.substring(11);
+    const imeiShort = p.imei.length > 10 ? p.imei.substring(0,6) + '··· ····' + p.imei.slice(-4) : p.imei;
     const sealedLabel = p.cond === 'new' ? '<span class="inv-spec-chip"><span class="zh">未拆封</span><span class="en">Sealed</span></span>' : '<span class="inv-spec-chip">' + (isZh ? p.condition.split('\u00b7')[0].trim() : p.conditionEn.split('\u00b7')[0].trim()) + '</span>';
 
     html += '<div class="table-row body inv-row" data-region="' + p.region + '" data-cond="' + p.cond + '" onclick="openDrawer(' + phoneIdx + ')">' +
