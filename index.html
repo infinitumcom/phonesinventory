@@ -7071,7 +7071,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                       <span class="hint"><span class="zh">系统自动带出</span><span class="en">auto-filled</span></span>
                     </label>
                     <div class="form-input-wrap">
-                      <input type="text" class="form-input" value="" disabled style="opacity:0.7;" placeholder="--">
+                      <input type="text" class="form-input" id="saleMsrpInput" value="" disabled style="opacity:0.7;" placeholder="--">
                       <span class="form-input-suffix">USD</span>
                     </div>
                   </div>
@@ -7083,7 +7083,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                       <span class="hint"><span class="zh">可让利</span><span class="en">may discount</span></span>
                     </label>
                     <div class="form-input-wrap">
-                      <input type="text" class="form-input" value="" style="font-weight:700;color:var(--brand);font-size:16px;" placeholder="0">
+                      <input type="text" class="form-input" id="salePriceInput" value="" style="font-weight:700;color:var(--brand);font-size:16px;" placeholder="0">
                       <span class="form-input-suffix">USD</span>
                     </div>
                   </div>
@@ -7220,19 +7220,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 </div>
               </div>
 
-              <!-- Points reward — highlighted -->
-              <div class="summary-section" style="background:linear-gradient(180deg,var(--purple-soft) 0%,transparent 100%);margin:0 -20px;padding:14px 20px;border-radius:8px;">
-                <div class="summary-section-label" style="color:var(--purple);">
-                  ◆ <span class="zh">销售员积分奖励</span><span class="en">Seller Points Reward</span>
-                </div>
-                <div style="display:flex;align-items:baseline;gap:6px;margin-top:6px;">
-                  <span style="font-family:'Inter',sans-serif;font-size:32px;font-weight:800;color:var(--purple);letter-spacing:-0.025em;line-height:1;">+20</span>
-                  <span style="font-family:'Inter',sans-serif;font-size:18px;color:var(--purple);opacity:0.85;">Points</span>
-                </div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-                  <span class="zh">≈ $20 可兑换 · 完成销售后自动入账</span>
-                  <span class="en">≈ $20 redeemable · Auto-credited on completion</span>
-                </div>
+              <!-- Points reward — hidden (not yet implemented) -->
+              <div class="summary-section" id="salePointsReward" style="display:none;background:linear-gradient(180deg,var(--purple-soft) 0%,transparent 100%);margin:0 -20px;padding:14px 20px;border-radius:8px;">
               </div>
 
               <div class="summary-section">
@@ -9250,6 +9239,16 @@ function initSalePage() {
     b.classList.remove('selected');
   });
 
+  // Bind price input event — update summary when user types price
+  var salePriceEl = document.getElementById('salePriceInput');
+  if (salePriceEl) {
+    salePriceEl.oninput = function() {
+      var val = parseFloat(this.value) || 0;
+      saleState.price = val;
+      updateSaleSummary();
+    };
+  }
+
   // Reset summary
   updateSaleSummary();
 }
@@ -9320,11 +9319,11 @@ function saleSearchIMEI(imei) {
   if (scanInput) scanInput.parentElement.style.display = 'none';
 
   // Update MSRP input
-  var msrpInput = document.querySelector('#page-sale input[disabled]');
-  if (msrpInput) msrpInput.value = saleState.msrp;
+  var msrpInput = document.getElementById('saleMsrpInput');
+  if (msrpInput) msrpInput.value = saleState.msrp || '';
   // Update actual price input
-  var priceInput = document.querySelector('#page-sale .form-input[style*="font-weight:700"]');
-  if (priceInput) { priceInput.value = saleState.msrp; }
+  var priceInput = document.getElementById('salePriceInput');
+  if (priceInput) { priceInput.value = saleState.msrp || ''; }
 
   // Update tax rate display
   var taxRateEl = document.getElementById('taxRate');
@@ -9398,7 +9397,7 @@ function completeSale() {
   if (!custName) { showToast('请输入客户姓名 / Enter customer name'); return; }
 
   // Get actual price from input
-  var priceInput = document.querySelector('#page-sale .form-input[style*="font-weight:700"]');
+  var priceInput = document.getElementById('salePriceInput');
   var actualPrice = priceInput ? parseFloat(priceInput.value) : saleState.price;
   if (isNaN(actualPrice) || actualPrice <= 0) { showToast('请输入有效价格 / Enter valid price'); return; }
   saleState.price = actualPrice;
