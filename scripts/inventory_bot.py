@@ -283,7 +283,10 @@ Each phone object should have these fields (use empty string if not found):
 
 IMPORTANT:
 - Read ALL text carefully including tiny print and barcodes with numbers below them
-- The barcode number IS the IMEI
+- IMEI is labeled "IMEI/MEID" or "IMEI" on the box — it is exactly 15 digits, usually starting with 35 or 86
+- IMEI2 is labeled "IMEI2" — also 15 digits
+- EID is labeled "EID" — it is 32 digits starting with 8904, this is the eSIM identifier, NOT an IMEI. Put it in the "eid" field, NEVER in "imei"
+- Do NOT confuse EID with IMEI — they are completely different numbers
 - For Apple: LL/A = US, ZA/A or ZP/A = HK, CH/A = CN
 - If you see multiple labels/stickers/boxes, each one is a SEPARATE phone — return an array
 - Only return the JSON, no other text"""
