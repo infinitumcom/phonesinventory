@@ -154,6 +154,9 @@ class APIHandler(BaseHTTPRequestHandler):
         elif path.startswith('/api/sale/'):
             sale_id = path.split('/')[-1]
             return self.update_sale(sale_id)
+        elif path.startswith('/api/inventory/'):
+            old_imei = path.split('/')[-1]
+            return self.update_inventory(old_imei)
         else:
             json_response(self, {'error': 'Not found'}, 404)
 
@@ -351,6 +354,54 @@ class APIHandler(BaseHTTPRequestHandler):
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
 
+
+    # ─── Inventory Update ───
+
+    def update_inventory(self, old_imei):
+        """Update inventory record fields (IMEI, store, etc.)"""
+        try:
+            data = self.read_body()
+            new_imei = data.get('imei', '').strip()
+
+            if new_imei:
+                # Validate new IMEI
+                digits = ''.join(c for c in new_imei if c.isdigit())
+                if len(digits) != 15:
+                    return json_response(self, {'error': 'IMEI must be 15 digits'}, 400)
+                new_imei = digits
+
+            with db_lock:
+                conn = get_db()
+                # Check old record exists
+                row = conn.execute("SELECT id FROM inventory WHERE imei = ?", (old_imei,)).fetchone()
+                if not row:
+                    conn.close()
+                    return json_response(self, {'error': 'Record not found'}, 404)
+
+                if new_imei and new_imei != old_imei:
+                    # Check new IMEI not duplicate
+                    dup = conn.execute("SELECT id FROM inventory WHERE imei = ? AND imei != ?",
+                                       (new_imei, old_imei)).fetchone()
+                    if dup:
+                        conn.close()
+                        return json_response(self, {'error': 'New IMEI already exists'}, 409)
+                    conn.execute("UPDATE inventory SET imei = ? WHERE imei = ?", (new_imei, old_imei))
+
+                # Update other fields if provided
+                if data.get('store'):
+                    conn.execute("UPDATE inventory SET store = ? WHERE imei = ?",
+                                 (data['store'], new_imei or old_imei))
+                if data.get('model'):
+                    conn.execute("UPDATE inventory SET model = ? WHERE imei = ?",
+                                 (data['model'], new_imei or old_imei))
+
+                conn.commit()
+                conn.close()
+
+            return json_response(self, {'ok': True, 'imei': new_imei or old_imei})
+        except Exception as e:
+            print(f"[API] Error updating inventory: {e}")
+            return json_response(self, {'error': str(e)}, 500)
 
     # ─── User PINs ───
 

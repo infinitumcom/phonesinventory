@@ -2227,7 +2227,23 @@ body[data-role="admin"] .staff-only { display: none !important; }
   font-size: 12px;
   color: var(--text-muted);
   letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
+.imei-edit-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0.3;
+  transition: opacity 0.2s;
+  line-height: 1;
+}
+.inv-row:hover .imei-edit-btn { opacity: 0.7; }
+.imei-edit-btn:hover { opacity: 1 !important; background: var(--bg-hover); }
 
 /* Age indicator */
 .inv-age {
@@ -11198,7 +11214,7 @@ function renderInventory() {
         '</div>' +
       '</div>' +
       '<div class="inv-color"><span class="swatch" style="background:' + p.colorHex + '"></span><span>' + (isZh ? p.color : p.colorEn) + '</span></div>' +
-      '<div class="inv-imei">' + imeiShort + '</div>' +
+      '<div class="inv-imei">' + imeiShort + '<button class="imei-edit-btn" onclick="event.stopPropagation();editIMEI(\'' + p.imei + '\',' + phoneIdx + ')" title="修改 IMEI / Edit IMEI">✏️</button></div>' +
       '<div class="inv-store">' + p.storeName + '<span class="shelf">' + p.shelf + '</span></div>' +
       '<div class="inv-age ' + ageClass + '">' + ageDays + 'd</div>' +
       '<div class="inv-price-block">' +
@@ -11343,6 +11359,41 @@ function updateFilterCounts() {
 }
 
 // Override setInvMode
+// Edit IMEI inline
+function editIMEI(oldImei, phoneIdx) {
+  var phone = phones[phoneIdx];
+  if (!phone) return;
+  var isZh = document.body.dataset.lang === 'zh';
+  var newImei = prompt(
+    (isZh ? '修改 IMEI\n当前: ' : 'Edit IMEI\nCurrent: ') + oldImei +
+    (isZh ? '\n\n请输入正确的 15 位 IMEI:' : '\n\nEnter correct 15-digit IMEI:'),
+    oldImei
+  );
+  if (!newImei || newImei === oldImei) return;
+  newImei = newImei.replace(/\s+/g, '').replace(/[^0-9]/g, '');
+  if (newImei.length !== 15) {
+    showToast(isZh ? 'IMEI 必须是 15 位数字' : 'IMEI must be 15 digits');
+    return;
+  }
+  // Check local duplicate
+  for (var i = 0; i < phones.length; i++) {
+    if (phones[i] && phones[i].imei === newImei && i !== phoneIdx) {
+      showToast(isZh ? '此 IMEI 已存在' : 'This IMEI already exists');
+      return;
+    }
+  }
+  // Call API to update
+  apiCall('PUT', '/inventory/' + oldImei, { imei: newImei }).then(function(res) {
+    if (res.error) { showToast('Error: ' + res.error); return; }
+    // Update local data
+    phone.imei = newImei;
+    renderInventory();
+    showToast((isZh ? 'IMEI 已修改: ' : 'IMEI updated: ') + newImei.substring(0,6) + '····' + newImei.slice(-4));
+  }).catch(function(e) {
+    showToast(isZh ? '修改失败，请重试' : 'Update failed, please retry');
+  });
+}
+
 function setInvMode(mode) {
   INV_FILTERS.mode = mode;
   INV_PAGE = 1;
