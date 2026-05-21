@@ -417,13 +417,16 @@ def handle_photo(msg):
         if ctx.get("store"):
             entry["store"] = ctx["store"]
 
-        # Region: user context > caption > model number detection > Claude guess
+        # Region: user context > model number detection > Claude guess
+        # Model number suffix (LL/A, ZA/A, CH/A) is the definitive source of truth
         if ctx.get("region"):
             entry["region"] = ctx["region"]
-        elif not entry.get("region") or entry["region"] == "us":
+        else:
             detected = detect_region_from_model(entry.get("model_number", ""))
             if detected:
                 entry["region"] = detected
+            elif not entry.get("region"):
+                entry["region"] = "us"  # default
 
         # Parse store from caption if not set by context
         if not entry.get("store") and caption:
