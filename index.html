@@ -9630,18 +9630,41 @@ function approveTransfer(transferId) {
   apiCall('PUT', '/transfer/' + transferId, { status: 'approved', approvedBy: acctName }).then(function() {
     var transfers = getLocalData('pi_transfers');
     var t = transfers.find(function(x){ return x.id === transferId; });
-    if (t) { t.status = 'transit'; t.approvedBy = acctName; }
+    if (t) {
+      t.status = 'transit'; t.approvedBy = acctName;
+      // Move phone to target store in memory
+      for (var i = 0; i < phones.length; i++) {
+        if (phones[i] && phones[i].imei === t.imei) {
+          phones[i].store = t.toStore;
+          phones[i].storeName = t.toStoreName || t.toStore;
+          phones[i].status = 'available';
+          break;
+        }
+      }
+    }
     setLocalData('pi_transfers', transfers);
     renderDashboard();
     renderTransferPage();
+    try { renderInventory(); } catch(e) {}
     showToast('调拨已批准 / Transfer approved: ' + transferId);
   }).catch(function() {
     var transfers = getLocalData('pi_transfers');
     var t = transfers.find(function(x){ return x.id === transferId; });
-    if (t) { t.status = 'transit'; t.approvedBy = acctName; }
+    if (t) {
+      t.status = 'transit'; t.approvedBy = acctName;
+      for (var i = 0; i < phones.length; i++) {
+        if (phones[i] && phones[i].imei === t.imei) {
+          phones[i].store = t.toStore;
+          phones[i].storeName = t.toStoreName || t.toStore;
+          phones[i].status = 'available';
+          break;
+        }
+      }
+    }
     setLocalData('pi_transfers', transfers);
     renderDashboard();
     renderTransferPage();
+    try { renderInventory(); } catch(e) {}
     showToast('调拨已批准 (离线): ' + transferId);
   });
 }
@@ -9676,6 +9699,29 @@ function rejectTransfer(transferId) {
     renderDashboard();
     renderTransferPage();
     showToast('调拨已拒绝 (离线) / Transfer rejected');
+  });
+}
+
+function completeTransfer(transferId) {
+  if (!confirm('确认已收到手机？\nConfirm receipt of phone?')) return;
+  apiCall('PUT', '/transfer/' + transferId, { status: 'completed' }).then(function() {
+    var transfers = getLocalData('pi_transfers');
+    var t = transfers.find(function(x){ return x.id === transferId; });
+    if (t) { t.status = 'completed'; }
+    setLocalData('pi_transfers', transfers);
+    renderDashboard();
+    renderTransferPage();
+    try { renderInventory(); } catch(e) {}
+    showToast('调拨已完成 / Transfer completed: ' + transferId);
+  }).catch(function() {
+    var transfers = getLocalData('pi_transfers');
+    var t = transfers.find(function(x){ return x.id === transferId; });
+    if (t) { t.status = 'completed'; }
+    setLocalData('pi_transfers', transfers);
+    renderDashboard();
+    renderTransferPage();
+    try { renderInventory(); } catch(e) {}
+    showToast('调拨已完成 (离线) / Transfer completed');
   });
 }
 
@@ -9719,7 +9765,9 @@ function renderTransferPage() {
     var fromName = (STORE_DATA[t.fromStore]||{}).nameEn || t.fromStoreName || t.fromStore;
     var toName = (STORE_DATA[t.toStore]||{}).nameEn || t.toStoreName || t.toStore;
     var actions = t.status === 'pending' ?
-      '<div style="display:flex;gap:6px;"><button class="btn btn-sm" onclick="rejectTransfer(\'' + t.id + '\')"><span class="zh">驳回</span><span class="en">Reject</span></button><button class="btn btn-sm btn-primary" onclick="approveTransfer(\'' + t.id + '\')"><span class="zh">同意</span><span class="en">Approve</span></button></div>' : '';
+      '<div style="display:flex;gap:6px;"><button class="btn btn-sm" onclick="rejectTransfer(\'' + t.id + '\')"><span class="zh">驳回</span><span class="en">Reject</span></button><button class="btn btn-sm btn-primary" onclick="approveTransfer(\'' + t.id + '\')"><span class="zh">同意</span><span class="en">Approve</span></button></div>' :
+      t.status === 'transit' ?
+      '<button class="btn btn-sm btn-success" onclick="completeTransfer(\'' + t.id + '\')" style="background:var(--success);color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;"><span class="zh">✓ 确认收货</span><span class="en">✓ Confirm Receipt</span></button>' : '';
     html += '<div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:14px 20px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;">' +
       '<div>' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">' +
@@ -9842,7 +9890,7 @@ function openStockRequestModal() {
 
 // --- Stock Request API Layer ---
 var _stockRequestsCache = [];
-var SR_API = '/api/stock_requests.php';
+var SR_API = (API_BASE === '/api') ? '/api/stock-requests' : API_BASE + '/stock-requests';
 
 function loadStockRequests(callback) {
   fetch(SR_API).then(function(r) { return r.json(); }).then(function(res) {

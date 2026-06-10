@@ -76,6 +76,22 @@ def init_api_tables():
         );
         CREATE INDEX IF NOT EXISTS idx_transfers_status ON transfers(status);
 
+        CREATE TABLE IF NOT EXISTS stock_requests (
+            id TEXT PRIMARY KEY,
+            requested_by TEXT,
+            store TEXT,
+            model TEXT,
+            items TEXT,
+            qty INTEGER DEFAULT 1,
+            note TEXT,
+            status TEXT DEFAULT 'pending',
+            approved_by TEXT,
+            fulfilled_by TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_sr_status ON stock_requests(status);
+
         CREATE TABLE IF NOT EXISTS user_pins (
             email TEXT PRIMARY KEY,
             pin TEXT NOT NULL,
@@ -124,12 +140,14 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.get_sales(params)
         elif path == '/api/transfers':
             return self.get_transfers(params)
+        elif path == '/api/stock-requests':
+            return self.get_stock_requests()
         elif path == '/api/sold-imeis':
             return self.get_sold_imeis()
         elif path == '/api/user-pins':
             return self.get_user_pins()
         elif path == '/api/health':
-            return json_response(self, {'status': 'ok'})
+            return self.health_check()
         else:
             json_response(self, {'error': 'Not found'}, 404)
 
@@ -140,6 +158,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.create_sale()
         elif path == '/api/transfer':
             return self.create_transfer()
+        elif path == '/api/stock-requests':
+            return self.handle_stock_request()
         elif path == '/api/change-pin':
             return self.change_pin()
         else:
@@ -355,6 +375,74 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'error': str(e)}, 500)
 
 
+    # ─── Stock Requests ───
+
+    def get_stock_requests(self):
+        try:
+            conn = get_db()
+            rows = conn.execute("SELECT * FROM stock_requests ORDER BY created_at DESC").fetchall()
+            conn.close()
+            result = []
+            for r in rows:
+                sr = dict(r)
+                sr['requestedBy'] = sr.pop('requested_by', '')
+                sr['approvedBy'] = sr.pop('approved_by', '')
+                sr['fulfilledBy'] = sr.pop('fulfilled_by', '')
+                sr['createdAt'] = sr.pop('created_at', '')
+                sr['updatedAt'] = sr.pop('updated_at', '')
+                try:
+                    sr['items'] = json.loads(sr.get('items') or '[]')
+                except:
+                    sr['items'] = []
+                result.append(sr)
+            return json_response(self, {'ok': True, 'data': result})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def handle_stock_request(self):
+        try:
+            data = self.read_body()
+            action = data.get('action', '')
+            now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+
+            if action == 'create':
+                sr_id = 'SR-' + datetime.now(PST).strftime('%Y%m%d%H%M%S')
+                with db_lock:
+                    conn = get_db()
+                    conn.execute("""
+                        INSERT INTO stock_requests (id, requested_by, store, model, items, qty, note, status, created_at, updated_at)
+                        VALUES (?,?,?,?,?,?,?,'pending',?,?)
+                    """, (
+                        sr_id, data.get('requestedBy', ''), data.get('store', ''),
+                        data.get('model', ''), json.dumps(data.get('items', [])),
+                        data.get('qty', 1), data.get('note', ''), now, now
+                    ))
+                    conn.commit()
+                    conn.close()
+                return json_response(self, {'ok': True, 'data': {'id': sr_id}})
+
+            elif action in ('approve', 'reject', 'fulfill'):
+                sr_id = data.get('id', '')
+                by = data.get('by', '')
+                status_map = {'approve': 'approved', 'reject': 'rejected', 'fulfill': 'fulfilled'}
+                new_status = status_map[action]
+                col_map = {'approve': 'approved_by', 'reject': 'approved_by', 'fulfill': 'fulfilled_by'}
+                col = col_map[action]
+                with db_lock:
+                    conn = get_db()
+                    conn.execute(
+                        f"UPDATE stock_requests SET status=?, {col}=?, updated_at=? WHERE id=?",
+                        (new_status, by, now, sr_id)
+                    )
+                    conn.commit()
+                    conn.close()
+                return json_response(self, {'ok': True})
+
+            else:
+                return json_response(self, {'error': 'Unknown action'}, 400)
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
     # ─── Inventory Update ───
 
     def update_inventory(self, old_imei):
@@ -402,6 +490,29 @@ class APIHandler(BaseHTTPRequestHandler):
         except Exception as e:
             print(f"[API] Error updating inventory: {e}")
             return json_response(self, {'error': str(e)}, 500)
+
+    # ─── Health Check ───
+
+    def health_check(self):
+        """Functional health check — verifies DB is accessible and data is consistent."""
+        checks = {}
+        try:
+            conn = get_db()
+            conn.execute("SELECT 1")
+            checks['db'] = 'ok'
+            # Quick data quality checks
+            row = conn.execute("SELECT COUNT(*) as c FROM inventory WHERE imei != '' AND length(imei) != 15").fetchone()
+            checks['imei_valid'] = 'ok' if row['c'] == 0 else f'{row["c"]} invalid'
+            row = conn.execute("SELECT COUNT(*) as c FROM inventory WHERE store IS NULL OR store = ''").fetchone()
+            checks['store_valid'] = 'ok' if row['c'] == 0 else f'{row["c"]} missing'
+            row = conn.execute("SELECT COUNT(*) as c FROM inventory WHERE region NOT IN ('us','hk','cn','jp','kr')").fetchone()
+            checks['region_valid'] = 'ok' if row['c'] == 0 else f'{row["c"]} invalid'
+            conn.close()
+            all_ok = all(v == 'ok' for v in checks.values())
+            return json_response(self, {'status': 'ok' if all_ok else 'degraded', 'checks': checks})
+        except Exception as e:
+            checks['db'] = str(e)
+            return json_response(self, {'status': 'error', 'checks': checks}, 500)
 
     # ─── User PINs ───
 
