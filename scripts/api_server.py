@@ -629,6 +629,9 @@ class APIHandler(BaseHTTPRequestHandler):
                 if data.get('storage'):
                     conn.execute("UPDATE inventory SET storage = ? WHERE imei = ?",
                                  (data['storage'], target_imei))
+                if data.get('status') and data['status'] in ('available', 'reserved', 'sold'):
+                    conn.execute("UPDATE inventory SET status = ? WHERE imei = ?",
+                                 (data['status'], target_imei))
 
                 conn.commit()
                 conn.close()

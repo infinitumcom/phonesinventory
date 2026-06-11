@@ -9007,6 +9007,17 @@ function openDrawer(idx) {
 
     ${extra}
 
+    <div class="info-section admin-only" style="border-top:1px dashed var(--border);padding-top:12px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${p.status === 'reserved' ? `<button class="btn btn-sm" onclick="unreservePhone('${p.imei}')" style="color:#b45309;border-color:#fbbf24;">
+          <span class="zh">取消预留</span><span class="en">Cancel Reservation</span>
+        </button>` : ''}
+        <button class="btn btn-sm" onclick="deleteInventoryItem('${p.imei}')" style="color:#ef4444;border-color:#fca5a5;">
+          <span class="zh">删除此手机</span><span class="en">Delete Phone</span>
+        </button>
+      </div>
+    </div>
+
     <div class="info-section">
       <div class="info-head">${isZh?'变动时间线':'Activity Timeline'}</div>
       <div class="timeline">
@@ -10986,43 +10997,57 @@ function processReturn(saleId) {
   var sale = sales.find(function(s){ return s.id === saleId; });
   if (!sale || sale.status === 'returned') return;
 
-  // 1. Mark sale as returned
-  sale.status = 'returned';
-  sale.returnDate = new Date().toISOString();
-  sale.returnedBy = (window._currentAccount || {}).name || '';
-  setLocalData('pi_sales', sales);
-
-  // 2. Restore phone to inventory
-  for (var i = 0; i < phones.length; i++) {
-    if (phones[i] && phones[i].imei === sale.imei) {
-      phones[i].status = 'available';
-      break;
+  // 1. Call server API to persist the return (source of truth)
+  apiCall('PUT', '/sale/' + saleId, { status: 'returned' }).then(function(res) {
+    if (res && res.error) {
+      showToast('退货失败: ' + res.error + ' / Return failed');
+      return;
     }
-  }
 
-  // 3. Record the return with commission deduction
-  var pointsDeducted = sale.cond === 'new' ? 15 : 10;
-  var returns = getLocalData('pi_returns');
-  returns.push({
-    id: 'RT-' + new Date().getFullYear() + '-' + (returns.length + 1).toString().padStart(4, '0'),
-    saleId: sale.id,
-    date: new Date().toISOString(),
-    imei: sale.imei,
-    phoneName: sale.phoneName,
-    seller: sale.seller,
-    pointsDeducted: pointsDeducted,
-    refundAmount: sale.total || 0,
-    processedBy: (window._currentAccount || {}).name || ''
+    // 2. Update local data after server confirms
+    sale.status = 'returned';
+    sale.returnDate = new Date().toISOString();
+    sale.returnedBy = (window._currentAccount || {}).name || '';
+    setLocalData('pi_sales', sales);
+
+    // 3. Restore phone to inventory locally
+    for (var i = 0; i < phones.length; i++) {
+      if (phones[i] && phones[i].imei === sale.imei) {
+        phones[i].status = 'available';
+        break;
+      }
+    }
+
+    // 4. Record the return with commission deduction
+    var pointsDeducted = sale.cond === 'new' ? 15 : 10;
+    var returns = getLocalData('pi_returns');
+    returns.push({
+      id: 'RT-' + new Date().getFullYear() + '-' + (returns.length + 1).toString().padStart(4, '0'),
+      saleId: sale.id,
+      date: new Date().toISOString(),
+      imei: sale.imei,
+      phoneName: sale.phoneName,
+      seller: sale.seller,
+      pointsDeducted: pointsDeducted,
+      refundAmount: sale.total || 0,
+      processedBy: (window._currentAccount || {}).name || ''
+    });
+    setLocalData('pi_returns', returns);
+
+    // 5. Reload from server to ensure consistency
+    try { syncSoldStatus(); } catch(e){}
+    try { loadServerSales(); } catch(e){}
+
+    // 6. Refresh pages
+    renderSalesPage();
+    renderDashboard();
+    renderInventory();
+    renderStaffPage();
+
+    showToast('退货完成: ' + sale.id + ' · 扣除 ' + pointsDeducted + 'P / Return processed, ' + pointsDeducted + 'P deducted from ' + sale.seller);
+  }).catch(function() {
+    showToast('退货失败，请重试 / Return failed, please retry');
   });
-  setLocalData('pi_returns', returns);
-
-  // 4. Refresh pages
-  renderSalesPage();
-  renderDashboard();
-  renderInventory();
-  renderStaffPage();
-
-  showToast('退货完成: ' + sale.id + ' · 扣除 ' + pointsDeducted + 'P / Return processed, ' + pointsDeducted + 'P deducted from ' + sale.seller);
 }
 
 // ===== Aged Stock Alert =====
@@ -11626,7 +11651,12 @@ function renderInventory() {
         var statusBadgeHtml = p.status === 'reserved' ? '<span class="status st-reserved" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">预留</span><span class="en">Resv</span></span>' :
           p.status === 'transit' ? '<span class="status st-transit" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">在途</span><span class="en">Transit</span></span>' :
           p.status === 'sold' ? '<span class="status st-sold" style="font-size:10px;padding:3px 8px;"><span class="dot"></span><span class="zh">已售</span><span class="en">Sold</span></span>' : '';
-        if (statusBusy) {
+        if (p.status === 'reserved') {
+          return '<div class="inv-actions" style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">' + statusBadgeHtml +
+            '<button class="btn btn-sm" onclick="event.stopPropagation();unreservePhone(\'' + p.imei + '\')" style="font-size:10px;padding:3px 8px;color:#b45309;border-color:#fbbf24;"><span class="zh">取消预留</span><span class="en">Unreserve</span></button>' +
+          '</div>';
+        }
+        if (p.status === 'transit' || p.status === 'sold') {
           return '<div class="inv-actions">' + statusBadgeHtml + '</div>';
         }
         if (isMyStore) {
@@ -11777,6 +11807,36 @@ function updateFilterCounts() {
 
 // Override setInvMode
 // Edit IMEI inline
+function unreservePhone(imei) {
+  if (!confirm('确认取消预留？\nCancel this reservation?')) return;
+  apiCall('PUT', '/inventory/' + imei, { status: 'available' }).then(function(res) {
+    if (res && res.error) { showToast('错误: ' + res.error); return; }
+    for (var i = 0; i < phones.length; i++) {
+      if (phones[i] && phones[i].imei === imei) { phones[i].status = 'available'; break; }
+    }
+    syncSoldStatus();
+    renderInventory();
+    renderDashboard();
+    showToast('预留已取消 / Reservation cancelled');
+  }).catch(function() { showToast('操作失败 / Failed'); });
+}
+
+function deleteInventoryItem(imei) {
+  if (!confirm('确认从库存中永久删除此手机？此操作不可撤销！\nPermanently delete this phone from inventory? This cannot be undone!')) return;
+  apiCall('DELETE', '/inventory/' + imei).then(function(res) {
+    if (res && res.error) { showToast('错误: ' + res.error); return; }
+    // Remove from local phones array
+    for (var i = 0; i < phones.length; i++) {
+      if (phones[i] && phones[i].imei === imei) { phones.splice(i, 1); break; }
+    }
+    closeDrawer();
+    syncSoldStatus();
+    renderInventory();
+    renderDashboard();
+    showToast('已删除 / Deleted');
+  }).catch(function() { showToast('删除失败 / Delete failed'); });
+}
+
 function editIMEI(oldImei, phoneIdx) {
   var phone = phones[phoneIdx];
   if (!phone) return;
