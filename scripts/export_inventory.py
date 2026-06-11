@@ -27,28 +27,36 @@ def detect_brand(brand_raw, model):
 
 # Color hex mapping
 COLOR_HEX = {
-    "black": "#1d1d1f", "白色": "#f5f5f0", "white": "#f5f5f0",
+    "black": "#1d1d1f", "黑色": "#1d1d1f", "宇宙黑": "#1d1d1f", "cosmic black": "#1d1d1f",
+    "白色": "#f5f5f0", "white": "#f5f5f0",
     "金色": "#f4e3c1", "gold": "#f4e3c1",
-    "蓝色": "#5b7fb5", "blue": "#5b7fb5",
+    "蓝色": "#5b7fb5", "blue": "#5b7fb5", "深蓝色": "#3a5a8c", "dark blue": "#3a5a8c",
     "紫色": "#b8a9d4", "purple": "#b8a9d4",
     "粉色": "#f5c6c6", "pink": "#f5c6c6",
     "红色": "#c94040", "red": "#c94040",
     "绿色": "#4a8c6f", "green": "#4a8c6f",
     "银色": "#d1d1d1", "silver": "#d1d1d1",
     "灰色": "#8a8a8a", "gray": "#8a8a8a", "grey": "#8a8a8a",
-    "黑色": "#1d1d1f",
     "原色": "#e8dcc8", "natural": "#e8dcc8",
     "钛色": "#9a9a95", "titanium": "#9a9a95",
-    "沙漠色": "#c8b88a", "desert": "#c8b88a",
+    "沙漠色": "#c8b88a", "desert": "#c8b88a", "desert titanium": "#c8b88a",
+    "cosmic orange": "#e87040", "宇宙橙": "#e87040",
+    "ultramarine": "#4169e1", "群青": "#4169e1",
+    "teal": "#008080", "青色": "#008080",
 }
 
-# Store name mapping
+# Store key → display name (canonical names used in inventory)
 STORE_NAMES = {
-    "irv": "Irvine", "irvine": "Irvine",
-    "alh": "Alhambra", "alhambra": "Alhambra",
-    "row": "Rowland Hts", "rowland": "Rowland Hts",
-    "mon": "Monterey Park", "monterey": "Monterey Park",
-    "warehouse": "Warehouse", "wh": "Warehouse",
+    "alhambra": "Alhambra",
+    "monterey park": "Monterey Park", "monterey": "Monterey Park",
+    "san gabriel": "San Gabriel",
+    "rowland heights": "Rowland Heights", "rowland": "Rowland Heights",
+    "arcadia 1": "Arcadia 1", "arcadia 1 (huntington)": "Arcadia 1",
+    "arcadia 2": "Arcadia 2", "arcadia 2 (baldwin)": "Arcadia 2",
+    "irvine": "Irvine", "irvine (99 ranch)": "Irvine",
+    "rancho cucamonga": "Rancho Cucamonga", "rancho cucamonga (99 ranch)": "Rancho Cucamonga",
+    "las vegas": "Las Vegas", "vegas": "Las Vegas",
+    "hq 总仓": "HQ 总仓", "hq warehouse": "HQ 总仓", "warehouse": "HQ 总仓",
 }
 
 # Region flag
@@ -69,7 +77,7 @@ def get_store_name(store):
     if not store:
         return ""
     sl = store.lower().strip()
-    for key, name in STORE_NAMES.items():
+    for key, name in sorted(STORE_NAMES.items(), key=lambda x: -len(x[0])):
         if key in sl:
             return name
     return store

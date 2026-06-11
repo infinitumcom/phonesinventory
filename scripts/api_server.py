@@ -19,6 +19,39 @@ PST = timezone(timedelta(hours=-7))
 
 db_lock = threading.Lock()
 
+# ─── Store Name Normalization ───
+# Slug key → display name mapping (must match STORE_DATA in index.html)
+STORE_KEY_TO_NAME = {
+    'alhambra': 'Alhambra',
+    'monterey-park': 'Monterey Park',
+    'san-gabriel': 'San Gabriel',
+    'rowland-heights': 'Rowland Heights',
+    'arcadia-1': 'Arcadia 1',
+    'arcadia-2': 'Arcadia 2',
+    'irvine': 'Irvine',
+    'rancho-cucamonga': 'Rancho Cucamonga',
+    'las-vegas': 'Las Vegas',
+    'hq-warehouse': 'HQ 总仓',
+}
+
+def normalize_store_name(raw):
+    """Convert slug key or any variant to canonical display name."""
+    if not raw:
+        return raw
+    # Already a display name?
+    for name in STORE_KEY_TO_NAME.values():
+        if raw == name:
+            return name
+    # Try slug lookup
+    key = raw.lower().strip().replace(' ', '-')
+    if key in STORE_KEY_TO_NAME:
+        return STORE_KEY_TO_NAME[key]
+    # Try direct lowercase match
+    name_lower = {v.lower(): v for v in STORE_KEY_TO_NAME.values()}
+    if raw.lower().strip() in name_lower:
+        return name_lower[raw.lower().strip()]
+    return raw
+
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
@@ -136,7 +169,9 @@ class APIHandler(BaseHTTPRequestHandler):
         path = parsed.path
         params = parse_qs(parsed.query)
 
-        if path == '/api/sales':
+        if path == '/api/inventory':
+            return self.get_inventory(params)
+        elif path == '/api/sales':
             return self.get_sales(params)
         elif path == '/api/transfers':
             return self.get_transfers(params)
@@ -180,6 +215,73 @@ class APIHandler(BaseHTTPRequestHandler):
         else:
             json_response(self, {'error': 'Not found'}, 404)
 
+    def do_DELETE(self):
+        path = urlparse(self.path).path
+
+        if path.startswith('/api/inventory/'):
+            imei = path.split('/')[-1]
+            return self.delete_inventory(imei)
+        else:
+            json_response(self, {'error': 'Not found'}, 404)
+
+    # ─── Inventory ───
+
+    def get_inventory(self, params):
+        """List inventory with optional filters."""
+        try:
+            conn = get_db()
+            store = params.get('store', [None])[0]
+            status = params.get('status', [None])[0]
+
+            query = "SELECT * FROM inventory"
+            conditions = []
+            args = []
+
+            if store and store != 'all':
+                conditions.append("store = ?")
+                args.append(normalize_store_name(store))
+            if status:
+                conditions.append("status = ?")
+                args.append(status)
+
+            if conditions:
+                query += " WHERE " + " AND ".join(conditions)
+            query += " ORDER BY id DESC"
+
+            rows = conn.execute(query, args).fetchall()
+            conn.close()
+
+            items = []
+            for r in rows:
+                item = dict(r)
+                item['batteryHealth'] = item.pop('battery_health', '')
+                item['colorEn'] = item.pop('color_en', '')
+                item['scannedBy'] = item.pop('scanned_by', '')
+                item['scannedAt'] = item.pop('scanned_at', '')
+                item['createdAt'] = item.pop('created_at', '')
+                item.pop('raw_ocr', None)  # Don't send raw OCR data
+                items.append(item)
+
+            return json_response(self, {'inventory': items, 'total': len(items)})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def delete_inventory(self, imei):
+        """Delete an inventory record by IMEI."""
+        try:
+            with db_lock:
+                conn = get_db()
+                row = conn.execute("SELECT id FROM inventory WHERE imei = ?", (imei,)).fetchone()
+                if not row:
+                    conn.close()
+                    return json_response(self, {'error': 'Record not found'}, 404)
+                conn.execute("DELETE FROM inventory WHERE imei = ?", (imei,))
+                conn.commit()
+                conn.close()
+            return json_response(self, {'ok': True})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
     # ─── Sales ───
 
     def create_sale(self):
@@ -204,6 +306,7 @@ class APIHandler(BaseHTTPRequestHandler):
                     }, 409)
 
                 now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                store_name = normalize_store_name(data.get('store', ''))
                 conn.execute("""
                     INSERT INTO sales (id, imei, phone_name, storage, color, color_en, cond, region,
                         cost, msrp, price, tax, total, profit, tax_applied, tax_rate,
@@ -219,7 +322,7 @@ class APIHandler(BaseHTTPRequestHandler):
                     1 if data.get('taxApplied') else 0, data.get('taxRate', 0),
                     data.get('customer', ''), data.get('customerPhone', ''),
                     data.get('customerEmail', ''), json.dumps(data.get('paymentMethods', [])),
-                    data.get('store', ''), data.get('storeKey', ''),
+                    store_name, data.get('storeKey', ''),
                     data.get('seller', ''), 'completed', now
                 ))
                 # Mark phone as sold in inventory
@@ -348,11 +451,12 @@ class APIHandler(BaseHTTPRequestHandler):
                         "UPDATE transfers SET status='approved', approved_by=?, updated_at=? WHERE id=?",
                         (data.get('approvedBy', ''), now, transfer_id)
                     )
-                    # Move phone to target store
+                    # Move phone to target store — normalize slug to display name
                     row = conn.execute("SELECT imei, to_store FROM transfers WHERE id=?", (transfer_id,)).fetchone()
                     if row:
+                        target_store = normalize_store_name(row['to_store'])
                         conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=?",
-                                     (row['to_store'], row['imei']))
+                                     (target_store, row['imei']))
                 elif status == 'rejected':
                     conn.execute(
                         "UPDATE transfers SET status='rejected', rejected_by=?, updated_at=? WHERE id=?",
@@ -475,18 +579,35 @@ class APIHandler(BaseHTTPRequestHandler):
                         return json_response(self, {'error': 'New IMEI already exists'}, 409)
                     conn.execute("UPDATE inventory SET imei = ? WHERE imei = ?", (new_imei, old_imei))
 
+                target_imei = new_imei or old_imei
+
                 # Update other fields if provided
                 if data.get('store'):
                     conn.execute("UPDATE inventory SET store = ? WHERE imei = ?",
-                                 (data['store'], new_imei or old_imei))
+                                 (normalize_store_name(data['store']), target_imei))
                 if data.get('model'):
                     conn.execute("UPDATE inventory SET model = ? WHERE imei = ?",
-                                 (data['model'], new_imei or old_imei))
+                                 (data['model'], target_imei))
+                if data.get('color'):
+                    conn.execute("UPDATE inventory SET color = ? WHERE imei = ?",
+                                 (data['color'], target_imei))
+                if data.get('color_en'):
+                    conn.execute("UPDATE inventory SET color_en = ? WHERE imei = ?",
+                                 (data['color_en'], target_imei))
+                if data.get('condition'):
+                    conn.execute("UPDATE inventory SET condition = ? WHERE imei = ?",
+                                 (data['condition'], target_imei))
+                if data.get('region'):
+                    conn.execute("UPDATE inventory SET region = ? WHERE imei = ?",
+                                 (data['region'], target_imei))
+                if data.get('storage'):
+                    conn.execute("UPDATE inventory SET storage = ? WHERE imei = ?",
+                                 (data['storage'], target_imei))
 
                 conn.commit()
                 conn.close()
 
-            return json_response(self, {'ok': True, 'imei': new_imei or old_imei})
+            return json_response(self, {'ok': True, 'imei': target_imei})
         except Exception as e:
             print(f"[API] Error updating inventory: {e}")
             return json_response(self, {'error': str(e)}, 500)
@@ -507,6 +628,12 @@ class APIHandler(BaseHTTPRequestHandler):
             checks['store_valid'] = 'ok' if row['c'] == 0 else f'{row["c"]} missing'
             row = conn.execute("SELECT COUNT(*) as c FROM inventory WHERE region NOT IN ('us','hk','cn','jp','kr')").fetchone()
             checks['region_valid'] = 'ok' if row['c'] == 0 else f'{row["c"]} invalid'
+            # Store name consistency
+            row = conn.execute("""SELECT COUNT(*) as c FROM inventory
+                WHERE store NOT IN ('Alhambra','Monterey Park','San Gabriel','Rowland Heights',
+                    'Arcadia 1','Arcadia 2','Irvine','Rancho Cucamonga','Las Vegas','HQ 总仓','')
+                AND store IS NOT NULL AND store != ''""").fetchone()
+            checks['store_names'] = 'ok' if row['c'] == 0 else f'{row["c"]} non-standard'
             conn.close()
             all_ok = all(v == 'ok' for v in checks.values())
             return json_response(self, {'status': 'ok' if all_ok else 'degraded', 'checks': checks})
@@ -558,12 +685,12 @@ class APIHandler(BaseHTTPRequestHandler):
 def main():
     init_api_tables()
     server = HTTPServer(('0.0.0.0', API_PORT), APIHandler)
-    print(f"🌐 API Server running on port {API_PORT}")
-    print(f"💾 Database: {DB_PATH}")
+    print(f"API Server running on port {API_PORT}")
+    print(f"Database: {DB_PATH}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        print("\n🛑 API Server stopped.")
+        print("\nAPI Server stopped.")
         server.server_close()
 
 

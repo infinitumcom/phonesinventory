@@ -113,11 +113,13 @@ MODEL_REGION_MAP = {
 }
 
 def detect_region_from_model(model_number):
-    """Detect region from Apple model number suffix like MG184LL/A."""
+    """Detect region from Apple model number suffix like MG184LL/A or MFXL4LL/A."""
     if not model_number:
         return None
     import re
-    m = re.search(r'[A-Z]\d{3,4}([A-Z]{1,2})/([A-Z])', model_number.upper())
+    # Match suffix pattern: 1-2 uppercase letters + /A at the end
+    # Works for both old format (MG184LL/A) and new format (MFXL4LL/A)
+    m = re.search(r'(LL|ZA|ZP|CH|JP|KH|B)/([A-Z])', model_number.upper())
     if m:
         suffix = m.group(1) + "/" + m.group(2)
         return MODEL_REGION_MAP.get(suffix, MODEL_REGION_MAP.get(m.group(1)))
@@ -207,7 +209,9 @@ def tg_api(method, data=None, files=None):
     else:
         req = urllib.request.Request(url)
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        # For getUpdates long polling, HTTP timeout must exceed the polling timeout
+        http_timeout = 60 if method == "getUpdates" else 30
+        with urllib.request.urlopen(req, timeout=http_timeout) as resp:
             return json.loads(resp.read().decode("utf-8"))
     except Exception as e:
         print(f"TG API error ({method}): {e}")
@@ -472,6 +476,14 @@ def handle_photo(msg):
         if not entry.get("store"):
             skipped.append({"entry": entry, "dup_id": None, "dup_model": None, "dup_time": None, "reason": "no_store"})
             continue
+
+        # Normalize color: ensure both Chinese and English fields are set
+        color = entry.get("color", "")
+        color_en = entry.get("color_en", "")
+        if color and not color_en:
+            entry["color_en"] = color  # fallback: use same value
+        if color_en and not color:
+            entry["color"] = color_en
 
         # Save to DB
         rid = save_entry(entry, raw_ocr=raw, scanned_by=username)

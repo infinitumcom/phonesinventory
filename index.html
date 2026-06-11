@@ -5490,7 +5490,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
           </div>
           <div class="page-actions">
-            <button class="btn" onclick="showToast('功能开发中 / Coming soon')">
+            <button class="btn" onclick="exportDailyReport()">
               <span class="zh">📥 导出日报</span>
               <span class="en">📥 Daily Report</span>
             </button>
@@ -5552,7 +5552,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="en">Needs attention</span>
                 <span style="font-size:10.5px;color:var(--text-muted);font-weight:500;font-family:'JetBrains Mono',monospace;">0</span>
               </div>
-              <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">查看全部</span><span class="en">View all</span></button>
+              <button class="btn btn-sm btn-ghost" onclick="navByName('reports')"><span class="zh">查看全部</span><span class="en">View all</span></button>
             </div>
             <div class="todos-list">
               <div style="padding:24px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
@@ -5771,8 +5771,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="count">· <span class="zh">点击查看详情</span><span class="en">Click for detail</span></span>
             </div>
             <div class="section-actions">
-              <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">按销售额</span><span class="en">By Revenue</span></button>
-              <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">按库存量</span><span class="en">By Stock</span></button>
+              <button class="btn btn-sm btn-ghost" id="sortRevBtn" onclick="sortStoreCards('revenue', this)"><span class="zh">按销售额</span><span class="en">By Revenue</span></button>
+              <button class="btn btn-sm btn-ghost" id="sortStockBtn" onclick="sortStoreCards('stock', this)"><span class="zh">按库存量</span><span class="en">By Stock</span></button>
             </div>
           </div>
           <div class="heatmap-grid">
@@ -6440,10 +6440,11 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <button class="btn btn-ghost" onclick="navByName('inventory')">
               <span class="zh">取消</span><span class="en">Cancel</span>
             </button>
-            <button class="btn" onclick="showToast('功能开发中 / Coming soon')">
-              <span class="zh">📥 导入 Excel</span>
-              <span class="en">📥 Import Excel</span>
+            <button class="btn" onclick="document.getElementById('excelImportInput').click()">
+              <span class="zh">📥 导入 Excel/CSV</span>
+              <span class="en">📥 Import Excel/CSV</span>
             </button>
+            <input type="file" id="excelImportInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="importExcelCSV(this)">
           </div>
         </div>
 
@@ -7545,8 +7546,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       </div>
       <div class="page-actions">
         <button class="btn" onclick="openIMEIModal()"><span class="zh">🔍 IMEI 查询</span><span class="en">🔍 IMEI Check</span></button>
-        <button class="btn" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">📋 检测队列</span><span class="en">📋 QC Queue</span><span class="chip-num" style="background:var(--warn);color:white;margin-left:5px;">0</span></button>
-        <button class="btn btn-primary" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">+ 新回收单</span><span class="en">+ New Trade-In</span></button>
+        <button class="btn" onclick="openQCQueue()" id="qcQueueBtn"><span class="zh">📋 检测队列</span><span class="en">📋 QC Queue</span><span class="chip-num" style="background:var(--warn);color:white;margin-left:5px;" id="qcQueueCount">0</span></button>
+        <button class="btn btn-primary" onclick="openNewTradeInModal()"><span class="zh">+ 新回收单</span><span class="en">+ New Trade-In</span></button>
       </div>
     </div>
 
@@ -7650,7 +7651,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <span class="en">QC Queue</span>
             <span class="count">· 0</span>
           </div>
-          <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">分配技师</span><span class="en">Assign Tech</span></button>
+          <button class="btn btn-sm btn-ghost" onclick="openQCQueue()"><span class="zh">分配技师</span><span class="en">Assign Tech</span></button>
         </div>
 
         <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
@@ -7708,7 +7709,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <span class="en">VIP Customers</span>
           <span class="count">· <span class="zh">累计消费 $5K+</span><span class="en">$5K+ lifetime</span></span>
         </div>
-        <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">查看全部</span><span class="en">View all</span></button>
+        <button class="btn btn-sm btn-ghost" onclick="setCustFilter(document.querySelector('#custFilters .chip:nth-child(2)'),'vip')"><span class="zh">查看全部</span><span class="en">View all</span></button>
       </div>
       <div id="custVipList" style="padding:30px 18px;text-align:center;color:var(--text-muted);font-size:13px;">
         <span class="zh">暂无 VIP 客户数据</span>
@@ -7772,27 +7773,27 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
       </div>
       <div class="page-actions">
-        <button class="btn" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">📊 自定义报表</span><span class="en">📊 Custom Report</span></button>
-        <button class="btn" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">📥 全部导出</span><span class="en">📥 Export All</span></button>
+        <button class="btn" onclick="exportReportCSV()"><span class="zh">📊 导出报表</span><span class="en">📊 Export Report</span></button>
+        <button class="btn" onclick="exportAllData()"><span class="zh">📥 全部导出</span><span class="en">📥 Export All</span></button>
       </div>
     </div>
 
     <!-- Tabs -->
-    <div class="filters" style="margin-bottom:16px;">
-      <button class="chip active" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">营收概览</span><span class="en">Revenue</span></button>
-      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">9 店对比</span><span class="en">Store Comparison</span></button>
-      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">滞销分析</span><span class="en">Aging Analysis</span></button>
-      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">利润分析</span><span class="en">Profit Analysis</span></button>
-      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">员工分析</span><span class="en">Staff Analysis</span></button>
-      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">客户分析</span><span class="en">Customer Analysis</span></button>
+    <div class="filters" id="reportTabFilters" style="margin-bottom:16px;">
+      <button class="chip active" onclick="setReportTab(this,'revenue')"><span class="zh">营收概览</span><span class="en">Revenue</span></button>
+      <button class="chip" onclick="setReportTab(this,'stores')"><span class="zh">9 店对比</span><span class="en">Store Comparison</span></button>
+      <button class="chip" onclick="setReportTab(this,'aging')"><span class="zh">滞销分析</span><span class="en">Aging Analysis</span></button>
+      <button class="chip" onclick="setReportTab(this,'profit')"><span class="zh">利润分析</span><span class="en">Profit Analysis</span></button>
+      <button class="chip" onclick="navByName('staff')"><span class="zh">员工分析</span><span class="en">Staff Analysis</span></button>
+      <button class="chip" onclick="navByName('customers')"><span class="zh">客户分析</span><span class="en">Customer Analysis</span></button>
     </div>
 
     <!-- Top KPI -->
     <div class="kpi-grid cols-4">
-      <div class="kpi"><div class="kpi-label"><span class="zh">本月营收</span><span class="en">Revenue MTD</span></div><div class="kpi-value"><span class="ccy">$</span>0</div><div class="kpi-meta">--</div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">本月毛利</span><span class="en">Profit MTD</span></div><div class="kpi-value"><span class="ccy">$</span>0</div><div class="kpi-meta">--</div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">滞销库存</span><span class="en">Aged Stock</span></div><div class="kpi-value" style="color:var(--danger);"><span class="ccy">$</span>0</div><div class="kpi-meta">0 <span class="zh">部</span><span class="en">phones</span></div></div>
-      <div class="kpi"><div class="kpi-label"><span class="zh">库存周转</span><span class="en">Turnover</span></div><div class="kpi-value">--</div><div class="kpi-meta">--</div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">本月营收</span><span class="en">Revenue MTD</span></div><div class="kpi-value" id="rptKpiRev"><span class="ccy">$</span>0</div><div class="kpi-meta" id="rptKpiRevMeta">--</div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">本月毛利</span><span class="en">Profit MTD</span></div><div class="kpi-value" id="rptKpiProfit"><span class="ccy">$</span>0</div><div class="kpi-meta" id="rptKpiProfitMeta">--</div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">滞销库存</span><span class="en">Aged Stock</span></div><div class="kpi-value" style="color:var(--danger);" id="rptKpiAgedCost"><span class="ccy">$</span>0</div><div class="kpi-meta" id="rptKpiAgedMeta">0 <span class="zh">部</span><span class="en">phones</span></div></div>
+      <div class="kpi"><div class="kpi-label"><span class="zh">库存周转</span><span class="en">Turnover</span></div><div class="kpi-value" id="rptKpiTurnover">--</div><div class="kpi-meta" id="rptKpiTurnoverMeta">--</div></div>
     </div>
 
     <!-- Two columns: Revenue chart + Store ranking -->
@@ -8012,33 +8013,33 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <div style="margin-bottom:14px;">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
               <span style="font-weight:600;">iPhone <span class="zh">新机</span><span class="en">New</span></span>
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
+              <span id="catProfitIphoneNew" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
             </div>
-            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:0%;height:100%;background:var(--brand);"></div></div>
+            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div id="catBarIphoneNew" style="width:0%;height:100%;background:var(--brand);transition:width 0.5s;"></div></div>
           </div>
 
           <div style="margin-bottom:14px;">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
               <span style="font-weight:600;">iPhone <span class="zh">二手</span><span class="en">Used</span></span>
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
+              <span id="catProfitIphoneUsed" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
             </div>
-            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:0%;height:100%;background:var(--warn);"></div></div>
+            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div id="catBarIphoneUsed" style="width:0%;height:100%;background:var(--warn);transition:width 0.5s;"></div></div>
           </div>
 
           <div style="margin-bottom:14px;">
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
               <span style="font-weight:600;">Samsung</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
+              <span id="catProfitSamsung" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
             </div>
-            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:0%;height:100%;background:var(--info);"></div></div>
+            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div id="catBarSamsung" style="width:0%;height:100%;background:var(--info);transition:width 0.5s;"></div></div>
           </div>
 
           <div>
             <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px;">
               <span style="font-weight:600;">Google Pixel</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
+              <span id="catProfitGoogle" style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--brand);">$0</span>
             </div>
-            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div style="width:0%;height:100%;background:var(--success);"></div></div>
+            <div style="height:7px;background:var(--bg-soft);border-radius:4px;overflow:hidden;"><div id="catBarGoogle" style="width:0%;height:100%;background:var(--success);transition:width 0.5s;"></div></div>
           </div>
         </div>
       </div>
@@ -8056,35 +8057,31 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
             <div style="padding:14px;background:var(--bg-tinted);border-radius:9px;">
               <div style="font-size:24px;margin-bottom:4px;">💳</div>
-              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
+              <div id="pmPctCard" style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
-                <span class="zh">刷卡 · $0</span>
-                <span class="en">Card · $0</span>
+                <span class="zh">刷卡 · </span><span class="en">Card · </span><span id="pmAmtCard">$0</span>
               </div>
             </div>
 
             <div style="padding:14px;background:var(--bg-tinted);border-radius:9px;">
               <div style="font-size:24px;margin-bottom:4px;">💵</div>
-              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
+              <div id="pmPctCash" style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
-                <span class="zh">现金 · $0</span>
-                <span class="en">Cash · $0</span>
+                <span class="zh">现金 · </span><span class="en">Cash · </span><span id="pmAmtCash">$0</span>
               </div>
             </div>
 
             <div style="padding:14px;background:var(--bg-tinted);border-radius:9px;">
               <div style="font-size:24px;margin-bottom:4px;">📱</div>
-              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
-              <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Zelle · $0</div>
+              <div id="pmPctZelle" style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">Zelle · <span id="pmAmtZelle">$0</span></div>
             </div>
 
             <div style="padding:14px;background:var(--bg-tinted);border-radius:9px;">
               <div style="font-size:24px;margin-bottom:4px;">💰</div>
-              <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
+              <div id="pmPctWechat" style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
               <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">
-                <span class="zh">微信/支付宝</span>
-                <span class="en">WeChat/Alipay</span>
-                · $0
+                <span class="zh">微信/支付宝 · </span><span class="en">WeChat/Alipay · </span><span id="pmAmtWechat">$0</span>
               </div>
             </div>
 
@@ -8092,8 +8089,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <div style="display:flex;align-items:center;gap:10px;">
                 <div style="font-size:24px;">🔄</div>
                 <div style="flex:1;">
-                  <div style="font-family:'Inter',sans-serif;font-size:18px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
-                  <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                  <div id="pmPctSplit" style="font-family:'Inter',sans-serif;font-size:18px;font-weight:800;letter-spacing:-0.02em;line-height:1;">0%</div>
+                  <div id="pmAmtSplit" style="font-size:11px;color:var(--text-muted);margin-top:2px;">
                     <span class="zh">组合支付 · $0 · 0 单</span>
                     <span class="en">Split payment · $0 · 0 orders</span>
                   </div>
@@ -8186,7 +8183,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   </div>
   <div class="drawer-body" id="drawerBody"></div>
   <div class="drawer-foot">
-    <button class="btn" onclick="showToast('编辑功能开发中 · Edit coming soon')"><span class="zh">编辑</span><span class="en">Edit</span></button>
+    <button class="btn" onclick="openEditModal()"><span class="zh">编辑</span><span class="en">Edit</span></button>
     <button class="btn" onclick="drawerStartTransfer()"><span class="zh">⇄ 调拨</span><span class="en">⇄ Transfer</span></button>
     <button class="btn btn-primary" onclick="drawerStartSale()"><span class="zh">$ 出售</span><span class="en">$ Sell</span></button>
   </div>
@@ -9275,16 +9272,42 @@ function saleSearchIMEI(imei) {
     showToast('请输入有效的 IMEI / Enter valid IMEI');
     return;
   }
-  // Check if already sold (local check first, server check happens at submit)
+  // Check if already sold (local check first)
   var sales = getLocalData('pi_sales');
   var existingSale = sales.find(function(s) { return s.imei === imei && s.status === 'completed'; });
   if (existingSale) {
     showToast('此手机已售出 (订单: ' + existingSale.id + ') / Already sold');
     return;
   }
+  // Also check phones[] sold status (synced from server)
+  var anyPhone = null;
+  for (var i = 0; i < phones.length; i++) {
+    if (phones[i] && phones[i].imei === imei) { anyPhone = phones[i]; break; }
+  }
+  if (anyPhone && anyPhone.status === 'sold') {
+    showToast('此手机已售出 / This phone is already sold');
+    return;
+  }
+  // Real-time server check: verify IMEI not sold on another device
+  apiCall('GET', '/sold-imeis').then(function(res) {
+    if (res && res.imeis && res.imeis.indexOf(imei) >= 0) {
+      showToast('此手机已在其他设备售出 / Already sold on another device');
+      // Update local status
+      if (anyPhone) anyPhone.status = 'sold';
+      return;
+    }
+    // Passed server check — proceed with search
+    _saleSearchIMEI_proceed(imei);
+  }).catch(function() {
+    // Server unreachable — proceed with local data only
+    _saleSearchIMEI_proceed(imei);
+  });
+}
+
+function _saleSearchIMEI_proceed(imei) {
   var found = null;
   for (var i = 0; i < phones.length; i++) {
-    if (phones[i] && phones[i].imei === imei && (phones[i].status === 'available' || !phones[i].status)) {
+    if (phones[i] && phones[i].imei === imei && phones[i].status !== 'sold') {
       found = phones[i];
       break;
     }
@@ -9627,24 +9650,28 @@ function createTransfer(imei, targetStore, reason) {
 
 function approveTransfer(transferId) {
   var acctName = (window._currentAccount || {}).name || '';
-  apiCall('PUT', '/transfer/' + transferId, { status: 'approved', approvedBy: acctName }).then(function() {
+  apiCall('PUT', '/transfer/' + transferId, { status: 'approved', approvedBy: acctName }).then(function(res) {
+    if (res && res.error) { showToast('服务器错误: ' + res.error); return; }
     var transfers = getLocalData('pi_transfers');
     var t = transfers.find(function(x){ return x.id === transferId; });
     if (t) {
       t.status = 'transit'; t.approvedBy = acctName;
       // Move phone to target store in memory
+      var targetName = (STORE_DATA[t.toStore]||{}).nameEn || t.toStoreName || t.toStore;
       for (var i = 0; i < phones.length; i++) {
         if (phones[i] && phones[i].imei === t.imei) {
-          phones[i].store = t.toStore;
-          phones[i].storeName = t.toStoreName || t.toStore;
+          phones[i].store = targetName;
+          phones[i].storeName = targetName;
           phones[i].status = 'available';
           break;
         }
       }
     }
     setLocalData('pi_transfers', transfers);
+    // Force reload from server to get consistent state
+    try { loadServerTransfers(); } catch(e){}
+    try { syncSoldStatus(); } catch(e){}
     renderDashboard();
-    renderTransferPage();
     try { renderInventory(); } catch(e) {}
     showToast('调拨已批准 / Transfer approved: ' + transferId);
   }).catch(function() {
@@ -9652,10 +9679,11 @@ function approveTransfer(transferId) {
     var t = transfers.find(function(x){ return x.id === transferId; });
     if (t) {
       t.status = 'transit'; t.approvedBy = acctName;
+      var targetName = (STORE_DATA[t.toStore]||{}).nameEn || t.toStoreName || t.toStore;
       for (var i = 0; i < phones.length; i++) {
         if (phones[i] && phones[i].imei === t.imei) {
-          phones[i].store = t.toStore;
-          phones[i].storeName = t.toStoreName || t.toStore;
+          phones[i].store = targetName;
+          phones[i].storeName = targetName;
           phones[i].status = 'available';
           break;
         }
@@ -9704,22 +9732,25 @@ function rejectTransfer(transferId) {
 
 function completeTransfer(transferId) {
   if (!confirm('确认已收到手机？\nConfirm receipt of phone?')) return;
-  apiCall('PUT', '/transfer/' + transferId, { status: 'completed' }).then(function() {
-    var transfers = getLocalData('pi_transfers');
-    var t = transfers.find(function(x){ return x.id === transferId; });
-    if (t) { t.status = 'completed'; }
-    setLocalData('pi_transfers', transfers);
+  // Update locally first for immediate feedback
+  var transfers = getLocalData('pi_transfers');
+  var t = transfers.find(function(x){ return x.id === transferId; });
+  if (t) { t.status = 'completed'; }
+  setLocalData('pi_transfers', transfers);
+  renderTransferPage();
+
+  apiCall('PUT', '/transfer/' + transferId, { status: 'completed' }).then(function(res) {
+    if (res && res.error) {
+      showToast('服务器错误: ' + res.error);
+      return;
+    }
+    // Force reload from server to ensure consistency
+    try { loadServerTransfers(); } catch(e){}
     renderDashboard();
-    renderTransferPage();
     try { renderInventory(); } catch(e) {}
     showToast('调拨已完成 / Transfer completed: ' + transferId);
   }).catch(function() {
-    var transfers = getLocalData('pi_transfers');
-    var t = transfers.find(function(x){ return x.id === transferId; });
-    if (t) { t.status = 'completed'; }
-    setLocalData('pi_transfers', transfers);
     renderDashboard();
-    renderTransferPage();
     try { renderInventory(); } catch(e) {}
     showToast('调拨已完成 (离线) / Transfer completed');
   });
@@ -9780,7 +9811,7 @@ function renderTransferPage() {
         '<div style="font-size:13px;font-weight:600;">' + t.phoneName + (t.storage ? ' · ' + t.storage : '') + '</div>' +
         '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">' +
           '<span class="mono">IMEI ' + t.imei + '</span> · ' +
-          t.requestedBy + ' · ' + new Date(t.date).toLocaleDateString() +
+          t.requestedBy + ' · ' + (t.date || t.createdAt ? new Date(t.date || t.createdAt).toLocaleDateString() : '') +
         '</div>' +
       '</div>' +
       actions +
@@ -12045,9 +12076,11 @@ if (!window.initDynamicUI) {
   window.loadServerTransfers = function() {
     apiCall('GET', '/transfers').then(function(res) {
       if (res && res.transfers) {
-        // Map server status 'approved' → 'transit' for frontend consistency
+        // Normalize server data for frontend
         res.transfers.forEach(function(t) {
           if (t.status === 'approved') t.status = 'transit';
+          // Ensure date field exists (server returns createdAt)
+          if (!t.date && t.createdAt) t.date = t.createdAt;
         });
         setLocalData('pi_transfers', res.transfers);
         try { renderTransferPage(); } catch(e){}
@@ -12089,6 +12122,15 @@ if (!window.initDynamicUI) {
     try { loadStockRequests(); } catch(e){}
     // Show aged stock alert after a short delay
     setTimeout(function(){ try { showAgedStockAlert(); } catch(e){} }, 2000);
+
+    // Periodic sync: refresh sold status + transfers every 30 seconds
+    if (!window._syncInterval) {
+      window._syncInterval = setInterval(function() {
+        try { syncSoldStatus(); } catch(e){}
+        try { loadServerSales(); } catch(e){}
+        try { loadServerTransfers(); } catch(e){}
+      }, 30000);
+    }
   };
 }
 </script>

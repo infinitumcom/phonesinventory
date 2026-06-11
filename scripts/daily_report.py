@@ -1,197 +1,154 @@
 #!/usr/bin/env python3
 """
 PhoneInventory Daily Telegram Report
-Reads phone/store data from index.html, formats and sends via Telegram Bot.
+Reads inventory/sales data from SQLite database and sends formatted report via Telegram.
 """
 
-import re
 import json
+import os
+import sqlite3
 import urllib.request
 import urllib.parse
 from datetime import datetime, timezone, timedelta
 
 # ─── Config ───
-BOT_TOKEN = "8150644814:AAEFF7axPiIOxNMaYTqfandfi7a9jAQ9z_k"
-CHAT_ID = "7625761638"
-DATA_URL = "https://infinitumcom.github.io/phonesinventory/index.html"
-LOCAL_PATH = "index.html"
+DEPLOY_DIR = os.environ.get("DEPLOY_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+DB_PATH = os.path.join(DEPLOY_DIR, "data", "inventory.db")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8682943904:AAHUj5DPOa6wdknmrNut4zJr2dZ1UTDTwLE")
+CHAT_ID = os.environ.get("REPORT_CHAT_ID", "7625761638")
+PST = timezone(timedelta(hours=-7))
 
-PST = timezone(timedelta(hours=-7))  # PDT (summer)
-
-
-def fetch_html():
-    """Try local file first, then remote."""
-    import os
-    if os.path.exists(LOCAL_PATH):
-        with open(LOCAL_PATH, "r", encoding="utf-8") as f:
-            return f.read()
-    req = urllib.request.Request(DATA_URL, headers={"User-Agent": "PhoneInventoryBot/1.0"})
-    with urllib.request.urlopen(req, timeout=30) as resp:
-        return resp.read().decode("utf-8")
-
-
-def extract_js_array(html, var_name):
-    """Extract a JS array/object assigned to var_name."""
-    pattern = rf"const\s+{var_name}\s*=\s*(\[[\s\S]*?\n\]);"
-    m = re.search(pattern, html)
-    if not m:
-        pattern = rf"const\s+{var_name}\s*=\s*(\{{[\s\S]*?\n\}});"
-        m = re.search(pattern, html)
-    if not m:
-        return None
-    raw = m.group(1)
-    # Convert JS to JSON-ish: replace single quotes, strip trailing commas, handle unquoted keys
-    raw = re.sub(r"//.*?$", "", raw, flags=re.MULTILINE)  # remove comments
-    raw = re.sub(r"/\*.*?\*/", "", raw, flags=re.DOTALL)  # remove block comments
-    raw = re.sub(r"'", '"', raw)  # single → double quotes
-    raw = re.sub(r"(\w+)\s*:", r'"\1":', raw)  # unquoted keys
-    raw = re.sub(r",\s*([}\]])", r"\1", raw)  # trailing commas
-    raw = re.sub(r'""(\w+)""', r'"\1"', raw)  # fix double-quoted keys
-    # Fix already-quoted keys that got double-quoted
-    raw = re.sub(r'""+', '"', raw)
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return None
+# Store key → display info
+STORE_INFO = {
+    'Alhambra': {'taxLabel': 'CA 10.25%'},
+    'Monterey Park': {'taxLabel': 'CA 9.5%'},
+    'San Gabriel': {'taxLabel': 'CA 9.5%'},
+    'Rowland Heights': {'taxLabel': 'CA 9.5%'},
+    'Arcadia 1': {'taxLabel': 'CA 10.25%'},
+    'Arcadia 2': {'taxLabel': 'CA 10.25%'},
+    'Irvine': {'taxLabel': 'CA 7.75%'},
+    'Rancho Cucamonga': {'taxLabel': 'CA 7.75%'},
+    'Las Vegas': {'taxLabel': 'NV 8.375%'},
+    'HQ 总仓': {'taxLabel': 'N/A'},
+}
 
 
-def extract_store_data(html):
-    """Extract STORE_DATA as dict."""
-    pattern = r"const\s+STORE_DATA\s*=\s*\{([\s\S]*?)\n\};"
-    m = re.search(pattern, html)
-    if not m:
-        return {}
-    raw = "{" + m.group(1) + "}"
-    raw = re.sub(r"//.*?$", "", raw, flags=re.MULTILINE)
-    raw = re.sub(r"'", '"', raw)
-    raw = re.sub(r"(\w[\w-]*)\s*:", r'"\1":', raw)
-    raw = re.sub(r",\s*([}\]])", r"\1", raw)
-    raw = re.sub(r'""+', '"', raw)
-    # Fix keys with hyphens
-    raw = re.sub(r'"(\w+)-(\w+)":', r'"\1-\2":', raw)
-    try:
-        return json.loads(raw)
-    except json.JSONDecodeError:
-        return {}
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
-def parse_phones_manual(html):
-    """Fallback: extract phone data using regex per-entry."""
-    phones = []
-    pattern = r"\{\s*cond\s*:\s*['\"](\w+)['\"].*?brand\s*:\s*['\"](\w+)['\"].*?name\s*:\s*['\"]([^'\"]+)['\"].*?storage\s*:\s*['\"]([^'\"]+)['\"].*?store\s*:\s*['\"]([^'\"]+)['\"].*?storeName\s*:\s*['\"]([^'\"]+)['\"].*?price\s*:\s*(\d+).*?cost\s*:\s*(\d+).*?status\s*:\s*['\"](\w+)['\"].*?region\s*:\s*['\"](\w+)['\"].*?ageDays\s*:\s*(\d+)"
-    for m in re.finditer(pattern, html, re.DOTALL):
-        phones.append({
-            "cond": m.group(1),
-            "brand": m.group(2),
-            "name": m.group(3),
-            "storage": m.group(4),
-            "store": m.group(5),
-            "storeName": m.group(6),
-            "price": int(m.group(7)),
-            "cost": int(m.group(8)),
-            "status": m.group(9),
-            "region": m.group(10),
-            "ageDays": int(m.group(11)),
-        })
-    return phones
-
-
-def parse_stores_manual(html):
-    """Fallback: extract store data using regex."""
-    stores = {}
-    block_pattern = r"['\"]([a-z][\w-]*)['\"]:\s*\{([^}]+)\}"
-    for m in re.finditer(block_pattern, html[html.find("STORE_DATA"):html.find("STORE_DATA") + 5000]):
-        key = m.group(1)
-        block = m.group(2)
-
-        def g(field, is_num=False):
-            p = rf"{field}\s*:\s*['\"]?([^'\",\n]+)['\"]?"
-            mm = re.search(p, block)
-            if not mm:
-                return 0 if is_num else ""
-            v = mm.group(1).strip()
-            if is_num:
-                return int(float(v)) if v.replace(".", "").isdigit() else 0
-            return v
-
-        stores[key] = {
-            "nameEn": g("nameEn"), "nameZh": g("nameZh"),
-            "mgr": g("mgr"), "phone": g("phone"),
-            "stock": g("stock", True), "stockNew": g("stockNew", True), "stockUsed": g("stockUsed", True),
-            "todaySold": g("todaySold", True), "todayRev": g("todayRev", True),
-            "mtdSold": g("mtdSold", True), "mtdRank": g("mtdRank", True),
-            "cash": g("cash", True), "taxRateLabel": g("taxRateLabel"),
-        }
-    return stores
-
-
-def build_report(phones, stores):
-    """Build formatted Telegram report message."""
+def build_report():
+    """Build report from database data."""
     now = datetime.now(PST)
     date_str = now.strftime("%Y-%m-%d %A")
+    today_str = now.strftime("%Y-%m-%d")
+    month_start = now.strftime("%Y-%m-01")
 
-    # ── Inventory Summary ──
-    total = len(phones)
-    new_phones = [p for p in phones if p.get("cond") == "new"]
-    used_phones = [p for p in phones if p.get("cond") == "used"]
-    available = [p for p in phones if p.get("status") == "available"]
-    sold = [p for p in phones if p.get("status") == "sold"]
-    reserved = [p for p in phones if p.get("status") == "reserved"]
-    transit = [p for p in phones if p.get("status") == "transit"]
-    aged = [p for p in phones if p.get("ageDays", 0) >= 60]
+    conn = get_db()
 
-    total_value = sum(p.get("price", 0) for p in available)
-    total_cost = sum(p.get("cost", 0) for p in available)
+    # ── Inventory stats ──
+    total = conn.execute("SELECT COUNT(*) FROM inventory").fetchone()[0]
+    available = conn.execute("SELECT COUNT(*) FROM inventory WHERE status='available'").fetchone()[0]
+    sold = conn.execute("SELECT COUNT(*) FROM inventory WHERE status='sold'").fetchone()[0]
+    new_count = conn.execute("SELECT COUNT(*) FROM inventory WHERE status='available' AND condition='new'").fetchone()[0]
+    used_count = conn.execute("SELECT COUNT(*) FROM inventory WHERE status='available' AND condition='used'").fetchone()[0]
 
     # Brand breakdown
-    brands = {}
-    for p in phones:
-        b = p.get("brand", "other")
-        brands[b] = brands.get(b, 0) + 1
-    brand_line = " · ".join(f"{k.title()} {v}" for k, v in sorted(brands.items(), key=lambda x: -x[1]))
+    brands_rows = conn.execute(
+        "SELECT brand, COUNT(*) as cnt FROM inventory WHERE status='available' GROUP BY brand ORDER BY cnt DESC"
+    ).fetchall()
+    brand_line = " · ".join(f"{r['brand'] or 'Other'} {r['cnt']}" for r in brands_rows) or "—"
 
     # Region breakdown
-    regions = {}
-    for p in available:
-        r = p.get("region", "us")
-        flag = {"us": "🇺🇸", "hk": "🇭🇰", "cn": "🇨🇳"}.get(r, "🌐")
-        regions[flag + r.upper()] = regions.get(flag + r.upper(), 0) + 1
-    region_line = " · ".join(f"{k} {v}" for k, v in regions.items())
+    region_rows = conn.execute(
+        "SELECT region, COUNT(*) as cnt FROM inventory WHERE status='available' GROUP BY region ORDER BY cnt DESC"
+    ).fetchall()
+    flags = {"us": "🇺🇸", "hk": "🇭🇰", "cn": "🇨🇳", "jp": "🇯🇵", "kr": "🇰🇷"}
+    region_line = " · ".join(f"{flags.get(r['region'], '🌐')}{(r['region'] or 'US').upper()} {r['cnt']}" for r in region_rows) or "—"
 
-    # ── Sales Summary ──
-    total_sold_today = sum(s.get("todaySold", 0) for s in stores.values())
-    total_rev_today = sum(s.get("todayRev", 0) for s in stores.values())
-    total_mtd = sum(s.get("mtdSold", 0) for s in stores.values())
+    # Today's inventory value
+    value_row = conn.execute("SELECT SUM(price) as v, SUM(cost) as c FROM inventory WHERE status='available'").fetchone()
+    total_value = int(value_row['v'] or 0)
+    total_cost = int(value_row['c'] or 0)
 
-    # ── Store Details ──
-    total_cash = sum(s.get("cash", 0) for s in stores.values())
+    # ── Sales stats ──
+    today_sales = conn.execute(
+        "SELECT COUNT(*) as cnt, SUM(total) as rev FROM sales WHERE status='completed' AND created_at >= ?",
+        (today_str,)
+    ).fetchone()
+    today_sold = today_sales['cnt'] or 0
+    today_rev = int(today_sales['rev'] or 0)
 
-    store_lines = []
-    sorted_stores = sorted(stores.items(), key=lambda x: x[1].get("mtdRank", 99))
-    for key, s in sorted_stores:
-        name = s.get("nameEn") or s.get("nameZh") or key
-        rank_medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(s.get("mtdRank", 0), "  ")
-        store_lines.append(
-            f"{rank_medal} *{name}*\n"
-            f"    📦 库存 {s.get('stock', 0)} (新{s.get('stockNew', 0)}/二手{s.get('stockUsed', 0)})\n"
-            f"    💰 今日 {s.get('todaySold', 0)}台 ${s.get('todayRev', 0):,}\n"
-            f"    📅 本月 {s.get('mtdSold', 0)}台 · 排名 #{s.get('mtdRank', '-')}\n"
-            f"    💵 现金 ${s.get('cash', 0):,} · {s.get('taxRateLabel', '')}"
-        )
+    mtd_sales = conn.execute(
+        "SELECT COUNT(*) as cnt, SUM(total) as rev FROM sales WHERE status='completed' AND created_at >= ?",
+        (month_start,)
+    ).fetchone()
+    mtd_sold = mtd_sales['cnt'] or 0
+    mtd_rev = int(mtd_sales['rev'] or 0)
 
-    # ── Sold Transactions Today ──
+    # Today's sold transactions
+    today_txns = conn.execute(
+        "SELECT phone_name, storage, store, total FROM sales WHERE status='completed' AND created_at >= ? ORDER BY created_at DESC",
+        (today_str,)
+    ).fetchall()
     sold_lines = []
-    for p in sold:
-        sold_lines.append(
-            f"  • {p.get('name', '?')} {p.get('storage', '')} → {p.get('storeName', '?')} · ${p.get('price', 0):,}"
+    for t in today_txns:
+        sold_lines.append(f"  • {t['phone_name']} {t['storage']} → {t['store']} · ${int(t['total'] or 0):,}")
+
+    # ── Store breakdown ──
+    store_rows = conn.execute("""
+        SELECT store, COUNT(*) as stock,
+            SUM(CASE WHEN condition='new' THEN 1 ELSE 0 END) as stock_new,
+            SUM(CASE WHEN condition='used' THEN 1 ELSE 0 END) as stock_used
+        FROM inventory WHERE status='available' AND store != '' GROUP BY store ORDER BY stock DESC
+    """).fetchall()
+
+    # Sales by store this month
+    store_sales = {}
+    for row in conn.execute("""
+        SELECT store, COUNT(*) as cnt, SUM(total) as rev FROM sales
+        WHERE status='completed' AND created_at >= ? GROUP BY store
+    """, (month_start,)).fetchall():
+        store_sales[row['store']] = {'mtd': row['cnt'], 'rev': int(row['rev'] or 0)}
+
+    # Sales by store today
+    for row in conn.execute("""
+        SELECT store, COUNT(*) as cnt, SUM(total) as rev FROM sales
+        WHERE status='completed' AND created_at >= ? GROUP BY store
+    """, (today_str,)).fetchall():
+        if row['store'] in store_sales:
+            store_sales[row['store']]['today'] = row['cnt']
+            store_sales[row['store']]['today_rev'] = int(row['rev'] or 0)
+        else:
+            store_sales[row['store']] = {'mtd': row['cnt'], 'rev': int(row['rev'] or 0), 'today': row['cnt'], 'today_rev': int(row['rev'] or 0)}
+
+    # Rank stores by MTD sales
+    all_stores = {}
+    for r in store_rows:
+        name = r['store']
+        s = store_sales.get(name, {})
+        all_stores[name] = {
+            'stock': r['stock'], 'new': r['stock_new'], 'used': r['stock_used'],
+            'mtd': s.get('mtd', 0), 'today': s.get('today', 0),
+            'today_rev': s.get('today_rev', 0),
+            'tax': STORE_INFO.get(name, {}).get('taxLabel', ''),
+        }
+
+    ranked = sorted(all_stores.items(), key=lambda x: -x[1]['mtd'])
+    store_lines = []
+    for i, (name, s) in enumerate(ranked, 1):
+        medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, "  ")
+        store_lines.append(
+            f"{medal} *{name}*\n"
+            f"    📦 库存 {s['stock']} (新{s['new']}/二手{s['used']})\n"
+            f"    💰 今日 {s['today']}台 ${s['today_rev']:,}\n"
+            f"    📅 本月 {s['mtd']}台 · 排名 #{i}\n"
+            f"    {s['tax']}"
         )
 
-    # ── Aged Stock Warning ──
-    aged_lines = []
-    for p in aged[:5]:
-        aged_lines.append(
-            f"  ⚠️ {p.get('name', '?')} {p.get('storage', '')} · {p.get('storeName', '?')} · {p.get('ageDays', 0)}天"
-        )
+    conn.close()
 
     # ── Build Message ──
     msg = f"""📊 *iFixForU 手机库存日报*
@@ -200,22 +157,22 @@ def build_report(phones, stores):
 
 📦 *一、库存总览*
 ┌ 总库存: *{total}* 部
-│ 新机 {len(new_phones)} · 二手 {len(used_phones)}
-│ 在售 {len(available)} · 已售 {len(sold)} · 预留 {len(reserved)} · 在途 {len(transit)}
+│ 在售 {available} · 已售 {sold}
+│ 新机 {new_count} · 二手 {used_count}
 │ 品牌: {brand_line}
 │ 版本: {region_line}
-│ 库存总值: *${total_value:,}* (成本 ${total_cost:,})
-└ 滞销 (>60天): {len(aged)} 部
+└ 库存总值: *${total_value:,}* (成本 ${total_cost:,})
 
 💰 *二、今日销售*
-┌ 今日成交: *{total_sold_today}* 台
-│ 今日营收: *${total_rev_today:,}*
-└ 本月累计: *{total_mtd}* 台"""
+┌ 今日成交: *{today_sold}* 台
+│ 今日营收: *${today_rev:,}*
+└ 本月累计: *{mtd_sold}* 台 · ${mtd_rev:,}"""
 
     if sold_lines:
         msg += "\n\n📝 *交易明细:*\n" + "\n".join(sold_lines)
 
-    msg += f"""
+    if store_lines:
+        msg += f"""
 
 🏪 *三、门店详情*
 {'─' * 20}
@@ -223,21 +180,9 @@ def build_report(phones, stores):
 
     msg += f"""
 
-💵 *四、现金汇总*
-┌ 全部门店现金合计: *${total_cash:,}*
-└ 共 {len(stores)} 家门店"""
-
-    if aged_lines:
-        msg += f"""
-
-⚠️ *五、滞销预警*
-""" + "\n".join(aged_lines)
-
-    msg += f"""
-
 ━━━━━━━━━━━━━━━━━━
 🤖 PhoneInventory Bot · {now.strftime('%H:%M PST')}
-🌐 https://infinitumcom.github.io/phonesinventory/"""
+🌐 https://phonesinventory.com"""
 
     return msg
 
@@ -256,35 +201,24 @@ def send_telegram(text, chat_id=CHAT_ID):
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             if result.get("ok"):
-                print(f"✅ Report sent to chat {chat_id}")
+                print(f"Report sent to chat {chat_id}")
             else:
-                print(f"❌ Telegram error: {result}")
+                print(f"Telegram error: {result}")
             return result
     except Exception as e:
-        print(f"❌ Failed to send: {e}")
+        print(f"Failed to send: {e}")
         return None
 
 
 def main():
-    print("📊 PhoneInventory Daily Report")
-    print(f"⏰ {datetime.now(PST).strftime('%Y-%m-%d %H:%M PST')}")
+    print("PhoneInventory Daily Report")
+    print(f"{datetime.now(PST).strftime('%Y-%m-%d %H:%M PST')}")
 
-    # Fetch and parse
-    html = fetch_html()
-    print(f"📄 HTML loaded: {len(html):,} chars")
-
-    phones = parse_phones_manual(html)
-    stores = parse_stores_manual(html)
-    print(f"📱 Phones: {len(phones)} | 🏪 Stores: {len(stores)}")
-
-    if not phones:
-        print("❌ No phone data found")
+    if not os.path.exists(DB_PATH):
+        print(f"Database not found: {DB_PATH}")
         return
-    if not stores:
-        print("⚠️ No store data found, proceeding with phone data only")
 
-    # Build and send
-    report = build_report(phones, stores)
+    report = build_report()
     print(f"\n{'='*40}\n{report}\n{'='*40}\n")
     send_telegram(report)
 

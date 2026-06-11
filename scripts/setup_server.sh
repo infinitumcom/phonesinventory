@@ -62,8 +62,9 @@ CRON_SYNC="*/5 * * * * cd $DEPLOY_DIR && BEFORE=\$(git rev-parse HEAD) && git pu
 CRON_EXPORT="*/2 * * * * cd $DEPLOY_DIR && python3 scripts/export_inventory.py >> /tmp/phonesinventory-export.log 2>&1"
 CRON_REPORT="0 3 * * * cd $DEPLOY_DIR && python3 scripts/daily_report.py >> /tmp/phonesinventory-report.log 2>&1"
 CRON_WATCHDOG="* * * * * bash $DEPLOY_DIR/scripts/watchdog.sh >> /tmp/phonesinventory-watchdog.log 2>&1"
+CRON_AUDIT="0 * * * * cd $DEPLOY_DIR && python3 scripts/data_audit.py >> /tmp/phonesinventory-audit.log 2>&1"
 
-(crontab -l 2>/dev/null | grep -v "phonesinventory" ; echo "# PhoneInventory auto-sync"; echo "$CRON_SYNC"; echo "# PhoneInventory export"; echo "$CRON_EXPORT"; echo "# PhoneInventory daily report"; echo "$CRON_REPORT"; echo "# PhoneInventory watchdog"; echo "$CRON_WATCHDOG") | crontab -
+(crontab -l 2>/dev/null | grep -v "phonesinventory" ; echo "# PhoneInventory auto-sync"; echo "$CRON_SYNC"; echo "# PhoneInventory export"; echo "$CRON_EXPORT"; echo "# PhoneInventory daily report"; echo "$CRON_REPORT"; echo "# PhoneInventory watchdog"; echo "$CRON_WATCHDOG"; echo "# PhoneInventory data audit"; echo "$CRON_AUDIT") | crontab -
 
 # 7. Start bot + API server
 echo "🤖 Starting services..."
@@ -81,6 +82,7 @@ echo "🤖 Bot: running"
 echo "🔄 Auto-sync: every 5 min"
 echo "📊 Data export: every 2 min"
 echo "🛡️ Watchdog: every 1 min"
+echo "🔍 Data audit: every 1 hour (alerts via Telegram)"
 echo ""
 echo "📋 Useful commands:"
 echo "  tail -f /tmp/upload-bot.log             # Bot logs"
