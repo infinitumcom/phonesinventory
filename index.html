@@ -5233,31 +5233,38 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     var saved = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
     for (var email in saved) { if (ACCOUNTS[email]) ACCOUNTS[email].pin = saved[email]; }
   } catch(e){}
-  // Then fetch from server (source of truth) and override
-  (function() {
+  // Make accessible globally
+  window.LOGIN_ACCOUNTS = ACCOUNTS;
+  // Track whether server PINs have been loaded
+  window._pinsLoaded = false;
+
+  // Fetch PINs from server asynchronously (source of truth)
+  function loadServerPins() {
     var apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
       ? 'http://localhost:8580' : '';
-    try {
-      var xhr = new XMLHttpRequest();
-      xhr.open('GET', apiBase + '/api/user-pins', false); // synchronous to block login
-      xhr.timeout = 3000;
-      xhr.send();
-      if (xhr.status === 200) {
-        var resp = JSON.parse(xhr.responseText);
+    return fetch(apiBase + '/api/user-pins', { signal: AbortSignal.timeout(5000) })
+      .then(function(r) { return r.json(); })
+      .then(function(resp) {
         if (resp && resp.pins) {
           for (var em in resp.pins) {
             if (ACCOUNTS[em]) ACCOUNTS[em].pin = resp.pins[em];
           }
-          // Also update localStorage cache
-          var merged = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-          for (var em2 in resp.pins) { merged[em2] = resp.pins[em2]; }
-          localStorage.setItem('pi_changed_pins', JSON.stringify(merged));
+          // Update localStorage cache
+          try {
+            var merged = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
+            for (var em2 in resp.pins) { merged[em2] = resp.pins[em2]; }
+            localStorage.setItem('pi_changed_pins', JSON.stringify(merged));
+          } catch(e){}
         }
-      }
-    } catch(e) { console.log('Failed to fetch PINs from server, using localStorage fallback'); }
-  })();
-  // Make accessible globally
-  window.LOGIN_ACCOUNTS = ACCOUNTS;
+        window._pinsLoaded = true;
+      })
+      .catch(function(e) {
+        console.log('Failed to fetch PINs from server, using localStorage fallback');
+        window._pinsLoaded = true; // still allow login with localStorage data
+      });
+  }
+  // Load PINs immediately
+  loadServerPins();
 
   var pinField = document.getElementById('loginPin');
   var emailField = document.getElementById('loginEmail');
@@ -5308,6 +5315,18 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     if (!selectedStore) { showErr('请先选择门店 / Select a store first'); if (storeSelect) storeSelect.focus(); return; }
     if (!em) { showErr('请输入工作邮箱 / Enter email'); emailField.focus(); return; }
     if (pin.length < 6) { showErr('请输入6位密码 (已输入' + pin.length + '位)'); pinField.focus(); return; }
+
+    // If server PINs haven't loaded yet, fetch and retry
+    if (!window._pinsLoaded) {
+      loginBtn.disabled = true;
+      loginBtn.innerHTML = '<span class="zh">加载中...</span><span class="en">Loading...</span>';
+      loadServerPins().then(function() {
+        loginBtn.disabled = false;
+        loginBtn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
+        tryLogin(); // retry after PINs loaded
+      });
+      return;
+    }
 
     var acct = ACCOUNTS[em];
     if (!acct || acct.pin !== pin) {
@@ -9383,12 +9402,16 @@ function renderDashboard() {
     if (stats[2]) stats[2].textContent = '$' + sd.todayRev.toLocaleString();
   });
 
-  // --- Inventory hero card ---
-  if (el('invHeroCount')) el('invHeroCount').textContent = totalAvail;
-  var heroSub = document.querySelector('#invHeroCount');
-  if (heroSub && heroSub.parentElement) {
-    var heroS = heroSub.parentElement.querySelector('.s');
-    if (heroS) heroS.textContent = totalNew + ' NEW · ' + totalUsed + ' USED';
+  // --- Inventory hero card (respects store filter) ---
+  // Hero card is now updated by updateFilterCounts() in renderInventory()
+  // Here we only set it if no store filter is active (dashboard init)
+  if (INV_FILTERS.store === 'all') {
+    if (el('invHeroCount')) el('invHeroCount').textContent = totalAvail;
+    var heroSub = document.querySelector('#invHeroCount');
+    if (heroSub && heroSub.parentElement) {
+      var heroS = heroSub.parentElement.querySelector('.s');
+      if (heroS) heroS.textContent = totalNew + ' NEW · ' + totalUsed + ' USED';
+    }
   }
 
   // --- Sidebar transfer badge ---
@@ -11593,6 +11616,25 @@ function updateFilterCounts() {
   const navBadge = document.getElementById('navBadgeInventory');
   if (navBadge) navBadge.textContent = phones.filter(p => p && p.status !== 'sold').length;
 
+  // Update hero card to match current store filter
+  const heroCount = document.getElementById('invHeroCount');
+  if (heroCount) heroCount.textContent = storeBase.length;
+  const heroSub = heroCount ? heroCount.parentElement.querySelector('.s') : null;
+  if (heroSub) heroSub.textContent = allNew.length + ' NEW · ' + allUsed.length + ' USED';
+  // Update hero store label
+  const heroStore = document.getElementById('heroStore');
+  const heroStoreEn = document.getElementById('heroStoreEn');
+  if (INV_FILTERS.store === 'all') {
+    if (heroStore) heroStore.textContent = '所有门店 · 10 店总览';
+    if (heroStoreEn) heroStoreEn.textContent = 'All Stores · 10 locations';
+  } else {
+    var sd = STORE_DATA[INV_FILTERS.store];
+    if (sd) {
+      if (heroStore) heroStore.textContent = sd.nameZh;
+      if (heroStoreEn) heroStoreEn.textContent = sd.nameEn;
+    }
+  }
+
   // Update tab counts (filtered by store)
   const tabNew = document.getElementById('tabCountNew');
   const tabUsed = document.getElementById('tabCountUsed');
@@ -11600,14 +11642,17 @@ function updateFilterCounts() {
   if (tabUsed) tabUsed.textContent = allUsed.length;
 
   // Update store pills counts
+  const globalNew = phones.filter(p => p && p.status !== 'sold' && p.cond === 'new').length;
+  const globalUsed = phones.filter(p => p && p.status !== 'sold' && p.cond === 'used').length;
   document.querySelectorAll('.store-pill').forEach(pill => {
     const storeKey = pill.dataset.store;
     const newC = pill.querySelector('.new-c');
     const usedC = pill.querySelector('.used-c');
     if (!storeKey) return;
     if (storeKey === 'all') {
-      if (newC) newC.innerHTML = 'NEW ' + allNew.length;
-      if (usedC) usedC.innerHTML = 'USED ' + allUsed.length;
+      // Always show global totals for "All" pill
+      if (newC) newC.innerHTML = 'NEW ' + globalNew;
+      if (usedC) usedC.innerHTML = 'USED ' + globalUsed;
     } else {
       const sNew = phones.filter(p => p && p.status !== 'sold' && p.cond === 'new' && normalizeStoreKey(p.store || p.storeName || '') === storeKey).length;
       const sUsed = phones.filter(p => p && p.status !== 'sold' && p.cond === 'used' && normalizeStoreKey(p.store || p.storeName || '') === storeKey).length;
@@ -12342,6 +12387,19 @@ if (!window.initDynamicUI) {
       var metaZh = account.role === 'admin' ? '总部 · 管理员' : (account.store || '') + ' · 员工';
       var metaEn = account.role === 'admin' ? 'HQ · Admin' : (account.store || '') + ' · Staff';
       el('maStoreMeta').innerHTML = '<span class="zh">' + metaZh + '</span><span class="en">' + metaEn + '</span>';
+    }
+    // Auto-select employee's store in inventory filter
+    if (account && account.store && account.store !== 'all') {
+      var storeKey = normalizeStoreKey(account.store);
+      if (storeKey && STORE_DATA[storeKey]) {
+        INV_FILTERS.store = storeKey;
+        // Activate the matching store pill
+        var pills = document.querySelectorAll('.store-pill');
+        pills.forEach(function(pill) {
+          pill.classList.remove('active');
+          if (pill.dataset.store === storeKey) pill.classList.add('active');
+        });
+      }
     }
     // Render all dynamic data
     try { renderDashboard(); } catch(e){}
