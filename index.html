@@ -9966,23 +9966,67 @@ function rejectTransfer(transferId) {
         phones[i].status = 'available'; break;
       }
     }
+    loadServerTransfers();
     renderDashboard();
     renderTransferPage();
     showToast('调拨已拒绝 / Transfer rejected');
   }).catch(function() {
-    // Offline fallback — also restore phone status
+    showToast('操作失败，请重试 / Failed, please retry');
+  });
+}
+
+function cancelTransfer(transferId) {
+  if (!confirm('确认撤回此调拨申请？\nCancel this transfer request?')) return;
+  apiCall('PUT', '/transfer/' + transferId, { status: 'cancelled' }).then(function(res) {
+    if (res && res.error) { showToast('错误: ' + res.error); return; }
     var transfers = getLocalData('pi_transfers');
     var t = transfers.find(function(x){ return x.id === transferId; });
-    if (t) { t.status = 'rejected'; t.rejectedBy = acctName; }
+    if (t) t.status = 'cancelled';
     setLocalData('pi_transfers', transfers);
+    // Restore phone status
     for (var i = 0; i < phones.length; i++) {
       if (phones[i] && phones[i].imei === (t||{}).imei && phones[i].status === 'reserved') {
         phones[i].status = 'available'; break;
       }
     }
+    loadServerTransfers();
     renderDashboard();
     renderTransferPage();
-    showToast('调拨已拒绝 (离线) / Transfer rejected');
+    renderInventory();
+    showToast('调拨已撤回 / Transfer cancelled');
+  }).catch(function() {
+    showToast('操作失败，请重试 / Failed, please retry');
+  });
+}
+
+function returnTransfer(transferId) {
+  if (!confirm('确认退回此手机到原门店？\nReturn this phone to the original store?')) return;
+  apiCall('PUT', '/transfer/' + transferId, { status: 'returned' }).then(function(res) {
+    if (res && res.error) { showToast('错误: ' + res.error); return; }
+    var transfers = getLocalData('pi_transfers');
+    var t = transfers.find(function(x){ return x.id === transferId; });
+    if (t) t.status = 'returned';
+    setLocalData('pi_transfers', transfers);
+    // Update phone store locally
+    if (t) {
+      var origStore = t.fromStoreName || t.fromStore;
+      for (var i = 0; i < phones.length; i++) {
+        if (phones[i] && phones[i].imei === t.imei) {
+          phones[i].store = origStore;
+          phones[i].storeName = origStore;
+          phones[i].status = 'available';
+          break;
+        }
+      }
+    }
+    loadServerTransfers();
+    syncSoldStatus(); // re-sync inventory from server
+    renderDashboard();
+    renderTransferPage();
+    renderInventory();
+    showToast('手机已退回原门店 / Phone returned to original store');
+  }).catch(function() {
+    showToast('操作失败，请重试 / Failed, please retry');
   });
 }
 
@@ -10042,19 +10086,35 @@ function renderTransferPage() {
   }
   var html = '';
   transfers.forEach(function(t) {
-    var statusBadge = t.status === 'pending' ?
-      '<span style="background:var(--warn-soft);color:var(--warn);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">⏱ <span class="zh">待审批</span><span class="en">Pending</span></span>' :
-      t.status === 'transit' ?
-      '<span style="background:var(--info-soft);color:var(--info);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">🚚 <span class="zh">在途</span><span class="en">In Transit</span></span>' :
-      t.status === 'completed' ?
-      '<span style="background:var(--success-soft);color:var(--success);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">✓ <span class="zh">完成</span><span class="en">Done</span></span>' :
-      '<span style="background:var(--danger-soft);color:var(--danger);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">✕ <span class="zh">驳回</span><span class="en">Rejected</span></span>';
+    var statusBadges = {
+      'pending': '<span style="background:var(--warn-soft);color:var(--warn);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">⏱ <span class="zh">待审批</span><span class="en">Pending</span></span>',
+      'transit': '<span style="background:var(--info-soft);color:var(--info);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">🚚 <span class="zh">在途</span><span class="en">In Transit</span></span>',
+      'completed': '<span style="background:var(--success-soft);color:var(--success);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">✓ <span class="zh">完成</span><span class="en">Done</span></span>',
+      'rejected': '<span style="background:var(--danger-soft);color:var(--danger);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">✕ <span class="zh">驳回</span><span class="en">Rejected</span></span>',
+      'cancelled': '<span style="background:#f3f4f6;color:#6b7280;padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">⊘ <span class="zh">已撤回</span><span class="en">Cancelled</span></span>',
+      'returned': '<span style="background:#fef3c7;color:#b45309;padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">↩ <span class="zh">已退回</span><span class="en">Returned</span></span>'
+    };
+    var statusBadge = statusBadges[t.status] || statusBadges['rejected'];
     var fromName = (STORE_DATA[t.fromStore]||{}).nameEn || t.fromStoreName || t.fromStore;
     var toName = (STORE_DATA[t.toStore]||{}).nameEn || t.toStoreName || t.toStore;
-    var actions = t.status === 'pending' ?
-      '<div style="display:flex;gap:6px;"><button class="btn btn-sm" onclick="rejectTransfer(\'' + t.id + '\')"><span class="zh">驳回</span><span class="en">Reject</span></button><button class="btn btn-sm btn-primary" onclick="approveTransfer(\'' + t.id + '\')"><span class="zh">同意</span><span class="en">Approve</span></button></div>' :
-      t.status === 'transit' ?
-      '<button class="btn btn-sm btn-success" onclick="completeTransfer(\'' + t.id + '\')" style="background:var(--success);color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;"><span class="zh">✓ 确认收货</span><span class="en">✓ Confirm Receipt</span></button>' : '';
+    var acctName = (window._currentAccount || {}).name || '';
+    var isAdmin = (window._currentAccount || {}).role === 'admin';
+    var isRequester = t.requestedBy === acctName;
+    var actions = '';
+    if (t.status === 'pending') {
+      // Requester can cancel; admin can reject or approve
+      var cancelBtn = (isRequester || isAdmin) ? '<button class="btn btn-sm" onclick="cancelTransfer(\'' + t.id + '\')" style="color:#ef4444;border-color:#fca5a5;"><span class="zh">撤回</span><span class="en">Cancel</span></button>' : '';
+      var adminBtns = isAdmin ? '<button class="btn btn-sm" onclick="rejectTransfer(\'' + t.id + '\')"><span class="zh">驳回</span><span class="en">Reject</span></button><button class="btn btn-sm btn-primary" onclick="approveTransfer(\'' + t.id + '\')"><span class="zh">同意</span><span class="en">Approve</span></button>' : '';
+      actions = '<div style="display:flex;gap:6px;flex-wrap:wrap;">' + cancelBtn + adminBtns + '</div>';
+    } else if (t.status === 'transit') {
+      actions = '<div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+        '<button class="btn btn-sm" onclick="returnTransfer(\'' + t.id + '\')" style="color:#b45309;border-color:#fbbf24;"><span class="zh">↩ 退回</span><span class="en">↩ Return</span></button>' +
+        '<button class="btn btn-sm btn-success" onclick="completeTransfer(\'' + t.id + '\')" style="background:var(--success);color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;"><span class="zh">✓ 确认收货</span><span class="en">✓ Confirm</span></button>' +
+      '</div>';
+    } else if (t.status === 'completed' && isAdmin) {
+      // Admin can still return a completed transfer
+      actions = '<button class="btn btn-sm" onclick="returnTransfer(\'' + t.id + '\')" style="color:#b45309;border-color:#fbbf24;"><span class="zh">↩ 退回原店</span><span class="en">↩ Return</span></button>';
+    }
     html += '<div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:14px 20px;margin-bottom:10px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;">' +
       '<div>' +
         '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">' +

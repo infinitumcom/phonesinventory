@@ -472,6 +472,32 @@ class APIHandler(BaseHTTPRequestHandler):
                         "UPDATE transfers SET status='completed', updated_at=? WHERE id=?",
                         (now, transfer_id)
                     )
+                elif status == 'cancelled':
+                    # Requester cancels a pending transfer — restore phone to available
+                    row = conn.execute("SELECT imei, status as ts FROM transfers WHERE id=?", (transfer_id,)).fetchone()
+                    if row and row['ts'] == 'pending':
+                        conn.execute(
+                            "UPDATE transfers SET status='cancelled', updated_at=? WHERE id=?",
+                            (now, transfer_id)
+                        )
+                        conn.execute("UPDATE inventory SET status='available' WHERE imei=?", (row['imei'],))
+                    else:
+                        conn.close()
+                        return json_response(self, {'error': 'Only pending transfers can be cancelled'}, 400)
+                elif status == 'returned':
+                    # Return a transit/completed transfer — move phone back to original store
+                    row = conn.execute("SELECT imei, from_store, status as ts FROM transfers WHERE id=?", (transfer_id,)).fetchone()
+                    if row and row['ts'] in ('approved', 'completed'):
+                        original_store = normalize_store_name(row['from_store'])
+                        conn.execute(
+                            "UPDATE transfers SET status='returned', updated_at=? WHERE id=?",
+                            (now, transfer_id)
+                        )
+                        conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=?",
+                                     (original_store, row['imei']))
+                    else:
+                        conn.close()
+                        return json_response(self, {'error': 'Only in-transit or completed transfers can be returned'}, 400)
                 conn.commit()
                 conn.close()
             return json_response(self, {'ok': True})
