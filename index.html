@@ -4955,9 +4955,15 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   .login-card .logo-mark { width: 44px; height: 44px; font-size: 20px; }
   .login-card .form-group input,
   .login-card .form-group select {
-    min-height: 48px;
+    min-height: 50px;
+    height: 50px;
     font-size: 16px;
-    border-radius: 10px;
+    border-radius: 12px;
+    padding: 0 14px;
+  }
+  .login-card select.form-input {
+    padding-right: 40px;
+    line-height: 50px;
   }
   .login-card .login-btn {
     min-height: 50px;
@@ -4993,12 +4999,26 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   background: #fafafa; color: #1a1a1a; outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
+  height: 48px;
+  line-height: 1.2;
 }
 .login-card .form-input:focus {
   border-color: var(--brand); box-shadow: 0 0 0 3px rgba(13,79,60,0.1);
   background: #fff;
 }
 .login-card .form-input::placeholder { color: #bbb; }
+/* Select dropdown — consistent cross-platform styling */
+.login-card select.form-input {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 16px;
+  padding-right: 40px;
+  cursor: pointer;
+}
 .login-card .pin-input {
   text-align: center; letter-spacing: 12px; font-size: 24px;
   font-family: 'JetBrains Mono', monospace; font-weight: 700;
@@ -5106,8 +5126,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       <label class="form-label">
         <span class="zh">选择门店</span><span class="en">Select Store</span>
       </label>
-      <select id="loginStore" class="form-input" style="appearance:auto;cursor:pointer;">
-        <option value=""><span class="zh">— 请选择当前所在门店 —</span></option>
+      <select id="loginStore" class="form-input">
+        <option value="">— 请选择门店 / Select Store —</option>
         <option value="Alhambra">Alhambra</option>
         <option value="Monterey Park">Monterey Park</option>
         <option value="San Gabriel">San Gabriel</option>
