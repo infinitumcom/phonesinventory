@@ -9777,17 +9777,8 @@ function completeSale() {
     renderInventory();
     showToast('销售完成: ' + sale.id + ' / Sale completed');
   }).catch(function(e) {
-    console.log('API failed, saving locally only', e);
-    // Fallback: save locally
-    var sales = getLocalData('pi_sales');
-    sales.unshift(sale);
-    setLocalData('pi_sales', sales);
-    saleState.phone.status = 'sold';
-    fillReceipt(sale);
-    openReceiptModal();
-    renderDashboard();
-    renderInventory();
-    showToast('销售完成 (离线模式): ' + sale.id);
+    console.log('Sale API failed', e);
+    showToast('销售提交失败，请检查网络后重试 / Sale failed, check network and retry');
   });
 }
 
@@ -9904,13 +9895,7 @@ function createTransfer(imei, targetStore, reason) {
     try { renderTransferPage(); } catch(e){}
     showToast('调拨已创建: ' + transfer.id + ' / Transfer created');
   }).catch(function(e) {
-    // Fallback: save locally
-    var transfers = getLocalData('pi_transfers');
-    transfers.unshift(transfer);
-    setLocalData('pi_transfers', transfers);
-    phone.status = 'reserved';
-    renderDashboard();
-    showToast('调拨已创建 (离线): ' + transfer.id);
+    showToast('调拨创建失败，请检查网络后重试 / Transfer failed, check network and retry');
   });
   return transfer;
 }
@@ -9942,25 +9927,10 @@ function approveTransfer(transferId) {
     try { renderInventory(); } catch(e) {}
     showToast('调拨已批准 / Transfer approved: ' + transferId);
   }).catch(function() {
-    var transfers = getLocalData('pi_transfers');
-    var t = transfers.find(function(x){ return x.id === transferId; });
-    if (t) {
-      t.status = 'transit'; t.approvedBy = acctName;
-      var targetName = (STORE_DATA[t.toStore]||{}).nameEn || t.toStoreName || t.toStore;
-      for (var i = 0; i < phones.length; i++) {
-        if (phones[i] && phones[i].imei === t.imei) {
-          phones[i].store = targetName;
-          phones[i].storeName = targetName;
-          phones[i].status = 'available';
-          break;
-        }
-      }
-    }
-    setLocalData('pi_transfers', transfers);
     renderDashboard();
     renderTransferPage();
     try { renderInventory(); } catch(e) {}
-    showToast('调拨已批准 (离线): ' + transferId);
+    showToast('审批失败，请检查网络后重试 / Approve failed, check network and retry');
   });
 }
 
@@ -10061,9 +10031,7 @@ function completeTransfer(transferId) {
     try { renderInventory(); } catch(e) {}
     showToast('调拨已完成 / Transfer completed: ' + transferId);
   }).catch(function() {
-    renderDashboard();
-    try { renderInventory(); } catch(e) {}
-    showToast('调拨已完成 (离线) / Transfer completed');
+    showToast('确认收货失败，请检查网络后重试 / Confirm failed, check network and retry');
   });
 }
 
