@@ -12402,29 +12402,31 @@ document.addEventListener('keydown', e => {
 if (!window.initDynamicUI) {
   // Sync sold statuses from server API into phones array
   window.syncSoldStatus = function() {
-    // Fetch sold IMEIs from server
+    // Fetch sold IMEIs from server (only completed sales, not returned)
     apiCall('GET', '/sold-imeis').then(function(res) {
       if (res && res.imeis) {
         var soldSet = {};
         res.imeis.forEach(function(imei) { soldSet[imei] = true; });
+        var changed = false;
         phones.forEach(function(p) {
-          if (p && p.imei && soldSet[p.imei]) p.status = 'sold';
+          if (!p || !p.imei) return;
+          if (soldSet[p.imei]) {
+            // Phone is sold on server
+            if (p.status !== 'sold') { p.status = 'sold'; changed = true; }
+          } else if (p.status === 'sold') {
+            // Phone was sold locally but NOT on server (returned/cancelled)
+            p.status = 'available';
+            changed = true;
+          }
         });
-        // Re-render after sync
-        try { renderInventory(); } catch(e){}
-        try { renderDashboard(); } catch(e){}
+        // Re-render only if something changed
+        if (changed) {
+          try { renderInventory(); } catch(e){}
+          try { renderDashboard(); } catch(e){}
+        }
       }
     }).catch(function(e) {
-      console.log('API sync failed, falling back to localStorage', e);
-      // Fallback: use localStorage
-      var sales = getLocalData('pi_sales');
-      var soldIMEIs = {};
-      sales.forEach(function(s) {
-        if (s.imei && s.status === 'completed') soldIMEIs[s.imei] = true;
-      });
-      phones.forEach(function(p) {
-        if (p && p.imei && soldIMEIs[p.imei]) p.status = 'sold';
-      });
+      console.log('Sold status sync failed', e);
     });
   };
 
