@@ -270,7 +270,7 @@ def analyze_photo(image_bytes, caption=""):
   "battery": "battery health % if shown",
   "condition": "new or used",
   "region": "us/hk/cn based on model number (LL=US, ZA/ZP=HK, CH=CN) or label language",
-  "model_number": "e.g. MG184LL/A",
+  "model_number": "CRITICAL: the full Apple model number INCLUDING the region suffix, e.g. MYW83ZA/A, MFXL4LL/A. Look for 'Model' or 'Modelo' on the label. Must include the suffix like LL/A, ZA/A, ZP/A, CH/A",
   "eid": "EID if present",
   "notes": "any other relevant info"
 }"""
@@ -294,7 +294,11 @@ IMPORTANT:
 - IMEI2 is labeled "IMEI2" — also 15 digits
 - EID is labeled "EID" — it is 32 digits starting with 8904, this is the eSIM identifier, NOT an IMEI. Put it in the "eid" field, NEVER in "imei"
 - Do NOT confuse EID with IMEI — they are completely different numbers
-- For Apple: LL/A = US, ZA/A or ZP/A = HK, CH/A = CN
+- MODEL NUMBER & REGION (CRITICAL): The Apple model number (e.g. MYW83ZA/A) contains the region suffix. You MUST read the COMPLETE model number from the label including its suffix. The suffix determines the region:
+  * LL/A = US (美版), ZA/A or ZP/A = HK (港版), CH/A = CN (国行), JP/A = Japan, KH/A = Korea, B/A = UK/EU
+  * Set "region" based on the suffix you read. Do NOT guess — read it from the label.
+  * The model number is usually printed near "Model" or "Modelo" on the box label.
+  * If the label is in Traditional Chinese (繁體中文) it is likely HK. If Simplified Chinese (简体中文) it is likely CN.
 - If you see multiple labels/stickers/boxes, each one is a SEPARATE phone — return an array
 - Only return the JSON, no other text"""
 
@@ -424,12 +428,18 @@ def handle_photo(msg):
         if ctx.get("store"):
             entry["store"] = ctx["store"]
 
-        # Region: user context > model number detection > Claude guess
+        # Region: user context > model number detection > raw OCR scan > Claude guess > default
         # Model number suffix (LL/A, ZA/A, CH/A) is the definitive source of truth
         if ctx.get("region"):
             entry["region"] = ctx["region"]
         else:
             detected = detect_region_from_model(entry.get("model_number", ""))
+            if not detected and raw:
+                # Fallback: scan the raw OCR text for any model number with region suffix
+                import re
+                raw_match = re.search(r'[A-Z0-9]{4,6}(LL|ZA|ZP|CH|JP|KH|B)/[A-Z]', raw.upper())
+                if raw_match:
+                    detected = MODEL_REGION_MAP.get(raw_match.group(1))
             if detected:
                 entry["region"] = detected
             elif not entry.get("region"):
