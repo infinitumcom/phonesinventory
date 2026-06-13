@@ -287,6 +287,9 @@ Each phone object should have these fields (use empty string if not found):
 
 IMPORTANT:
 - Read ALL text carefully including tiny print and barcodes with numbers below them
+- COLOR: You MUST read the color name DIRECTLY from the printed text on the label/box. Do NOT guess the color from the image appearance. The label always prints the color name explicitly (e.g. "Silver", "Black Titanium", "Desert Titanium", "Natural Titanium", "White Titanium"). Use EXACTLY what is printed on the label.
+- For "color" field: translate the printed English color name to Chinese (e.g. Silver→银色, Black→黑色, Gold→金色, Natural Titanium→原色钛金属, Desert Titanium→沙漠钛金属, White Titanium→白色钛金属, Black Titanium→黑色钛金属)
+- For "color_en" field: use the EXACT English color name as printed on the label
 - IMEI is labeled "IMEI/MEID" or "IMEI" on the box — it is exactly 15 digits, usually starting with 35 or 86
 - IMEI2 is labeled "IMEI2" — also 15 digits
 - EID is labeled "EID" — it is 32 digits starting with 8904, this is the eSIM identifier, NOT an IMEI. Put it in the "eid" field, NEVER in "imei"
@@ -296,7 +299,7 @@ IMPORTANT:
 - Only return the JSON, no other text"""
 
     body = json.dumps({
-        "model": "claude-haiku-4-5-20251001",
+        "model": "claude-sonnet-4-6",
         "max_tokens": 4096,
         "messages": [{
             "role": "user",
