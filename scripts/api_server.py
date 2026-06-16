@@ -271,13 +271,23 @@ class APIHandler(BaseHTTPRequestHandler):
         try:
             with db_lock:
                 conn = get_db()
-                row = conn.execute("SELECT id FROM inventory WHERE imei = ?", (imei,)).fetchone()
-                if not row:
+                try:
+                    row = conn.execute("SELECT id, status FROM inventory WHERE imei = ?", (imei,)).fetchone()
+                    if not row:
+                        return json_response(self, {'error': 'Record not found'}, 404)
+                    # Prevent deleting sold phones with active sales
+                    if row['status'] == 'sold':
+                        sale = conn.execute(
+                            "SELECT id FROM sales WHERE imei = ? AND status = 'completed'", (imei,)
+                        ).fetchone()
+                        if sale:
+                            return json_response(self, {
+                                'error': f'Cannot delete: phone has active sale ({sale["id"]})'
+                            }, 400)
+                    conn.execute("DELETE FROM inventory WHERE imei = ?", (imei,))
+                    conn.commit()
+                finally:
                     conn.close()
-                    return json_response(self, {'error': 'Record not found'}, 404)
-                conn.execute("DELETE FROM inventory WHERE imei = ?", (imei,))
-                conn.commit()
-                conn.close()
             return json_response(self, {'ok': True})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
@@ -287,48 +297,59 @@ class APIHandler(BaseHTTPRequestHandler):
     def create_sale(self):
         try:
             data = self.read_body()
-            imei = data.get('imei', '')
+            imei = data.get('imei', '').strip()
             if not imei:
                 return json_response(self, {'error': 'IMEI required'}, 400)
+            # Validate IMEI format
+            digits = ''.join(c for c in imei if c.isdigit())
+            if len(digits) != 15:
+                return json_response(self, {'error': 'IMEI must be 15 digits'}, 400)
+            imei = digits
 
             with db_lock:
                 conn = get_db()
-                # Check duplicate
-                existing = conn.execute(
-                    "SELECT id FROM sales WHERE imei = ? AND status = 'completed'", (imei,)
-                ).fetchone()
-                if existing:
-                    conn.close()
-                    return json_response(self, {
-                        'error': f'此手机已售出 (订单: {existing["id"]})',
-                        'duplicate': True,
-                        'existing_id': existing['id']
-                    }, 409)
+                try:
+                    # Check duplicate sale
+                    existing = conn.execute(
+                        "SELECT id FROM sales WHERE imei = ? AND status = 'completed'", (imei,)
+                    ).fetchone()
+                    if existing:
+                        return json_response(self, {
+                            'error': f'此手机已售出 (订单: {existing["id"]})',
+                            'duplicate': True,
+                            'existing_id': existing['id']
+                        }, 409)
 
-                now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
-                store_name = normalize_store_name(data.get('store', ''))
-                conn.execute("""
-                    INSERT INTO sales (id, imei, phone_name, storage, color, color_en, cond, region,
-                        cost, msrp, price, tax, total, profit, tax_applied, tax_rate,
-                        customer, customer_phone, customer_email, payment_methods,
-                        store, store_key, seller, status, created_at)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-                """, (
-                    data.get('id', ''), imei, data.get('phoneName', ''),
-                    data.get('storage', ''), data.get('color', ''), data.get('colorEn', ''),
-                    data.get('cond', ''), data.get('region', ''),
-                    data.get('cost', 0), data.get('msrp', 0), data.get('price', 0),
-                    data.get('tax', 0), data.get('total', 0), data.get('profit', 0),
-                    1 if data.get('taxApplied') else 0, data.get('taxRate', 0),
-                    data.get('customer', ''), data.get('customerPhone', ''),
-                    data.get('customerEmail', ''), json.dumps(data.get('paymentMethods', [])),
-                    store_name, data.get('storeKey', ''),
-                    data.get('seller', ''), 'completed', now
-                ))
-                # Mark phone as sold in inventory
-                conn.execute("UPDATE inventory SET status = 'sold' WHERE imei = ?", (imei,))
-                conn.commit()
-                conn.close()
+                    # Verify phone exists in inventory
+                    inv = conn.execute("SELECT id FROM inventory WHERE imei = ?", (imei,)).fetchone()
+                    if not inv:
+                        return json_response(self, {'error': 'IMEI not found in inventory'}, 404)
+
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    store_name = normalize_store_name(data.get('store', ''))
+                    conn.execute("""
+                        INSERT INTO sales (id, imei, phone_name, storage, color, color_en, cond, region,
+                            cost, msrp, price, tax, total, profit, tax_applied, tax_rate,
+                            customer, customer_phone, customer_email, payment_methods,
+                            store, store_key, seller, status, created_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    """, (
+                        data.get('id', ''), imei, data.get('phoneName', ''),
+                        data.get('storage', ''), data.get('color', ''), data.get('colorEn', ''),
+                        data.get('cond', ''), data.get('region', ''),
+                        data.get('cost', 0), data.get('msrp', 0), data.get('price', 0),
+                        data.get('tax', 0), data.get('total', 0), data.get('profit', 0),
+                        1 if data.get('taxApplied') else 0, data.get('taxRate', 0),
+                        data.get('customer', ''), data.get('customerPhone', ''),
+                        data.get('customerEmail', ''), json.dumps(data.get('paymentMethods', [])),
+                        store_name, data.get('storeKey', ''),
+                        data.get('seller', ''), 'completed', now
+                    ))
+                    # Mark phone as sold in inventory
+                    conn.execute("UPDATE inventory SET status = 'sold' WHERE imei = ?", (imei,))
+                    conn.commit()
+                finally:
+                    conn.close()
 
             return json_response(self, {'ok': True, 'id': data.get('id', '')})
         except Exception as e:
@@ -372,15 +393,20 @@ class APIHandler(BaseHTTPRequestHandler):
             data = self.read_body()
             with db_lock:
                 conn = get_db()
-                status = data.get('status', '')
-                if status == 'returned':
-                    conn.execute("UPDATE sales SET status = 'returned' WHERE id = ?", (sale_id,))
-                    # Get IMEI and mark phone as available again
-                    row = conn.execute("SELECT imei FROM sales WHERE id = ?", (sale_id,)).fetchone()
-                    if row:
+                try:
+                    status = data.get('status', '')
+                    if status == 'returned':
+                        # Query IMEI FIRST, before updating status
+                        row = conn.execute("SELECT imei, status FROM sales WHERE id = ?", (sale_id,)).fetchone()
+                        if not row:
+                            return json_response(self, {'error': 'Sale not found'}, 404)
+                        if row['status'] == 'returned':
+                            return json_response(self, {'error': 'Already returned'}, 400)
+                        conn.execute("UPDATE sales SET status = 'returned' WHERE id = ?", (sale_id,))
                         conn.execute("UPDATE inventory SET status = 'available' WHERE imei = ?", (row['imei'],))
-                conn.commit()
-                conn.close()
+                    conn.commit()
+                finally:
+                    conn.close()
             return json_response(self, {'ok': True})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
@@ -401,19 +427,27 @@ class APIHandler(BaseHTTPRequestHandler):
             data = self.read_body()
             with db_lock:
                 conn = get_db()
-                now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
-                conn.execute("""
-                    INSERT INTO transfers (id, imei, phone_name, from_store, to_store,
-                        requested_by, status, notes, created_at, updated_at)
-                    VALUES (?,?,?,?,?,?,?,?,?,?)
-                """, (
-                    data.get('id', ''), data.get('imei', ''), data.get('phoneName', ''),
-                    data.get('fromStore', ''), data.get('toStore', ''),
-                    data.get('requestedBy', ''), 'pending',
-                    data.get('notes', ''), now, now
-                ))
-                conn.commit()
-                conn.close()
+                try:
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    conn.execute("""
+                        INSERT INTO transfers (id, imei, phone_name, from_store, to_store,
+                            requested_by, status, notes, created_at, updated_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?)
+                    """, (
+                        data.get('id', ''), data.get('imei', ''), data.get('phoneName', ''),
+                        data.get('fromStore', ''), data.get('toStore', ''),
+                        data.get('requestedBy', ''), 'pending',
+                        data.get('notes', ''), now, now
+                    ))
+                    # Lock the phone at the origin store as in-transit:
+                    # it stays in from_store (visible) but is no longer sellable.
+                    conn.execute(
+                        "UPDATE inventory SET status='transit' WHERE imei=? AND status='available'",
+                        (data.get('imei', ''),)
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
             return json_response(self, {'ok': True, 'id': data.get('id', '')})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
@@ -440,54 +474,78 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'error': str(e)}, 500)
 
     def update_transfer(self, transfer_id):
+        # Valid state transitions
+        VALID_TRANSITIONS = {
+            'approved': ('pending',),
+            'rejected': ('pending',),
+            # One-step model: receiving store confirms a pending request directly.
+            # 'approved' kept for backward compatibility (admin two-step flow).
+            'completed': ('pending', 'approved'),
+            'cancelled': ('pending',),
+            'returned': ('approved', 'completed'),
+        }
         try:
             data = self.read_body()
+            new_status = data.get('status', '')
+            if new_status not in VALID_TRANSITIONS:
+                return json_response(self, {'error': f'Invalid status: {new_status}'}, 400)
+
             with db_lock:
                 conn = get_db()
-                status = data.get('status', '')
-                now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
-                if status == 'approved':
-                    conn.execute(
-                        "UPDATE transfers SET status='approved', approved_by=?, updated_at=? WHERE id=?",
-                        (data.get('approvedBy', ''), now, transfer_id)
-                    )
-                    # Move phone to target store — normalize slug to display name
-                    row = conn.execute("SELECT imei, to_store FROM transfers WHERE id=?", (transfer_id,)).fetchone()
-                    if row:
+                try:
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    # Always fetch current state first
+                    row = conn.execute(
+                        "SELECT imei, from_store, to_store, status FROM transfers WHERE id=?",
+                        (transfer_id,)
+                    ).fetchone()
+                    if not row:
+                        return json_response(self, {'error': 'Transfer not found'}, 404)
+
+                    current_status = row['status']
+                    if current_status not in VALID_TRANSITIONS[new_status]:
+                        return json_response(self, {
+                            'error': f'Cannot change from {current_status} to {new_status}'
+                        }, 400)
+
+                    if new_status == 'approved':
+                        conn.execute(
+                            "UPDATE transfers SET status='approved', approved_by=?, updated_at=? WHERE id=?",
+                            (data.get('approvedBy', ''), now, transfer_id)
+                        )
                         target_store = normalize_store_name(row['to_store'])
                         conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=?",
                                      (target_store, row['imei']))
-                elif status == 'rejected':
-                    conn.execute(
-                        "UPDATE transfers SET status='rejected', rejected_by=?, updated_at=? WHERE id=?",
-                        (data.get('rejectedBy', ''), now, transfer_id)
-                    )
-                    # Restore phone status from reserved to available
-                    row = conn.execute("SELECT imei FROM transfers WHERE id=?", (transfer_id,)).fetchone()
-                    if row:
-                        conn.execute("UPDATE inventory SET status='available' WHERE imei=? AND status='reserved'",
+
+                    elif new_status == 'rejected':
+                        # Receiving store rejected: unlock phone, it stays in origin store.
+                        conn.execute(
+                            "UPDATE transfers SET status='rejected', rejected_by=?, updated_at=? WHERE id=?",
+                            (data.get('rejectedBy', ''), now, transfer_id)
+                        )
+                        conn.execute("UPDATE inventory SET status='available' WHERE imei=? AND status IN ('transit','reserved')",
                                      (row['imei'],))
-                elif status == 'completed':
-                    conn.execute(
-                        "UPDATE transfers SET status='completed', updated_at=? WHERE id=?",
-                        (now, transfer_id)
-                    )
-                elif status == 'cancelled':
-                    # Requester cancels a pending transfer — restore phone to available
-                    row = conn.execute("SELECT imei, status as ts FROM transfers WHERE id=?", (transfer_id,)).fetchone()
-                    if row and row['ts'] == 'pending':
+
+                    elif new_status == 'completed':
+                        # Receiving store confirmed: move phone to destination store, make it sellable.
+                        conn.execute(
+                            "UPDATE transfers SET status='completed', updated_at=? WHERE id=?",
+                            (now, transfer_id)
+                        )
+                        target_store = normalize_store_name(row['to_store'])
+                        conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=?",
+                                     (target_store, row['imei']))
+
+                    elif new_status == 'cancelled':
+                        # Origin store withdrew the request: unlock phone in origin store.
                         conn.execute(
                             "UPDATE transfers SET status='cancelled', updated_at=? WHERE id=?",
                             (now, transfer_id)
                         )
-                        conn.execute("UPDATE inventory SET status='available' WHERE imei=?", (row['imei'],))
-                    else:
-                        conn.close()
-                        return json_response(self, {'error': 'Only pending transfers can be cancelled'}, 400)
-                elif status == 'returned':
-                    # Return a transit/completed transfer — move phone back to original store
-                    row = conn.execute("SELECT imei, from_store, status as ts FROM transfers WHERE id=?", (transfer_id,)).fetchone()
-                    if row and row['ts'] in ('approved', 'completed'):
+                        conn.execute("UPDATE inventory SET status='available' WHERE imei=? AND status IN ('transit','reserved')",
+                                     (row['imei'],))
+
+                    elif new_status == 'returned':
                         original_store = normalize_store_name(row['from_store'])
                         conn.execute(
                             "UPDATE transfers SET status='returned', updated_at=? WHERE id=?",
@@ -495,11 +553,10 @@ class APIHandler(BaseHTTPRequestHandler):
                         )
                         conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=?",
                                      (original_store, row['imei']))
-                    else:
-                        conn.close()
-                        return json_response(self, {'error': 'Only in-transit or completed transfers can be returned'}, 400)
-                conn.commit()
-                conn.close()
+
+                    conn.commit()
+                finally:
+                    conn.close()
             return json_response(self, {'ok': True})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
@@ -539,16 +596,18 @@ class APIHandler(BaseHTTPRequestHandler):
                 sr_id = 'SR-' + datetime.now(PST).strftime('%Y%m%d%H%M%S')
                 with db_lock:
                     conn = get_db()
-                    conn.execute("""
-                        INSERT INTO stock_requests (id, requested_by, store, model, items, qty, note, status, created_at, updated_at)
-                        VALUES (?,?,?,?,?,?,?,'pending',?,?)
-                    """, (
-                        sr_id, data.get('requestedBy', ''), data.get('store', ''),
-                        data.get('model', ''), json.dumps(data.get('items', [])),
-                        data.get('qty', 1), data.get('note', ''), now, now
-                    ))
-                    conn.commit()
-                    conn.close()
+                    try:
+                        conn.execute("""
+                            INSERT INTO stock_requests (id, requested_by, store, model, items, qty, note, status, created_at, updated_at)
+                            VALUES (?,?,?,?,?,?,?,'pending',?,?)
+                        """, (
+                            sr_id, data.get('requestedBy', ''), data.get('store', ''),
+                            data.get('model', ''), json.dumps(data.get('items', [])),
+                            data.get('qty', 1), data.get('note', ''), now, now
+                        ))
+                        conn.commit()
+                    finally:
+                        conn.close()
                 return json_response(self, {'ok': True, 'data': {'id': sr_id}})
 
             elif action in ('approve', 'reject', 'fulfill'):
@@ -556,16 +615,27 @@ class APIHandler(BaseHTTPRequestHandler):
                 by = data.get('by', '')
                 status_map = {'approve': 'approved', 'reject': 'rejected', 'fulfill': 'fulfilled'}
                 new_status = status_map[action]
-                col_map = {'approve': 'approved_by', 'reject': 'approved_by', 'fulfill': 'fulfilled_by'}
-                col = col_map[action]
                 with db_lock:
                     conn = get_db()
-                    conn.execute(
-                        f"UPDATE stock_requests SET status=?, {col}=?, updated_at=? WHERE id=?",
-                        (new_status, by, now, sr_id)
-                    )
-                    conn.commit()
-                    conn.close()
+                    try:
+                        if action == 'approve':
+                            conn.execute(
+                                "UPDATE stock_requests SET status=?, approved_by=?, updated_at=? WHERE id=?",
+                                (new_status, by, now, sr_id)
+                            )
+                        elif action == 'reject':
+                            conn.execute(
+                                "UPDATE stock_requests SET status=?, approved_by=?, updated_at=? WHERE id=?",
+                                (new_status, by, now, sr_id)
+                            )
+                        elif action == 'fulfill':
+                            conn.execute(
+                                "UPDATE stock_requests SET status=?, fulfilled_by=?, updated_at=? WHERE id=?",
+                                (new_status, by, now, sr_id)
+                            )
+                        conn.commit()
+                    finally:
+                        conn.close()
                 return json_response(self, {'ok': True})
 
             else:
@@ -590,51 +660,51 @@ class APIHandler(BaseHTTPRequestHandler):
 
             with db_lock:
                 conn = get_db()
-                # Check old record exists
-                row = conn.execute("SELECT id FROM inventory WHERE imei = ?", (old_imei,)).fetchone()
-                if not row:
+                try:
+                    # Check old record exists
+                    row = conn.execute("SELECT id FROM inventory WHERE imei = ?", (old_imei,)).fetchone()
+                    if not row:
+                        return json_response(self, {'error': 'Record not found'}, 404)
+
+                    if new_imei and new_imei != old_imei:
+                        # Check new IMEI not duplicate
+                        dup = conn.execute("SELECT id FROM inventory WHERE imei = ? AND imei != ?",
+                                           (new_imei, old_imei)).fetchone()
+                        if dup:
+                            return json_response(self, {'error': 'New IMEI already exists'}, 409)
+                        conn.execute("UPDATE inventory SET imei = ? WHERE imei = ?", (new_imei, old_imei))
+
+                    target_imei = new_imei or old_imei
+
+                    # Update other fields if provided
+                    if data.get('store'):
+                        conn.execute("UPDATE inventory SET store = ? WHERE imei = ?",
+                                     (normalize_store_name(data['store']), target_imei))
+                    if data.get('model'):
+                        conn.execute("UPDATE inventory SET model = ? WHERE imei = ?",
+                                     (data['model'], target_imei))
+                    if data.get('color'):
+                        conn.execute("UPDATE inventory SET color = ? WHERE imei = ?",
+                                     (data['color'], target_imei))
+                    if data.get('color_en'):
+                        conn.execute("UPDATE inventory SET color_en = ? WHERE imei = ?",
+                                     (data['color_en'], target_imei))
+                    if data.get('condition'):
+                        conn.execute("UPDATE inventory SET condition = ? WHERE imei = ?",
+                                     (data['condition'], target_imei))
+                    if data.get('region'):
+                        conn.execute("UPDATE inventory SET region = ? WHERE imei = ?",
+                                     (data['region'], target_imei))
+                    if data.get('storage'):
+                        conn.execute("UPDATE inventory SET storage = ? WHERE imei = ?",
+                                     (data['storage'], target_imei))
+                    if data.get('status') and data['status'] in ('available', 'reserved', 'sold'):
+                        conn.execute("UPDATE inventory SET status = ? WHERE imei = ?",
+                                     (data['status'], target_imei))
+
+                    conn.commit()
+                finally:
                     conn.close()
-                    return json_response(self, {'error': 'Record not found'}, 404)
-
-                if new_imei and new_imei != old_imei:
-                    # Check new IMEI not duplicate
-                    dup = conn.execute("SELECT id FROM inventory WHERE imei = ? AND imei != ?",
-                                       (new_imei, old_imei)).fetchone()
-                    if dup:
-                        conn.close()
-                        return json_response(self, {'error': 'New IMEI already exists'}, 409)
-                    conn.execute("UPDATE inventory SET imei = ? WHERE imei = ?", (new_imei, old_imei))
-
-                target_imei = new_imei or old_imei
-
-                # Update other fields if provided
-                if data.get('store'):
-                    conn.execute("UPDATE inventory SET store = ? WHERE imei = ?",
-                                 (normalize_store_name(data['store']), target_imei))
-                if data.get('model'):
-                    conn.execute("UPDATE inventory SET model = ? WHERE imei = ?",
-                                 (data['model'], target_imei))
-                if data.get('color'):
-                    conn.execute("UPDATE inventory SET color = ? WHERE imei = ?",
-                                 (data['color'], target_imei))
-                if data.get('color_en'):
-                    conn.execute("UPDATE inventory SET color_en = ? WHERE imei = ?",
-                                 (data['color_en'], target_imei))
-                if data.get('condition'):
-                    conn.execute("UPDATE inventory SET condition = ? WHERE imei = ?",
-                                 (data['condition'], target_imei))
-                if data.get('region'):
-                    conn.execute("UPDATE inventory SET region = ? WHERE imei = ?",
-                                 (data['region'], target_imei))
-                if data.get('storage'):
-                    conn.execute("UPDATE inventory SET storage = ? WHERE imei = ?",
-                                 (data['storage'], target_imei))
-                if data.get('status') and data['status'] in ('available', 'reserved', 'sold'):
-                    conn.execute("UPDATE inventory SET status = ? WHERE imei = ?",
-                                 (data['status'], target_imei))
-
-                conn.commit()
-                conn.close()
 
             return json_response(self, {'ok': True, 'imei': target_imei})
         except Exception as e:
@@ -699,12 +769,14 @@ class APIHandler(BaseHTTPRequestHandler):
             now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
             with db_lock:
                 conn = get_db()
-                conn.execute(
-                    "INSERT OR REPLACE INTO user_pins (email, pin, changed_at) VALUES (?, ?, ?)",
-                    (email, pin, now)
-                )
-                conn.commit()
-                conn.close()
+                try:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO user_pins (email, pin, changed_at) VALUES (?, ?, ?)",
+                        (email, pin, now)
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
             return json_response(self, {'ok': True})
         except Exception as e:
             print(f"[API] Error changing PIN: {e}")
