@@ -9431,7 +9431,14 @@ function renderDashboard() {
   }
 
   // --- Sidebar transfer badge ---
-  var pendingTransfers = transfers.filter(function(t){ return t.status === 'pending'; }).length;
+  // For store staff, show only incoming transfers awaiting THEIR confirmation; admins see all pending.
+  var _badgeStoreK = normalizeStoreKey((window._currentAccount || {}).store || '');
+  var _badgeIsAdmin = (window._currentAccount || {}).role === 'admin';
+  var pendingTransfers = transfers.filter(function(t){
+    if (t.status !== 'pending') return false;
+    if (_badgeIsAdmin || !_badgeStoreK) return true;
+    return normalizeStoreKey(t.toStore || t.toStoreName || '') === _badgeStoreK;
+  }).length;
   var trBadge = document.querySelector('.nav-item[onclick*="transfer"] .nav-badge');
   if (trBadge) {
     trBadge.textContent = pendingTransfers;

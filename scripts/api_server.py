@@ -321,9 +321,14 @@ class APIHandler(BaseHTTPRequestHandler):
                         }, 409)
 
                     # Verify phone exists in inventory
-                    inv = conn.execute("SELECT id FROM inventory WHERE imei = ?", (imei,)).fetchone()
+                    inv = conn.execute("SELECT id, status FROM inventory WHERE imei = ?", (imei,)).fetchone()
                     if not inv:
                         return json_response(self, {'error': 'IMEI not found in inventory'}, 404)
+                    # Block selling a phone that is currently being transferred between stores
+                    if inv['status'] == 'transit':
+                        return json_response(self, {
+                            'error': '此手机正在调拨中，无法销售 / Phone is in transit, cannot sell'
+                        }, 409)
 
                     now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
                     store_name = normalize_store_name(data.get('store', ''))
@@ -425,10 +430,22 @@ class APIHandler(BaseHTTPRequestHandler):
     def create_transfer(self):
         try:
             data = self.read_body()
+            imei = data.get('imei', '')
             with db_lock:
                 conn = get_db()
                 try:
                     now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    # Validate the phone is actually transferable before creating a request.
+                    inv = conn.execute("SELECT status FROM inventory WHERE imei=?", (imei,)).fetchone()
+                    if not inv:
+                        return json_response(self, {'error': 'IMEI 不在库存中 / Phone not found in inventory'}, 404)
+                    if inv['status'] != 'available':
+                        msg = {
+                            'sold': '此手机已售出',
+                            'transit': '此手机已在调拨中',
+                            'reserved': '此手机已被预留',
+                        }.get(inv['status'], '此手机当前不可调拨')
+                        return json_response(self, {'error': msg + ' / Phone not available for transfer'}, 409)
                     conn.execute("""
                         INSERT INTO transfers (id, imei, phone_name, from_store, to_store,
                             requested_by, status, notes, created_at, updated_at)
@@ -507,6 +524,17 @@ class APIHandler(BaseHTTPRequestHandler):
                         return json_response(self, {
                             'error': f'Cannot change from {current_status} to {new_status}'
                         }, 400)
+
+                    # Guard: never resurrect a phone that was sold while the transfer
+                    # was pending. Moves that make a phone 'available' must not run on sold stock.
+                    if new_status in ('approved', 'completed', 'returned'):
+                        inv_row = conn.execute(
+                            "SELECT status FROM inventory WHERE imei=?", (row['imei'],)
+                        ).fetchone()
+                        if inv_row and inv_row['status'] == 'sold':
+                            return json_response(self, {
+                                'error': '此手机已售出，无法完成调拨 / Phone already sold, cannot complete transfer'
+                            }, 409)
 
                     if new_status == 'approved':
                         conn.execute(
