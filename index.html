@@ -12503,9 +12503,40 @@ if (!window.initDynamicUI) {
     }).catch(function(e) { console.log('Failed to load transfers from server', e); });
   };
 
+  // Reconcile live inventory (status + owning store) from server into phones[].
+  // phones[] base data comes from phones.js (regenerated every 2 min); this keeps
+  // status/store changes — especially cross-store transfers — visible without a
+  // full page reload. Only known phones are reconciled; new bot-scanned phones
+  // still arrive via the phones.js refresh on reload.
+  window.loadServerInventory = function() {
+    apiCall('GET', '/inventory').then(function(res) {
+      if (!res || !res.inventory) return;
+      var byImei = {};
+      res.inventory.forEach(function(it){ if (it && it.imei) byImei[it.imei] = it; });
+      var changed = false;
+      phones.forEach(function(p) {
+        if (!p || !p.imei) return;
+        var srv = byImei[p.imei];
+        if (!srv) return;
+        if (srv.status && p.status !== srv.status) { p.status = srv.status; changed = true; }
+        if (srv.store && p.store !== srv.store) {
+          p.store = srv.store;
+          var k = normalizeStoreKey(srv.store);
+          p.storeName = (STORE_DATA[k] && STORE_DATA[k].nameEn) || srv.store;
+          changed = true;
+        }
+      });
+      if (changed) {
+        try { renderInventory(); } catch(e){}
+        try { renderDashboard(); } catch(e){}
+      }
+    }).catch(function(e) { console.log('Failed to sync inventory from server', e); });
+  };
+
   window.initDynamicUI = function(account) {
     // Sync data from server
     try { syncSoldStatus(); } catch(e){}
+    try { loadServerInventory(); } catch(e){}
     try { loadServerSales(); } catch(e){}
     try { loadServerTransfers(); } catch(e){}
 
@@ -12555,6 +12586,7 @@ if (!window.initDynamicUI) {
     if (!window._syncInterval) {
       window._syncInterval = setInterval(function() {
         try { syncSoldStatus(); } catch(e){}
+        try { loadServerInventory(); } catch(e){}
         try { loadServerSales(); } catch(e){}
         try { loadServerTransfers(); } catch(e){}
       }, 30000);
