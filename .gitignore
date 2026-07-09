@@ -11,3 +11,6 @@ data/phones.js
 .DS_Store
 __pycache__/
 *.pyc
+data/inventory.db-shm
+data/inventory.db-wal
+data/phones.js
