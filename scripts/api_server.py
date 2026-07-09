@@ -4,20 +4,139 @@ PhoneInventory API Server
 Minimal REST API for cross-device data sync (sales, transfers, etc.)
 Runs alongside the Telegram bot.
 """
+import base64
+import hashlib
+import hmac
 import json
 import os
+import secrets
 import sqlite3
+import sys
 import threading
+import time
+import urllib.request
 from datetime import datetime, timezone, timedelta
-from http.server import HTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs
+from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs, quote
 
-DEPLOY_DIR = os.environ.get("DEPLOY_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import env_loader
+import export_inventory
+import mailer
+
+DEPLOY_DIR = env_loader.DEPLOY_DIR
 DB_PATH = os.path.join(DEPLOY_DIR, "data", "inventory.db")
 API_PORT = int(os.environ.get("API_PORT", "8580"))
 PST = timezone(timedelta(hours=-7))
 
+# ─── Auth config ───
+AUTH_SECRET = env_loader.require_env("AUTH_SECRET").encode()
+TOKEN_TTL = 30 * 86400          # login token lifetime: 30 days
+DEFAULT_PIN = "888888"
+IMEI_API_KEY = os.environ.get("IMEI_API_KEY", "")
+ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "https://phonesinventory.com")
+
+# Endpoints reachable without a token
+PUBLIC_PATHS = {
+    ('POST', '/api/login'),
+    ('POST', '/api/pin-reset/request'),
+    ('POST', '/api/pin-reset/confirm'),
+    ('GET', '/api/health'),
+}
+
+# Login accounts (seeded into users table; PINs live in user_pins as salted hashes)
+SEED_USERS = [
+    ('anderson@ifixforu.com', 'Andy Wang', 'admin', 'all'),
+    ('jayden@ifixforu.com', 'Jayden Sun', 'staff', 'Alhambra'),
+    ('steve@ifixforu.com', 'Steve Shen', 'staff', 'Monterey Park'),
+    ('harry@ifixforu.com', 'Harry Zou', 'staff', 'San Gabriel'),
+    ('bill@ifixforu.com', 'Bill Han', 'staff', 'Rowland Heights'),
+    ('will@ifixforu.com', 'Will Jiang', 'staff', 'Arcadia 1'),
+    ('kelvin@ifixforu.com', 'Kelvin Liu', 'staff', 'Arcadia 2'),
+    ('cici@ifixforu.com', 'Cici', 'staff', 'Irvine'),
+    ('feiyang@ifixforu.com', 'Feiyang Zhao', 'staff', 'Rancho Cucamonga'),
+    ('jason@ifixforu.com', 'Jason Zeng', 'staff', 'Las Vegas'),
+    ('chester@ifixforu.com', 'Chester', 'staff', 'Alhambra'),
+    ('grace@ifixforu.com', 'Grace', 'staff', 'Las Vegas'),
+    ('bobby@ifixforu.com', 'Bobby', 'staff', 'Monterey Park'),
+]
+
 db_lock = threading.Lock()
+
+# ─── PIN hashing (sha256$<salt>$<hex>) ───
+
+def hash_pin(pin, salt=None):
+    salt = salt or secrets.token_hex(8)
+    digest = hashlib.sha256((salt + pin).encode()).hexdigest()
+    return f"sha256${salt}${digest}"
+
+
+def verify_pin(pin, stored):
+    if not stored:
+        return False
+    stored = str(stored)
+    if stored.startswith("sha256$"):
+        try:
+            _, salt, digest = stored.split("$", 2)
+        except ValueError:
+            return False
+        return hmac.compare_digest(hashlib.sha256((salt + pin).encode()).hexdigest(), digest)
+    # Legacy plaintext row (pre-migration safety net)
+    return hmac.compare_digest(stored, pin)
+
+
+# ─── Auth tokens (HMAC-signed, 30-day expiry) ───
+
+def make_token(email):
+    exp = int(time.time()) + TOKEN_TTL
+    payload = f"{email}|{exp}"
+    sig = hmac.new(AUTH_SECRET, payload.encode(), hashlib.sha256).hexdigest()
+    return base64.urlsafe_b64encode(f"{payload}|{sig}".encode()).decode()
+
+
+def verify_token(token):
+    """Return email if token is valid and unexpired, else None."""
+    try:
+        payload = base64.urlsafe_b64decode(token.encode()).decode()
+        email, exp, sig = payload.rsplit("|", 2)
+        expected = hmac.new(AUTH_SECRET, f"{email}|{exp}".encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            return None
+        if int(exp) < time.time():
+            return None
+        return email
+    except Exception:
+        return None
+
+
+# ─── In-memory rate limiting (single process) ───
+
+_rate_lock = threading.Lock()
+_login_fails = {}   # "email|ip" -> [timestamps]
+_reset_sends = {}   # email -> [timestamps]
+
+
+def _too_many(bucket, key, limit, window):
+    now = time.time()
+    with _rate_lock:
+        recent = [t for t in bucket.get(key, []) if now - t < window]
+        bucket[key] = recent
+        return len(recent) >= limit
+
+
+def _record(bucket, key):
+    with _rate_lock:
+        bucket.setdefault(key, []).append(time.time())
+
+
+def _notify_pin_changed(email, name):
+    """Best-effort PIN-change notice (background thread)."""
+    if not mailer.is_configured():
+        return
+    try:
+        mailer.send_pin_changed_notice(email, name)
+    except Exception as e:
+        print(f"[API] Failed to send PIN change notice to {email}: {e}")
 
 # ─── Store Name Normalization ───
 # Slug key → display name mapping (must match STORE_DATA in index.html)
@@ -54,10 +173,31 @@ def normalize_store_name(raw):
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=15)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     return conn
+
+
+def get_user(conn, email):
+    return conn.execute(
+        "SELECT email, name, role, store FROM users WHERE email = ?", (email,)
+    ).fetchone()
+
+
+def check_user_pin(conn, email, pin):
+    """True if pin matches the stored (or default) PIN for email."""
+    row = conn.execute("SELECT pin FROM user_pins WHERE email = ?", (email,)).fetchone()
+    if row:
+        return verify_pin(pin, row['pin'])
+    return pin == DEFAULT_PIN
+
+
+def pin_is_default(conn, email):
+    row = conn.execute("SELECT pin FROM user_pins WHERE email = ?", (email,)).fetchone()
+    if row:
+        return verify_pin(DEFAULT_PIN, row['pin'])
+    return True
 
 
 def init_api_tables():
@@ -130,18 +270,50 @@ def init_api_tables():
             pin TEXT NOT NULL,
             changed_at TEXT
         );
+
+        CREATE TABLE IF NOT EXISTS users (
+            email TEXT PRIMARY KEY,
+            name TEXT,
+            role TEXT DEFAULT 'staff',
+            store TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS pin_reset_codes (
+            email TEXT PRIMARY KEY,
+            code_hash TEXT,
+            expires_at INTEGER,
+            attempts INTEGER DEFAULT 0
+        );
     """)
+    # Seed login accounts (never overwrites existing rows)
+    conn.executemany(
+        "INSERT OR IGNORE INTO users (email, name, role, store) VALUES (?,?,?,?)",
+        SEED_USERS
+    )
+    # Migrate legacy plaintext PINs to salted hashes
+    for r in conn.execute("SELECT email, pin FROM user_pins").fetchall():
+        if not str(r['pin']).startswith('sha256$'):
+            conn.execute("UPDATE user_pins SET pin = ? WHERE email = ?",
+                         (hash_pin(str(r['pin'])), r['email']))
     conn.commit()
     conn.close()
+
+
+def cors_origin(handler):
+    """Production locks CORS to the site origin; localhost allowed for dev."""
+    origin = handler.headers.get('Origin', '')
+    if 'localhost' in origin or '127.0.0.1' in origin:
+        return origin
+    return ALLOWED_ORIGIN
 
 
 def json_response(handler, data, status=200):
     body = json.dumps(data, ensure_ascii=False).encode('utf-8')
     handler.send_response(status)
     handler.send_header('Content-Type', 'application/json; charset=utf-8')
-    handler.send_header('Access-Control-Allow-Origin', '*')
+    handler.send_header('Access-Control-Allow-Origin', cors_origin(handler))
     handler.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-    handler.send_header('Access-Control-Allow-Headers', 'Content-Type')
+    handler.send_header('Access-Control-Allow-Headers', 'Content-Type, X-Auth-Token')
     handler.send_header('Content-Length', len(body))
     handler.end_headers()
     handler.wfile.write(body)
@@ -153,9 +325,9 @@ class APIHandler(BaseHTTPRequestHandler):
 
     def do_OPTIONS(self):
         self.send_response(204)
-        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Origin', cors_origin(self))
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-Auth-Token')
         self.end_headers()
 
     def read_body(self):
@@ -164,13 +336,33 @@ class APIHandler(BaseHTTPRequestHandler):
             return {}
         return json.loads(self.rfile.read(length))
 
+    def check_auth(self, method, path):
+        """Token gate for every endpoint except PUBLIC_PATHS.
+        Returns the authenticated email ('' for public paths), or None
+        after sending a 401 response."""
+        if (method, path) in PUBLIC_PATHS:
+            self._auth_email = None
+            return ''
+        token = self.headers.get('X-Auth-Token', '')
+        email = verify_token(token) if token else None
+        if not email:
+            json_response(self, {'error': 'unauthorized'}, 401)
+            return None
+        self._auth_email = email
+        return email
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path
         params = parse_qs(parsed.query)
 
+        if self.check_auth('GET', path) is None:
+            return
+
         if path == '/api/inventory':
             return self.get_inventory(params)
+        elif path == '/api/phones':
+            return self.get_phones()
         elif path == '/api/sales':
             return self.get_sales(params)
         elif path == '/api/transfers':
@@ -179,6 +371,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.get_stock_requests()
         elif path == '/api/sold-imeis':
             return self.get_sold_imeis()
+        elif path == '/api/imei-check':
+            return self.imei_check(params)
         elif path == '/api/user-pins':
             return self.get_user_pins()
         elif path == '/api/health':
@@ -189,7 +383,16 @@ class APIHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         path = urlparse(self.path).path
 
-        if path == '/api/sale':
+        if self.check_auth('POST', path) is None:
+            return
+
+        if path == '/api/login':
+            return self.login()
+        elif path == '/api/pin-reset/request':
+            return self.pin_reset_request()
+        elif path == '/api/pin-reset/confirm':
+            return self.pin_reset_confirm()
+        elif path == '/api/sale':
             return self.create_sale()
         elif path == '/api/transfer':
             return self.create_transfer()
@@ -202,6 +405,9 @@ class APIHandler(BaseHTTPRequestHandler):
 
     def do_PUT(self):
         path = urlparse(self.path).path
+
+        if self.check_auth('PUT', path) is None:
+            return
 
         if path.startswith('/api/transfer/'):
             transfer_id = path.split('/')[-1]
@@ -218,11 +424,196 @@ class APIHandler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         path = urlparse(self.path).path
 
+        if self.check_auth('DELETE', path) is None:
+            return
+
         if path.startswith('/api/inventory/'):
             imei = path.split('/')[-1]
             return self.delete_inventory(imei)
         else:
             json_response(self, {'error': 'Not found'}, 404)
+
+    # ─── Auth: login / PIN reset ───
+
+    def login(self):
+        try:
+            data = self.read_body()
+            email = str(data.get('email', '')).strip().lower()
+            pin = str(data.get('pin', '')).strip()
+            key = f"{email}|{self.client_address[0]}"
+            if _too_many(_login_fails, key, 10, 900):
+                return json_response(self, {
+                    'error': '尝试次数过多，请15分钟后再试 / Too many attempts, try again in 15 minutes'
+                }, 429)
+            if not email or not pin:
+                return json_response(self, {'error': '邮箱或密码错误 / Incorrect email or PIN'}, 401)
+
+            conn = get_db()
+            try:
+                user = get_user(conn, email)
+                if not user or not check_user_pin(conn, email, pin):
+                    _record(_login_fails, key)
+                    return json_response(self, {'error': '邮箱或密码错误 / Incorrect email or PIN'}, 401)
+                must_change = pin_is_default(conn, email)
+            finally:
+                conn.close()
+
+            return json_response(self, {
+                'ok': True,
+                'token': make_token(email),
+                'account': {'email': user['email'], 'name': user['name'],
+                            'role': user['role'], 'store': user['store']},
+                'mustChangePin': must_change,
+            })
+        except Exception as e:
+            print(f"[API] Error in login: {e}")
+            return json_response(self, {'error': str(e)}, 500)
+
+    def pin_reset_request(self):
+        """Email a 6-digit reset code (10 min validity, 3 sends/hour/email)."""
+        try:
+            if not mailer.is_configured():
+                return json_response(self, {
+                    'error': '邮件服务未配置，请联系管理员 / Email service not configured'
+                }, 503)
+            data = self.read_body()
+            email = str(data.get('email', '')).strip().lower()
+            if not email:
+                return json_response(self, {'error': 'Email required'}, 400)
+            if _too_many(_reset_sends, email, 3, 3600):
+                return json_response(self, {
+                    'error': '请求过于频繁，请稍后再试 / Too many requests, try again later'
+                }, 429)
+
+            conn = get_db()
+            try:
+                user = get_user(conn, email)
+            finally:
+                conn.close()
+            if not user:
+                # Don't reveal whether the account exists
+                return json_response(self, {'ok': True})
+
+            code = f"{secrets.randbelow(1000000):06d}"
+            expires = int(time.time()) + 600
+            with db_lock:
+                conn = get_db()
+                try:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO pin_reset_codes (email, code_hash, expires_at, attempts) VALUES (?,?,?,0)",
+                        (email, hash_pin(code), expires)
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+
+            try:
+                mailer.send_pin_reset_code(email, user['name'], code)
+            except Exception as e:
+                print(f"[API] Failed to send reset code to {email}: {e}")
+                return json_response(self, {
+                    'error': '邮件发送失败，请稍后再试 / Failed to send email'
+                }, 502)
+            _record(_reset_sends, email)
+            return json_response(self, {'ok': True})
+        except Exception as e:
+            print(f"[API] Error in pin_reset_request: {e}")
+            return json_response(self, {'error': str(e)}, 500)
+
+    def pin_reset_confirm(self):
+        """Verify reset code, set new PIN, auto-login (same payload as /api/login)."""
+        try:
+            data = self.read_body()
+            email = str(data.get('email', '')).strip().lower()
+            code = str(data.get('code', '')).strip()
+            new_pin = str(data.get('newPin', '')).strip()
+            if len(new_pin) != 6 or not new_pin.isdigit():
+                return json_response(self, {'error': 'PIN must be 6 digits'}, 400)
+            if new_pin == DEFAULT_PIN:
+                return json_response(self, {'error': 'Cannot use default PIN'}, 400)
+
+            now_ts = int(time.time())
+            now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+            with db_lock:
+                conn = get_db()
+                try:
+                    row = conn.execute(
+                        "SELECT code_hash, expires_at, attempts FROM pin_reset_codes WHERE email = ?",
+                        (email,)
+                    ).fetchone()
+                    if not row or row['expires_at'] < now_ts or row['attempts'] >= 5:
+                        conn.execute("DELETE FROM pin_reset_codes WHERE email = ? AND expires_at < ?",
+                                     (email, now_ts))
+                        conn.commit()
+                        return json_response(self, {
+                            'error': '验证码无效或已过期 / Invalid or expired code'
+                        }, 401)
+                    if not verify_pin(code, row['code_hash']):
+                        conn.execute("UPDATE pin_reset_codes SET attempts = attempts + 1 WHERE email = ?",
+                                     (email,))
+                        conn.commit()
+                        return json_response(self, {'error': '验证码错误 / Incorrect code'}, 401)
+
+                    user = get_user(conn, email)
+                    if not user:
+                        return json_response(self, {'error': 'Account not found'}, 404)
+                    conn.execute(
+                        "INSERT OR REPLACE INTO user_pins (email, pin, changed_at) VALUES (?,?,?)",
+                        (email, hash_pin(new_pin), now)
+                    )
+                    conn.execute("DELETE FROM pin_reset_codes WHERE email = ?", (email,))
+                    conn.commit()
+                finally:
+                    conn.close()
+
+            threading.Thread(target=_notify_pin_changed, args=(email, user['name']), daemon=True).start()
+            return json_response(self, {
+                'ok': True,
+                'token': make_token(email),
+                'account': {'email': user['email'], 'name': user['name'],
+                            'role': user['role'], 'store': user['store']},
+                'mustChangePin': False,
+            })
+        except Exception as e:
+            print(f"[API] Error in pin_reset_confirm: {e}")
+            return json_response(self, {'error': str(e)}, 500)
+
+    # ─── IMEI lookup proxy (keeps the third-party API key server-side) ───
+
+    def imei_check(self, params):
+        try:
+            imei = params.get('imei', [''])[0].strip()
+            srv = params.get('srv', ['1013'])[0].strip()
+            digits = ''.join(c for c in imei if c.isdigit())
+            if len(digits) != 15:
+                return json_response(self, {'error': 'IMEI must be 15 digits'}, 400)
+            if srv not in ('1013', '1010'):
+                return json_response(self, {'error': 'Invalid srv'}, 400)
+            if not IMEI_API_KEY:
+                return json_response(self, {'error': 'IMEI API key not configured'}, 503)
+            url = (f"https://us.gsxunlocking.com/api/uapi?format=json"
+                   f"&key={quote(IMEI_API_KEY)}&srv={srv}&imei={digits}")
+            req = urllib.request.Request(url, headers={'User-Agent': 'PhonesInventory/1.0'})
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                body = resp.read().decode('utf-8', 'replace')
+            try:
+                return json_response(self, json.loads(body))
+            except ValueError:
+                return json_response(self, {'error': 'Upstream returned non-JSON'}, 502)
+        except Exception as e:
+            print(f"[API] IMEI check failed: {e}")
+            return json_response(self, {'error': '查询失败，请稍后再试 / Lookup failed'}, 502)
+
+    # ─── Enriched phones list (replaces the public data/phones.js export) ───
+
+    def get_phones(self):
+        try:
+            conn = get_db()
+            rows = conn.execute("SELECT * FROM inventory ORDER BY id DESC").fetchall()
+            conn.close()
+            return json_response(self, {'phones': export_inventory.build_phones(rows)})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
 
     # ─── Inventory ───
 
@@ -771,28 +1162,34 @@ class APIHandler(BaseHTTPRequestHandler):
     # ─── User PINs ───
 
     def get_user_pins(self):
-        """Return all changed PINs so frontend can merge with hardcoded defaults"""
-        try:
-            conn = get_db()
-            rows = conn.execute("SELECT email, pin FROM user_pins").fetchall()
-            conn.close()
-            pins = {}
-            for r in rows:
-                pins[r['email']] = r['pin']
-            return json_response(self, {'pins': pins})
-        except Exception as e:
-            return json_response(self, {'error': str(e)}, 500)
+        """Retired: PINs are never broadcast anymore (login moved server-side)."""
+        return json_response(self, {'error': 'gone'}, 410)
 
     def change_pin(self):
-        """Save a changed PIN to the database"""
+        """Change own PIN — requires valid token + correct current PIN."""
         try:
             data = self.read_body()
-            email = data.get('email', '').strip().lower()
-            pin = data.get('pin', '').strip()
+            email = str(data.get('email', '')).strip().lower()
+            current_pin = str(data.get('currentPin', '')).strip()
+            pin = str(data.get('pin', '')).strip()
             if not email or not pin:
                 return json_response(self, {'error': 'Email and PIN required'}, 400)
             if len(pin) != 6 or not pin.isdigit():
                 return json_response(self, {'error': 'PIN must be 6 digits'}, 400)
+            if pin == DEFAULT_PIN:
+                return json_response(self, {'error': 'Cannot use default PIN'}, 400)
+            if email != getattr(self, '_auth_email', None):
+                return json_response(self, {'error': 'Can only change your own PIN'}, 403)
+
+            conn = get_db()
+            try:
+                user = get_user(conn, email)
+                if not user:
+                    return json_response(self, {'error': 'Account not found'}, 404)
+                if not check_user_pin(conn, email, current_pin):
+                    return json_response(self, {'error': '当前密码错误 / Incorrect current PIN'}, 401)
+            finally:
+                conn.close()
 
             now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
             with db_lock:
@@ -800,11 +1197,13 @@ class APIHandler(BaseHTTPRequestHandler):
                 try:
                     conn.execute(
                         "INSERT OR REPLACE INTO user_pins (email, pin, changed_at) VALUES (?, ?, ?)",
-                        (email, pin, now)
+                        (email, hash_pin(pin), now)
                     )
                     conn.commit()
                 finally:
                     conn.close()
+
+            threading.Thread(target=_notify_pin_changed, args=(email, user['name']), daemon=True).start()
             return json_response(self, {'ok': True})
         except Exception as e:
             print(f"[API] Error changing PIN: {e}")
@@ -813,8 +1212,9 @@ class APIHandler(BaseHTTPRequestHandler):
 
 def main():
     init_api_tables()
-    server = HTTPServer(('0.0.0.0', API_PORT), APIHandler)
-    print(f"API Server running on port {API_PORT}")
+    server = ThreadingHTTPServer(('0.0.0.0', API_PORT), APIHandler)
+    server.daemon_threads = True
+    print(f"API Server running on port {API_PORT} (threaded)")
     print(f"Database: {DB_PATH}")
     try:
         server.serve_forever()

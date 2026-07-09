@@ -12,11 +12,14 @@ import urllib.request
 import urllib.parse
 from datetime import datetime, timezone, timedelta
 
-DEPLOY_DIR = os.environ.get("DEPLOY_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import env_loader
+
+DEPLOY_DIR = env_loader.DEPLOY_DIR
 DB_PATH = os.path.join(DEPLOY_DIR, "data", "inventory.db")
-PHONES_JS = os.path.join(DEPLOY_DIR, "data", "phones.js")
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8682943904:AAHUj5DPOa6wdknmrNut4zJr2dZ1UTDTwLE")
-ADMIN_CHAT = "7625761638"
+BOT_TOKEN = env_loader.require_env("BOT_TOKEN")
+ADMIN_CHAT = env_loader.require_env("REPORT_CHAT_ID")
 
 PST = timezone(timedelta(hours=-7))
 
@@ -127,18 +130,8 @@ def run_audit():
         elif inv_status is None:
             issues.append(f"销售#{sale_id} IMEI={imei} 已完成但无库存记录")
 
-    # 8. phones.js sync check
-    try:
-        if os.path.exists(PHONES_JS):
-            with open(PHONES_JS) as f:
-                data = f.read().replace("const phones = ", "").rstrip(";\n")
-                js_phones = json.loads(data)
-            c.execute("SELECT COUNT(*) FROM inventory")
-            db_total = c.fetchone()[0]
-            if abs(db_total - len(js_phones)) > 2:
-                issues.append(f"phones.js({len(js_phones)}条) 与数据库({db_total}条)差异过大")
-    except Exception as e:
-        issues.append(f"phones.js检查失败: {e}")
+    # (phones.js sync check removed — public export retired, frontend now
+    #  reads token-protected /api/phones directly)
 
     # Stats
     c.execute("SELECT COUNT(*) FROM inventory")

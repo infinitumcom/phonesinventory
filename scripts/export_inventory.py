@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """
-Export inventory data from SQLite to phones.js for the web frontend.
-Run periodically via cron to keep the website in sync with bot uploads.
+Inventory enrichment library: maps raw SQLite inventory rows to the
+phones[] structure the web frontend expects.
 
-Usage: python3 scripts/export_inventory.py
+Historically this wrote a public data/phones.js via cron (which exposed
+IMEI / cost / supplier to the whole internet). That export path is retired;
+api_server.py now imports build_phones() and serves the same structure from
+the token-protected GET /api/phones endpoint.
 """
 import sqlite3
 import json
@@ -83,19 +86,8 @@ def get_store_name(store):
     return store
 
 
-def export():
-    if not os.path.exists(DB_PATH):
-        print(f"Database not found: {DB_PATH}")
-        # Write empty array
-        os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
-        with open(OUTPUT_PATH, "w") as f:
-            f.write("const phones = [];\n")
-        return
-
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute("SELECT * FROM inventory ORDER BY id DESC").fetchall()
-
+def build_phones(rows):
+    """Map raw inventory rows (sqlite3.Row) to the frontend phones[] structure."""
     phones = []
     for row in rows:
         brand = detect_brand(row["brand"], row["model"])
@@ -131,13 +123,25 @@ def export():
             "notes": row["notes"] or "",
         }
         phones.append(phone)
+    return phones
 
+
+def export():
+    """Legacy manual export (no longer run via cron — kept for debugging)."""
+    if not os.path.exists(DB_PATH):
+        print(f"Database not found: {DB_PATH}")
+        return
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute("SELECT * FROM inventory ORDER BY id DESC").fetchall()
     conn.close()
 
+    phones = build_phones(rows)
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write("const phones = ")
-        json.dump(phones, f, ensure_ascii=False, indent=1)
+        json.dump(phones, f, ensure_ascii=False)
         f.write(";\n")
 
     print(f"Exported {len(phones)} phones to {OUTPUT_PATH}")

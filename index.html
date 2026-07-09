@@ -5183,28 +5183,41 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     <h3><span class="zh">首次登录 · 请修改密码</span><span class="en">First Login · Change PIN</span></h3>
     <p><span class="zh">为了账户安全，请设置您的专属 6 位数密码。</span><span class="en">For security, please set your own 6-digit PIN.</span></p>
     <div class="modal-error" id="changePinError"></div>
+    <input type="tel" id="currentPin" maxlength="6" pattern="[0-9]*" placeholder="当前密码 / Current PIN" style="display:none;text-align:center;letter-spacing:4px;font-size:18px;-webkit-text-security:disc;" />
     <input type="tel" id="newPin1" maxlength="6" pattern="[0-9]*" placeholder="新密码 (6位) / New PIN (6 digits)" style="text-align:center;letter-spacing:4px;font-size:18px;-webkit-text-security:disc;" />
     <input type="tel" id="newPin2" maxlength="6" pattern="[0-9]*" placeholder="确认密码 / Confirm PIN" style="text-align:center;letter-spacing:4px;font-size:18px;-webkit-text-security:disc;" />
     <div class="btn-row">
-      <button class="primary" style="flex:1;" onclick="submitNewPin()">
+      <button class="primary" style="flex:1;" id="submitNewPinBtn" onclick="submitNewPin()">
         <span class="zh">确认修改</span><span class="en">Confirm</span>
       </button>
     </div>
   </div>
 </div>
 
-<!-- Forgot Password Modal -->
+<!-- Forgot Password Modal (2 steps: email → code + new PIN) -->
 <div class="login-modal" id="forgotOverlay" onclick="if(event.target===this)closeForgotPassword()">
   <div class="modal-box">
     <h3><span class="zh">忘记密码</span><span class="en">Forgot PIN</span></h3>
-    <p><span class="zh">输入你的工作邮箱，我们将发送重置链接。</span><span class="en">Enter your work email to receive a reset link.</span></p>
-    <input type="email" id="forgotEmail" placeholder="name@ifixforu.com" />
-    <div id="forgotSuccess" style="display:none;padding:12px;background:#f0fdf4;border-radius:8px;color:#16a34a;font-size:12.5px;font-weight:600;margin-bottom:12px;">
-      <span class="zh">✅ 重置链接已发送到你的邮箱。</span><span class="en">✅ Reset link sent.</span>
+    <div class="modal-error" id="forgotError" style="display:none;"></div>
+    <!-- Step 1: request code -->
+    <div id="forgotStep1">
+      <p><span class="zh">输入你的工作邮箱，我们将发送 6 位验证码。</span><span class="en">Enter your work email to receive a 6-digit code.</span></p>
+      <input type="email" id="forgotEmail" placeholder="name@ifixforu.com" />
+      <div class="btn-row">
+        <button onclick="closeForgotPassword()"><span class="zh">取消</span><span class="en">Cancel</span></button>
+        <button class="primary" id="forgotSendBtn" onclick="sendResetCode()"><span class="zh">发送验证码</span><span class="en">Send Code</span></button>
+      </div>
     </div>
-    <div class="btn-row">
-      <button onclick="closeForgotPassword()"><span class="zh">取消</span><span class="en">Cancel</span></button>
-      <button class="primary" onclick="sendResetLink()"><span class="zh">发送</span><span class="en">Send</span></button>
+    <!-- Step 2: code + new PIN -->
+    <div id="forgotStep2" style="display:none;">
+      <p><span class="zh">验证码已发送到你的邮箱（10 分钟内有效）。</span><span class="en">A code was sent to your email (valid 10 minutes).</span></p>
+      <input type="tel" id="resetCode" maxlength="6" pattern="[0-9]*" placeholder="验证码 / Verification Code" style="text-align:center;letter-spacing:4px;font-size:18px;" />
+      <input type="tel" id="resetPin1" maxlength="6" pattern="[0-9]*" placeholder="新密码 (6位) / New PIN" style="text-align:center;letter-spacing:4px;font-size:18px;-webkit-text-security:disc;" />
+      <input type="tel" id="resetPin2" maxlength="6" pattern="[0-9]*" placeholder="确认新密码 / Confirm PIN" style="text-align:center;letter-spacing:4px;font-size:18px;-webkit-text-security:disc;" />
+      <div class="btn-row">
+        <button onclick="backToForgotStep1()"><span class="zh">重新发送</span><span class="en">Resend</span></button>
+        <button class="primary" id="forgotConfirmBtn" onclick="confirmResetPin()"><span class="zh">重置密码</span><span class="en">Reset PIN</span></button>
+      </div>
     </div>
   </div>
 </div>
@@ -5212,59 +5225,74 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 <!-- LOGIN SCRIPT: isolated from main app script -->
 <script>
 (function(){
-  // Login accounts
+  // Staff directory — names/roles/stores only. PINs live server-side
+  // (login is verified by POST /api/login; nothing secret in this file).
   var ACCOUNTS = {
-    'anderson@ifixforu.com': { pin:'888888', name:'Andy Wang',   role:'admin', store:'all' },
-    'jayden@ifixforu.com':   { pin:'888888', name:'Jayden Sun',  role:'staff', store:'Alhambra' },
-    'steve@ifixforu.com':    { pin:'888888', name:'Steve Shen',  role:'staff', store:'Monterey Park' },
-    'harry@ifixforu.com':    { pin:'888888', name:'Harry Zou',   role:'staff', store:'San Gabriel' },
-    'bill@ifixforu.com':     { pin:'888888', name:'Bill Han',    role:'staff', store:'Rowland Heights' },
-    'will@ifixforu.com':     { pin:'888888', name:'Will Jiang',  role:'staff', store:'Arcadia 1' },
-    'kelvin@ifixforu.com':   { pin:'888888', name:'Kelvin Liu',  role:'staff', store:'Arcadia 2' },
-    'cici@ifixforu.com':     { pin:'888888', name:'Cici',        role:'staff', store:'Irvine' },
-    'feiyang@ifixforu.com':  { pin:'888888', name:'Feiyang Zhao',role:'staff', store:'Rancho Cucamonga' },
-    'jason@ifixforu.com':    { pin:'888888', name:'Jason Zeng',  role:'staff', store:'Las Vegas' },
-    'chester@ifixforu.com':  { pin:'888888', name:'Chester',     role:'staff', store:'Alhambra' },
-    'grace@ifixforu.com':    { pin:'888888', name:'Grace',       role:'staff', store:'Las Vegas' },
-    'bobby@ifixforu.com':    { pin:'888888', name:'Bobby',       role:'staff', store:'Monterey Park' }
+    'anderson@ifixforu.com': { name:'Andy Wang',   role:'admin', store:'all' },
+    'jayden@ifixforu.com':   { name:'Jayden Sun',  role:'staff', store:'Alhambra' },
+    'steve@ifixforu.com':    { name:'Steve Shen',  role:'staff', store:'Monterey Park' },
+    'harry@ifixforu.com':    { name:'Harry Zou',   role:'staff', store:'San Gabriel' },
+    'bill@ifixforu.com':     { name:'Bill Han',    role:'staff', store:'Rowland Heights' },
+    'will@ifixforu.com':     { name:'Will Jiang',  role:'staff', store:'Arcadia 1' },
+    'kelvin@ifixforu.com':   { name:'Kelvin Liu',  role:'staff', store:'Arcadia 2' },
+    'cici@ifixforu.com':     { name:'Cici',        role:'staff', store:'Irvine' },
+    'feiyang@ifixforu.com':  { name:'Feiyang Zhao',role:'staff', store:'Rancho Cucamonga' },
+    'jason@ifixforu.com':    { name:'Jason Zeng',  role:'staff', store:'Las Vegas' },
+    'chester@ifixforu.com':  { name:'Chester',     role:'staff', store:'Alhambra' },
+    'grace@ifixforu.com':    { name:'Grace',       role:'staff', store:'Las Vegas' },
+    'bobby@ifixforu.com':    { name:'Bobby',       role:'staff', store:'Monterey Park' }
   };
-  // Restore changed PINs from localStorage first (fast, offline fallback)
-  try {
-    var saved = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-    for (var email in saved) { if (ACCOUNTS[email]) ACCOUNTS[email].pin = saved[email]; }
-  } catch(e){}
-  // Make accessible globally
+  // Staff page renders from this directory
   window.LOGIN_ACCOUNTS = ACCOUNTS;
-  // Track whether server PINs have been loaded
-  window._pinsLoaded = false;
 
-  // Fetch PINs from server asynchronously (source of truth)
-  function loadServerPins() {
-    var apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-      ? 'http://localhost:8580' : '';
-    return fetch(apiBase + '/api/user-pins', { signal: AbortSignal.timeout(5000) })
-      .then(function(r) { return r.json(); })
-      .then(function(resp) {
-        if (resp && resp.pins) {
-          for (var em in resp.pins) {
-            if (ACCOUNTS[em]) ACCOUNTS[em].pin = resp.pins[em];
-          }
-          // Update localStorage cache
-          try {
-            var merged = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-            for (var em2 in resp.pins) { merged[em2] = resp.pins[em2]; }
-            localStorage.setItem('pi_changed_pins', JSON.stringify(merged));
-          } catch(e){}
-        }
-        window._pinsLoaded = true;
-      })
-      .catch(function(e) {
-        console.log('Failed to fetch PINs from server, using localStorage fallback');
-        window._pinsLoaded = true; // still allow login with localStorage data
-      });
+  var apiBase = (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    ? 'http://localhost:8580' : '';
+
+  // Auth calls use their own fetch (NOT apiCall): a 401 here means wrong
+  // credentials, not an expired session.
+  function authPost(path, data) {
+    return fetch(apiBase + '/api' + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      signal: AbortSignal.timeout(15000)
+    }).then(function(r) { return r.json(); });
   }
-  // Load PINs immediately
-  loadServerPins();
+
+  // Shared success path for login and PIN-reset auto-login
+  function enterApp(resp, sessionStore) {
+    var acct = { email: resp.account.email, name: resp.account.name,
+                 role: resp.account.role, store: sessionStore };
+    try {
+      localStorage.setItem('pi_session', JSON.stringify({
+        token: resp.token, email: acct.email, name: acct.name, role: acct.role,
+        store: sessionStore, mustChangePin: !!resp.mustChangePin, ts: Date.now()
+      }));
+    } catch(e){}
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('mainApp').style.display = '';
+    window._currentAccount = acct;
+    try { if (window.setRole) window.setRole(null, acct.role, acct); } catch(e){}
+    try { if (window.initDynamicUI) window.initDynamicUI(acct); } catch(e){}
+    try { if (window.showToast) window.showToast('👋 欢迎 Welcome, ' + acct.name); } catch(e){}
+    // Pull inventory + server data now that we have a token
+    try { if (window.loadInitialData) window.loadInitialData(); } catch(e){}
+    if (resp.mustChangePin) showChangePinOverlay();
+  }
+
+  function showChangePinOverlay() {
+    setTimeout(function() {
+      var overlay = document.getElementById('changePinOverlay');
+      if (!overlay) return;
+      overlay.classList.add('show');
+      var cur = document.getElementById('currentPin');
+      if (cur) { cur.style.display = window._loginPin ? 'none' : ''; cur.value = ''; }
+      var np1 = document.getElementById('newPin1');
+      if (np1) { np1.value = ''; np1.focus(); }
+      var np2 = document.getElementById('newPin2');
+      if (np2) np2.value = '';
+    }, 600);
+  }
 
   var pinField = document.getElementById('loginPin');
   var emailField = document.getElementById('loginEmail');
@@ -5306,6 +5334,11 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     errorBox.classList.add('show');
   }
 
+  function resetLoginBtn() {
+    loginBtn.disabled = false;
+    loginBtn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
+  }
+
   function tryLogin() {
     var storeSelect = document.getElementById('loginStore');
     var selectedStore = storeSelect ? storeSelect.value : '';
@@ -5316,73 +5349,31 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     if (!em) { showErr('请输入工作邮箱 / Enter email'); emailField.focus(); return; }
     if (pin.length < 6) { showErr('请输入6位密码 (已输入' + pin.length + '位)'); pinField.focus(); return; }
 
-    // If server PINs haven't loaded yet, fetch and retry
-    if (!window._pinsLoaded) {
-      loginBtn.disabled = true;
-      loginBtn.innerHTML = '<span class="zh">加载中...</span><span class="en">Loading...</span>';
-      loadServerPins().then(function() {
-        loginBtn.disabled = false;
-        loginBtn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
-        tryLogin(); // retry after PINs loaded
-      });
-      return;
-    }
-
-    var acct = ACCOUNTS[em];
-    if (!acct || acct.pin !== pin) {
-      showErr('邮箱或密码错误 / Incorrect email or PIN');
-      pinField.value = ''; pinField.focus();
-      return;
-    }
-
-    // Use selected store for this session (allows staff to work at different stores)
-    var sessionStore = acct.role === 'admin' ? 'all' : selectedStore;
-    acct._sessionStore = sessionStore;
-
-    // Success - hide login, show app
-    errorBox.classList.remove('show');
     loginBtn.disabled = true;
-    loginBtn.textContent = '...';
+    loginBtn.innerHTML = '<span class="zh">登录中...</span><span class="en">Signing in...</span>';
 
-    // Always save session (so refresh keeps correct user)
-    try {
-      localStorage.setItem('pi_session', JSON.stringify({
-        email: em, name: acct.name, role: acct.role, store: sessionStore, ts: Date.now()
-      }));
-    } catch(e){}
-
-    setTimeout(function() {
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('mainApp').style.display = '';
-      loginBtn.disabled = false;
-      loginBtn.innerHTML = '<span class="zh">登 录</span><span class="en">Sign In</span>';
-
-      // Set role and user info based on login account
-      window._currentAccount = acct;
-      window._currentAccount.email = em;
-      window._currentAccount.store = sessionStore;
-      try { if (window.setRole) window.setRole(null, acct.role, acct); } catch(e){}
-      // Init dynamic UI
-      try { if (window.initDynamicUI) window.initDynamicUI(acct); } catch(e){}
-      // Toast
-      try { if (window.showToast) window.showToast('👋 欢迎 Welcome, ' + acct.name); } catch(e){}
-
-      // Force change PIN on first login
-      try {
-        var changed = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-        if (!changed[em]) {
-          window._pendLogin = { email: em, account: acct };
+    // Server-side verification (no PINs in the frontend anymore)
+    authPost('/login', { email: em, pin: pin })
+      .then(function(resp) {
+        if (resp && resp.ok) {
+          errorBox.classList.remove('show');
+          window._loginPin = pin;  // kept in memory only, for the change-PIN call
+          var sessionStore = resp.account.role === 'admin' ? 'all' : selectedStore;
           setTimeout(function() {
-            var overlay = document.getElementById('changePinOverlay');
-            if (overlay) overlay.classList.add('show');
-            var np1 = document.getElementById('newPin1');
-            if (np1) { np1.value = ''; np1.focus(); }
-            var np2 = document.getElementById('newPin2');
-            if (np2) np2.value = '';
-          }, 600);
+            enterApp(resp, sessionStore);
+            resetLoginBtn();
+            pinField.value = '';
+          }, 300);
+        } else {
+          showErr((resp && resp.error) || '登录失败 / Login failed');
+          resetLoginBtn();
+          pinField.value = ''; pinField.focus();
         }
-      } catch(e){}
-    }, 400);
+      })
+      .catch(function() {
+        showErr('无法连接服务器，请检查网络 / Cannot reach server');
+        resetLoginBtn();
+      });
   }
 
   // Auto-login from saved session (must wait for DOM since mainApp is after this script)
@@ -5390,7 +5381,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     var sess = localStorage.getItem('pi_session');
     if (sess) {
       var s = JSON.parse(sess);
-      if (Date.now() - s.ts < 30 * 86400000) {
+      // Sessions without a token are from the old client-side-login version — force re-login
+      if (s.token && Date.now() - s.ts < 30 * 86400000) {
         // Hide login immediately (element exists above this script)
         document.getElementById('loginScreen').classList.add('hidden');
         // Show mainApp after DOM is ready (element is below this script)
@@ -5403,6 +5395,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           setTimeout(function() {
             try { if (window.setRole) window.setRole(null, s.role, sa); } catch(e){}
             try { if (window.initDynamicUI) window.initDynamicUI(sa); } catch(e){}
+            try { if (window.loadInitialData) window.loadInitialData(); } catch(e){}
             // Restore last active page
             try {
               var lastPage = sessionStorage.getItem('pi_current_page');
@@ -5411,42 +5404,89 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 if (navEl) { navTo(navEl, lastPage); }
               }
             } catch(e){}
-            // Force change PIN if still default (auto-login path)
-            try {
-              var changed = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-              if (s.email && !changed[s.email]) {
-                window._pendLogin = { email: s.email, account: sa };
-                setTimeout(function() {
-                  var overlay = document.getElementById('changePinOverlay');
-                  if (overlay) overlay.classList.add('show');
-                  var np1 = document.getElementById('newPin1');
-                  if (np1) { np1.value = ''; np1.focus(); }
-                  var np2 = document.getElementById('newPin2');
-                  if (np2) np2.value = '';
-                }, 600);
-              }
-            } catch(e){}
+            // Force change PIN if still default (server told us at login)
+            if (s.mustChangePin) showChangePinOverlay();
           }, 100);
         });
+      } else {
+        localStorage.removeItem('pi_session');
       }
     }
   } catch(e){}
 
-  // Forgot password
+  // ─── Forgot PIN (real flow: email code → verify → new PIN) ───
+  function forgotErr(msg) {
+    var el = document.getElementById('forgotError');
+    if (!el) return;
+    if (msg) { el.textContent = msg; el.style.display = 'block'; }
+    else { el.textContent = ''; el.style.display = 'none'; }
+  }
+  function showForgotStep(n) {
+    document.getElementById('forgotStep1').style.display = (n === 1) ? '' : 'none';
+    document.getElementById('forgotStep2').style.display = (n === 2) ? '' : 'none';
+  }
   window.showForgotPassword = function() {
     document.getElementById('forgotOverlay').classList.add('show');
     document.getElementById('forgotEmail').value = emailField.value;
-    document.getElementById('forgotSuccess').style.display = 'none';
+    forgotErr('');
+    showForgotStep(1);
   };
   window.closeForgotPassword = function() { document.getElementById('forgotOverlay').classList.remove('show'); };
-  window.sendResetLink = function() {
-    var e = document.getElementById('forgotEmail').value.trim();
-    if (!e || e.indexOf('@') < 0) { document.getElementById('forgotEmail').style.borderColor = '#dc3545'; return; }
-    document.getElementById('forgotEmail').style.borderColor = '';
-    document.getElementById('forgotSuccess').style.display = 'block';
+  window.backToForgotStep1 = function() { forgotErr(''); showForgotStep(1); };
+
+  window.sendResetCode = function() {
+    var e = document.getElementById('forgotEmail').value.trim().toLowerCase();
+    if (!e || e.indexOf('@') < 0) { forgotErr('请输入有效邮箱 / Enter a valid email'); return; }
+    var btn = document.getElementById('forgotSendBtn');
+    btn.disabled = true;
+    forgotErr('');
+    authPost('/pin-reset/request', { email: e })
+      .then(function(resp) {
+        btn.disabled = false;
+        if (resp && resp.ok) {
+          window._resetEmail = e;
+          showForgotStep(2);
+          var c = document.getElementById('resetCode');
+          if (c) { c.value = ''; c.focus(); }
+          document.getElementById('resetPin1').value = '';
+          document.getElementById('resetPin2').value = '';
+        } else {
+          forgotErr((resp && resp.error) || '发送失败，请稍后再试 / Failed to send');
+        }
+      })
+      .catch(function() { btn.disabled = false; forgotErr('无法连接服务器 / Cannot reach server'); });
   };
 
-  // Submit new PIN
+  window.confirmResetPin = function() {
+    var code = document.getElementById('resetCode').value.replace(/[^0-9]/g, '');
+    var p1 = document.getElementById('resetPin1').value.replace(/[^0-9]/g, '');
+    var p2 = document.getElementById('resetPin2').value.replace(/[^0-9]/g, '');
+    if (code.length !== 6) { forgotErr('请输入6位验证码 / Enter the 6-digit code'); return; }
+    if (p1.length !== 6) { forgotErr('新密码必须6位数字 / New PIN must be 6 digits'); return; }
+    if (p1 === '888888') { forgotErr('不能使用默认密码 / Cannot use default PIN'); return; }
+    if (p1 !== p2) { forgotErr('两次密码不一致 / PINs do not match'); return; }
+    var btn = document.getElementById('forgotConfirmBtn');
+    btn.disabled = true;
+    forgotErr('');
+    authPost('/pin-reset/confirm', { email: window._resetEmail, code: code, newPin: p1 })
+      .then(function(resp) {
+        btn.disabled = false;
+        if (resp && resp.ok) {
+          document.getElementById('forgotOverlay').classList.remove('show');
+          window._loginPin = p1;
+          var storeSelect = document.getElementById('loginStore');
+          var sessionStore = resp.account.role === 'admin' ? 'all'
+            : ((storeSelect && storeSelect.value) || resp.account.store);
+          enterApp(resp, sessionStore);
+          try { if (window.showToast) window.showToast('✅ 密码已重置 / PIN reset'); } catch(e){}
+        } else {
+          forgotErr((resp && resp.error) || '重置失败 / Reset failed');
+        }
+      })
+      .catch(function() { btn.disabled = false; forgotErr('无法连接服务器 / Cannot reach server'); });
+  };
+
+  // Submit new PIN (forced first-login change + manual change)
   window.submitNewPin = function() {
     var p1 = document.getElementById('newPin1').value.replace(/[^0-9]/g, '');
     var p2 = document.getElementById('newPin2').value.replace(/[^0-9]/g, '');
@@ -5455,46 +5495,54 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     if (p1 === '888888') { err.textContent = 'Cannot use default PIN'; err.style.display = 'block'; return; }
     if (p1 !== p2) { err.textContent = 'PINs do not match'; err.style.display = 'block'; return; }
 
-    // Get email from _pendLogin or fallback to _currentAccount / session
-    var pend = window._pendLogin;
-    var email = pend ? pend.email : null;
-    if (!email && window._currentAccount) email = window._currentAccount.email;
+    var email = (window._currentAccount && window._currentAccount.email) || '';
     if (!email) {
-      try { var sess = JSON.parse(localStorage.getItem('pi_session') || '{}'); email = sess.email; } catch(e){}
+      try { var sess2 = JSON.parse(localStorage.getItem('pi_session') || '{}'); email = sess2.email || ''; } catch(e){}
+    }
+    var curField = document.getElementById('currentPin');
+    var current = window._loginPin || (curField ? curField.value.replace(/[^0-9]/g, '') : '');
+    if (!current) {
+      if (curField) curField.style.display = '';
+      err.textContent = '请输入当前密码 / Enter current PIN';
+      err.style.display = 'block';
+      if (curField) curField.focus();
+      return;
     }
 
-    if (email && ACCOUNTS[email]) {
-      ACCOUNTS[email].pin = p1;
-    }
-    if (pend && pend.account) {
-      pend.account.pin = p1;
-    }
+    var btn = document.getElementById('submitNewPinBtn');
+    if (btn) btn.disabled = true;
+    err.style.display = 'none';
 
-    // Save to localStorage (fallback)
-    if (email) {
-      try {
-        var ch = JSON.parse(localStorage.getItem('pi_changed_pins') || '{}');
-        ch[email] = p1;
-        localStorage.setItem('pi_changed_pins', JSON.stringify(ch));
-      } catch(e){}
-    }
-
-    // Save to server (source of truth)
-    if (email) {
-      try {
-        apiCall('POST', '/change-pin', { email: email, pin: p1 })
-          .then(function(res) { if (res && res.ok) console.log('PIN saved to server'); })
-          .catch(function(e) { console.log('Failed to save PIN to server', e); });
-      } catch(e){}
-    }
-
-    document.getElementById('changePinOverlay').classList.remove('show');
-    try { if (window.showToast) window.showToast('✅ 密码已修改 / PIN changed'); } catch(e){}
+    // Server write is the source of truth — only close the modal on success
+    apiCall('POST', '/change-pin', { email: email, currentPin: current, pin: p1 })
+      .then(function(res) {
+        if (btn) btn.disabled = false;
+        if (res && res.ok) {
+          window._loginPin = p1;
+          try {
+            var ss = JSON.parse(localStorage.getItem('pi_session') || '{}');
+            ss.mustChangePin = false;
+            localStorage.setItem('pi_session', JSON.stringify(ss));
+          } catch(e){}
+          document.getElementById('changePinOverlay').classList.remove('show');
+          try { if (window.showToast) window.showToast('✅ 密码已修改 / PIN changed'); } catch(e){}
+        } else {
+          err.textContent = (res && res.error) || '保存失败，请重试 / Save failed';
+          err.style.display = 'block';
+        }
+      })
+      .catch(function(e) {
+        if (btn) btn.disabled = false;
+        err.textContent = (e && e.serverError) || '保存失败，请检查网络后重试 / Save failed, check network';
+        err.style.display = 'block';
+      });
   };
 
   // Logout
   window.doLogout = function() {
     localStorage.removeItem('pi_session');
+    window._loginPin = null;
+    window._sessionExpiredHandled = false;
     try { sessionStorage.removeItem('pi_current_page'); } catch(e){}
     document.getElementById('mainApp').style.display = 'none';
     document.getElementById('loginScreen').classList.remove('hidden');
@@ -8919,12 +8967,10 @@ The more detail you provide, the easier it is to handle this issue."></textarea>
 
 <div class="toast" id="toast"></div>
 
-<!-- Inventory data (auto-generated from SQLite by export script) -->
-<script src="data/phones.js"></script>
+<!-- Inventory data now loads from token-protected GET /api/phones after login
+     (the public data/phones.js export leaked IMEI/cost/supplier and is retired) -->
 <script>
-// Fallback: if data/phones.js not loaded, create empty array
-// NOTE: phones.js uses "const phones", so we must NOT use "var phones" here (const/var conflict = SyntaxError)
-try { if (!phones) phones = []; } catch(e) { window.phones = []; }
+var phones = [];
 
 const statusMap = {
   available: { zh:'在售', en:'Available', cls:'st-avail' },
@@ -9177,11 +9223,35 @@ function normalizeStoreKey(raw) {
 var API_BASE = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
   ? 'http://localhost:8580' : '/api';
 
-function apiCall(method, path, data) {
-  var url = (API_BASE === '/api') ? '/api' + path : API_BASE + path;
-  var opts = { method: method, headers: { 'Content-Type': 'application/json' } };
-  if (data && method !== 'GET') opts.body = JSON.stringify(data);
-  return fetch(url, opts).then(function(r) { return r.json(); });
+function apiCall(method, path, data, opts) {
+  // prod: '/api' + path; local dev: 'http://localhost:8580/api' + path
+  var url = (API_BASE === '/api') ? '/api' + path : API_BASE + '/api' + path;
+  var headers = { 'Content-Type': 'application/json' };
+  // Attach auth token from session (all API endpoints require it now)
+  try {
+    var sess = JSON.parse(localStorage.getItem('pi_session') || '{}');
+    if (sess.token) headers['X-Auth-Token'] = sess.token;
+  } catch(e) {}
+  var fetchOpts = {
+    method: method,
+    headers: headers,
+    signal: AbortSignal.timeout((opts && opts.timeout) || 15000)
+  };
+  if (data && method !== 'GET') fetchOpts.body = JSON.stringify(data);
+  return fetch(url, fetchOpts).then(function(r) {
+    return r.json().catch(function() { return { error: 'HTTP ' + r.status }; }).then(function(j) {
+      // Expired/invalid session → force re-login once (guard against the
+      // 30s pollers all triggering reloads simultaneously). Other 401s
+      // (e.g. wrong current PIN) pass through to the caller.
+      if (r.status === 401 && j && j.error === 'unauthorized' && !window._sessionExpiredHandled) {
+        window._sessionExpiredHandled = true;
+        try { localStorage.removeItem('pi_session'); } catch(e) {}
+        try { if (window.showToast) window.showToast('登录已过期，请重新登录 / Session expired'); } catch(e) {}
+        setTimeout(function() { location.reload(); }, 1500);
+      }
+      return j;
+    });
+  });
 }
 
 function getLocalData(key) {
@@ -9311,6 +9381,27 @@ function renderDashboard() {
     if (m4) m4.textContent = margin + '% margin';
   }
 
+  // Hero greeting card stats (今日销售 / 本月营收 / 毛利率) — were static zeros in the HTML
+  var todaySoldAll = 0, todayRevAll = 0;
+  Object.keys(STORE_DATA).forEach(function(k) {
+    todaySoldAll += STORE_DATA[k].todaySold;
+    todayRevAll += STORE_DATA[k].todayRev;
+  });
+  var heroCells = document.querySelectorAll('.user-stat-row .user-stat-cell');
+  if (heroCells[0]) {
+    heroCells[0].querySelector('.val').textContent = todaySoldAll;
+    heroCells[0].querySelector('.sub').innerHTML = '<span class="zh">9 店共 ·</span><span class="en">9 stores ·</span> $' + todayRevAll.toLocaleString();
+  }
+  if (heroCells[1]) {
+    heroCells[1].querySelector('.val').innerHTML = '<span class="ccy">$</span>' + mtdRev.toLocaleString();
+    heroCells[1].querySelector('.sub').innerHTML = mtdSold > 0
+      ? ('<span class="zh">' + mtdSold + ' 单</span><span class="en">' + mtdSold + ' sales</span>') : '--';
+  }
+  if (heroCells[2]) {
+    heroCells[2].querySelector('.val').textContent = margin + '%';
+    heroCells[2].querySelector('.sub').textContent = mtdProfit > 0 ? ('$' + mtdProfit.toLocaleString()) : '--';
+  }
+
   // --- Financial overview ---
   var totalCost = 0, totalMSRP = 0, newCount = 0, usedCount = 0;
   var newCost = 0, newMSRP = 0, usedCost = 0, usedMSRP = 0;
@@ -9428,6 +9519,14 @@ function renderDashboard() {
       var heroS = heroSub.parentElement.querySelector('.s');
       if (heroS) heroS.textContent = totalNew + ' NEW · ' + totalUsed + ' USED';
     }
+  }
+  // "今日销售" cell in the inventory hero (was a static zero in the HTML)
+  var invHeroToday = document.querySelector('.staff-hero .shero-stat:first-child');
+  if (invHeroToday) {
+    var ihv = invHeroToday.querySelector('.v');
+    if (ihv) ihv.textContent = todaySoldAll;
+    var ihs = invHeroToday.querySelector('.s.admin-only');
+    if (ihs) ihs.textContent = '$' + todayRevAll.toLocaleString();
   }
 
   // --- Sidebar transfer badge ---
@@ -10261,13 +10360,18 @@ function openStockRequestModal() {
   }
 }
 
-// --- Stock Request API Layer ---
+// --- Stock Request API Layer (goes through apiCall for auth token) ---
 var _stockRequestsCache = [];
-var SR_API = (API_BASE === '/api') ? '/api/stock-requests' : API_BASE + '/stock-requests';
 
 function loadStockRequests(callback) {
-  fetch(SR_API).then(function(r) { return r.json(); }).then(function(res) {
-    if (res.ok) _stockRequestsCache = res.data || [];
+  apiCall('GET', '/stock-requests').then(function(res) {
+    if (res.ok) {
+      _stockRequestsCache = res.data || [];
+      // Normalize server dates for iOS Safari ("YYYY-MM-DD HH:MM:SS" → ISO)
+      _stockRequestsCache.forEach(function(sr) {
+        if (!sr.date && sr.createdAt) sr.date = sr.createdAt.replace(' ', 'T');
+      });
+    }
     if (callback) callback(_stockRequestsCache);
     renderStockRequests();
     updateStockRequestBadge();
@@ -10298,19 +10402,15 @@ function submitStockRequest() {
 
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '...'; }
 
-  fetch(SR_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      action: 'create',
-      requestedBy: acct.name || 'Unknown',
-      store: store,
-      model: modelDisplay,
-      items: items,
-      qty: items.reduce(function(s, it) { return s + it.qty; }, 0),
-      note: note
-    })
-  }).then(function(r) { return r.json(); }).then(function(res) {
+  apiCall('POST', '/stock-requests', {
+    action: 'create',
+    requestedBy: acct.name || 'Unknown',
+    store: store,
+    model: modelDisplay,
+    items: items,
+    qty: items.reduce(function(s, it) { return s + it.qty; }, 0),
+    note: note
+  }).then(function(res) {
     if (res.ok) {
       var m = document.getElementById('stockRequestModal');
       if (m) m.parentNode.removeChild(m);
@@ -10340,11 +10440,8 @@ function fulfillStockRequest(id) {
 
 function _updateStockRequestStatus(id, action, msg) {
   var acct = window._currentAccount || {};
-  fetch(SR_API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: action, id: id, by: acct.name || '' })
-  }).then(function(r) { return r.json(); }).then(function(res) {
+  apiCall('POST', '/stock-requests', { action: action, id: id, by: acct.name || '' })
+  .then(function(res) {
     if (res.ok) {
       showToast(id + ' ' + msg);
       loadStockRequests();
@@ -11987,35 +12084,27 @@ function setBrandFilter(brand) {
 })();
 
 // ===== IMEI Check System =====
+// IMEI lookup goes through our backend proxy (/api/imei-check) so the paid
+// third-party API key stays server-side instead of being readable in this file.
 const IMEI_API = {
-  baseUrl: 'https://us.gsxunlocking.com/api/uapi',
-  key: 'YS60N7CH8VZXNE4VGSS1',
   services: {
     activationLock: 1013,
     warranty: 1010
   },
-  timeout: 120000,
+  timeout: 130000,
   maxConcurrent: 20
 };
 
 let imeiCheckHistory = JSON.parse(localStorage.getItem('imeiCheckHistory') || '[]');
 
-function buildIMEIUrl(imei, srvId) {
-  return `${IMEI_API.baseUrl}?format=json&key=${IMEI_API.key}&srv=${srvId}&imei=${imei}`;
-}
-
 async function fetchIMEIService(imei, srvId) {
-  const url = buildIMEIUrl(imei, srvId);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), IMEI_API.timeout);
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timer);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return await res.json();
+    const data = await apiCall('GET', '/imei-check?imei=' + encodeURIComponent(imei) + '&srv=' + srvId,
+      null, { timeout: IMEI_API.timeout });
+    if (data && data.error) throw new Error(data.error);
+    return data;
   } catch (e) {
-    clearTimeout(timer);
-    if (e.name === 'AbortError') throw new Error('查询超时 / Request timeout (120s)');
+    if (e.name === 'AbortError' || e.name === 'TimeoutError') throw new Error('查询超时 / Request timeout (120s)');
     throw e;
   }
 }
@@ -12481,8 +12570,15 @@ if (!window.initDynamicUI) {
   window.loadServerSales = function() {
     apiCall('GET', '/sales').then(function(res) {
       if (res && res.sales) {
+        // Normalize dates: server only returns createdAt ("YYYY-MM-DD HH:MM:SS"),
+        // and iOS Safari can't parse that format — convert to ISO with 'T'.
+        // Without s.date the dashboard KPIs (today/month) all compute NaN/zero.
+        res.sales.forEach(function(s) {
+          if (!s.date && s.createdAt) s.date = s.createdAt.replace(' ', 'T');
+        });
         setLocalData('pi_sales', res.sales);
         try { renderSalesPage(); } catch(e){}
+        try { renderDashboard(); } catch(e){}
       }
     }).catch(function(e) { console.log('Failed to load sales from server', e); });
   };
@@ -12494,8 +12590,8 @@ if (!window.initDynamicUI) {
         // Normalize server data for frontend
         res.transfers.forEach(function(t) {
           if (t.status === 'approved') t.status = 'transit';
-          // Ensure date field exists (server returns createdAt)
-          if (!t.date && t.createdAt) t.date = t.createdAt;
+          // Ensure date field exists, iOS-safe ISO format
+          if (!t.date && t.createdAt) t.date = t.createdAt.replace(' ', 'T');
         });
         setLocalData('pi_transfers', res.transfers);
         try { renderTransferPage(); } catch(e){}
@@ -12503,34 +12599,26 @@ if (!window.initDynamicUI) {
     }).catch(function(e) { console.log('Failed to load transfers from server', e); });
   };
 
-  // Reconcile live inventory (status + owning store) from server into phones[].
-  // phones[] base data comes from phones.js (regenerated every 2 min); this keeps
-  // status/store changes — especially cross-store transfers — visible without a
-  // full page reload. Only known phones are reconciled; new bot-scanned phones
-  // still arrive via the phones.js refresh on reload.
+  // Full inventory refresh from the token-protected /api/phones endpoint
+  // (replaces the public phones.js export). Server returns the exact phones[]
+  // structure; only re-render when the payload actually changed.
   window.loadServerInventory = function() {
-    apiCall('GET', '/inventory').then(function(res) {
-      if (!res || !res.inventory) return;
-      var byImei = {};
-      res.inventory.forEach(function(it){ if (it && it.imei) byImei[it.imei] = it; });
-      var changed = false;
-      phones.forEach(function(p) {
-        if (!p || !p.imei) return;
-        var srv = byImei[p.imei];
-        if (!srv) return;
-        if (srv.status && p.status !== srv.status) { p.status = srv.status; changed = true; }
-        if (srv.store && p.store !== srv.store) {
-          p.store = srv.store;
-          var k = normalizeStoreKey(srv.store);
-          p.storeName = (STORE_DATA[k] && STORE_DATA[k].nameEn) || srv.store;
-          changed = true;
-        }
-      });
-      if (changed) {
-        try { renderInventory(); } catch(e){}
-        try { renderDashboard(); } catch(e){}
-      }
+    apiCall('GET', '/phones').then(function(res) {
+      if (!res || !res.phones) return;
+      var snapshot = JSON.stringify(res.phones);
+      if (window._phonesSnapshot === snapshot) return;
+      window._phonesSnapshot = snapshot;
+      phones.length = 0;
+      Array.prototype.push.apply(phones, res.phones);
+      try { renderInventory(); } catch(e){}
+      try { renderDashboard(); } catch(e){}
+      try { initSalePage(); } catch(e){}
     }).catch(function(e) { console.log('Failed to sync inventory from server', e); });
+  };
+
+  // Initial data pull right after login/auto-login (called from login script)
+  window.loadInitialData = function() {
+    try { window.loadServerInventory(); } catch(e){}
   };
 
   window.initDynamicUI = function(account) {
@@ -12583,8 +12671,10 @@ if (!window.initDynamicUI) {
     setTimeout(function(){ try { showAgedStockAlert(); } catch(e){} }, 2000);
 
     // Periodic sync: refresh sold status + transfers every 30 seconds
+    // (paused while the tab is in the background to save battery/server load)
     if (!window._syncInterval) {
       window._syncInterval = setInterval(function() {
+        if (document.hidden) return;
         try { syncSoldStatus(); } catch(e){}
         try { loadServerInventory(); } catch(e){}
         try { loadServerSales(); } catch(e){}

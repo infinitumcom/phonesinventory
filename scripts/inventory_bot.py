@@ -24,10 +24,13 @@ import traceback
 import threading
 from datetime import datetime, timezone, timedelta
 
-# ─── Config ───
-BOT_TOKEN = "8682943904:AAHUj5DPOa6wdknmrNut4zJr2dZ1UTDTwLE"
+# ─── Config (credentials from .env via env_loader — no defaults in code) ───
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import env_loader
+
+BOT_TOKEN = env_loader.require_env("BOT_TOKEN")
 # Admin user IDs (can use bot anywhere, manage settings)
-ADMIN_IDS = os.environ.get("ADMIN_IDS", "7625761638").split(",")
+ADMIN_IDS = [a.strip() for a in env_loader.require_env("ADMIN_IDS").split(",") if a.strip()]
 # Allowed group chat IDs — anyone in these groups can upload
 # Group IDs are negative numbers, e.g. -1001234567890
 ALLOWED_GROUP_IDS = [g.strip() for g in os.environ.get("ALLOWED_GROUP_IDS", "").split(",") if g.strip()]

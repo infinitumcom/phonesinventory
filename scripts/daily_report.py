@@ -11,11 +11,15 @@ import urllib.request
 import urllib.parse
 from datetime import datetime, timezone, timedelta
 
-# ─── Config ───
-DEPLOY_DIR = os.environ.get("DEPLOY_DIR", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# ─── Config (credentials from .env via env_loader — no defaults in code) ───
+import sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import env_loader
+
+DEPLOY_DIR = env_loader.DEPLOY_DIR
 DB_PATH = os.path.join(DEPLOY_DIR, "data", "inventory.db")
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8682943904:AAHUj5DPOa6wdknmrNut4zJr2dZ1UTDTwLE")
-CHAT_ID = os.environ.get("REPORT_CHAT_ID", "7625761638")
+BOT_TOKEN = env_loader.require_env("BOT_TOKEN")
+CHAT_ID = env_loader.require_env("REPORT_CHAT_ID")
 PST = timezone(timedelta(hours=-7))
 
 # Store key → display info
