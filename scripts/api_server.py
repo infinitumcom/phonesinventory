@@ -173,9 +173,11 @@ def normalize_store_name(raw):
 
 
 def get_db():
+    # timeout: how long to wait for a locked DB before raising (cross-process WAL writes)
     conn = sqlite3.connect(DB_PATH, timeout=15)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=15000")
     return conn
 
 
@@ -607,18 +609,22 @@ class APIHandler(BaseHTTPRequestHandler):
     # ─── Enriched phones list (replaces the public data/phones.js export) ───
 
     def get_phones(self):
+        conn = None
         try:
             conn = get_db()
             rows = conn.execute("SELECT * FROM inventory ORDER BY id DESC").fetchall()
-            conn.close()
             return json_response(self, {'phones': export_inventory.build_phones(rows)})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
 
     # ─── Inventory ───
 
     def get_inventory(self, params):
         """List inventory with optional filters."""
+        conn = None
         try:
             conn = get_db()
             store = params.get('store', [None])[0]
@@ -640,7 +646,6 @@ class APIHandler(BaseHTTPRequestHandler):
             query += " ORDER BY id DESC"
 
             rows = conn.execute(query, args).fetchall()
-            conn.close()
 
             items = []
             for r in rows:
@@ -656,6 +661,9 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'inventory': items, 'total': len(items)})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
 
     def delete_inventory(self, imei):
         """Delete an inventory record by IMEI."""
@@ -753,6 +761,7 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'error': str(e)}, 500)
 
     def get_sales(self, params):
+        conn = None
         try:
             conn = get_db()
             store = params.get('store', [None])[0]
@@ -762,7 +771,6 @@ class APIHandler(BaseHTTPRequestHandler):
                 ).fetchall()
             else:
                 rows = conn.execute("SELECT * FROM sales ORDER BY created_at DESC").fetchall()
-            conn.close()
             sales = []
             for r in rows:
                 sale = dict(r)
@@ -783,6 +791,9 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'sales': sales})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
 
     def update_sale(self, sale_id):
         try:
@@ -808,13 +819,16 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'error': str(e)}, 500)
 
     def get_sold_imeis(self):
+        conn = None
         try:
             conn = get_db()
             rows = conn.execute("SELECT imei FROM sales WHERE status = 'completed'").fetchall()
-            conn.close()
             return json_response(self, {'imeis': [r['imei'] for r in rows]})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
 
     # ─── Transfers ───
 
@@ -861,10 +875,10 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'error': str(e)}, 500)
 
     def get_transfers(self, params):
+        conn = None
         try:
             conn = get_db()
             rows = conn.execute("SELECT * FROM transfers ORDER BY created_at DESC").fetchall()
-            conn.close()
             transfers = []
             for r in rows:
                 t = dict(r)
@@ -880,6 +894,9 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'transfers': transfers})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
 
     def update_transfer(self, transfer_id):
         # Valid state transitions
@@ -984,10 +1001,10 @@ class APIHandler(BaseHTTPRequestHandler):
     # ─── Stock Requests ───
 
     def get_stock_requests(self):
+        conn = None
         try:
             conn = get_db()
             rows = conn.execute("SELECT * FROM stock_requests ORDER BY created_at DESC").fetchall()
-            conn.close()
             result = []
             for r in rows:
                 sr = dict(r)
@@ -1004,6 +1021,9 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'ok': True, 'data': result})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
 
     def handle_stock_request(self):
         try:
