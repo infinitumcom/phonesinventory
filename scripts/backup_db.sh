@@ -13,7 +13,22 @@ if [ ! -f "$DB" ]; then
     exit 1
 fi
 
-if sqlite3 "$DB" ".backup '$OUT'"; then
+do_backup() {
+    if command -v sqlite3 > /dev/null 2>&1; then
+        sqlite3 "$DB" ".backup '$OUT'"
+    else
+        # Fallback: python3 stdlib sqlite3 has the same WAL-safe backup API
+        python3 - "$DB" "$OUT" <<'PYEOF'
+import sqlite3, sys
+src = sqlite3.connect(sys.argv[1])
+dst = sqlite3.connect(sys.argv[2])
+src.backup(dst)
+dst.close(); src.close()
+PYEOF
+    fi
+}
+
+if do_backup; then
     gzip -f "$OUT"
     echo "$(date) Backup OK: $OUT.gz ($(du -h "$OUT.gz" | cut -f1))"
 else
