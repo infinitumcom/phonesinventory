@@ -142,21 +142,39 @@ async def _read_device_async():
     except Exception:
         pass
 
-    # 设备详情: 全量 lockdown 值 + MobileGestalt 补充(主板序列号/颜色等)
+    # 设备详情: 逐字段单独读(最稳) + 尝试全量 dump + MobileGestalt 补充
     details = {}
+    detail_keys = [
+        'DeviceName', 'ProductType', 'ProductName', 'ProductVersion', 'BuildVersion',
+        'SerialNumber', 'UniqueDeviceID', 'UniqueChipID', 'ModelNumber', 'RegionInfo',
+        'HardwareModel', 'DeviceColor', 'DeviceEnclosureColor', 'DeviceClass',
+        'CPUArchitecture', 'ChipID', 'BoardId', 'HardwarePlatform', 'ActivationState',
+        'TimeZone', 'PartitionType', 'TotalDiskCapacity',
+        'BasebandVersion', 'BasebandSerialNumber', 'BasebandStatus', 'BasebandChipId',
+        'WiFiAddress', 'BluetoothAddress', 'EthernetAddress',
+        'InternationalMobileEquipmentIdentity', 'InternationalMobileEquipmentIdentity2',
+        'MobileEquipmentIdentifier', 'IntegratedCircuitCardIdentity',
+        'InternationalMobileSubscriberIdentity', 'PhoneNumber', 'TelephonyCapability',
+    ]
+    for k in detail_keys:
+        v = await gv(k)
+        if v is not None and v != '':
+            details[k] = _jsonsafe(v)
     try:
         root = await lockdown.get_value(None, None)
         if isinstance(root, dict):
-            details = _jsonsafe(root)
+            for k, v in _jsonsafe(root).items():
+                if k not in details and not isinstance(v, (dict, list)):
+                    details[k] = v
     except Exception:
         pass
     try:
         mg = await DiagnosticsService(lockdown).mobilegestalt(keys=[
-            'MLBSerialNumber', 'DeviceColor', 'DeviceEnclosureColor', 'RegionInfo',
-            'BasebandSerialNumber', 'WifiVendor', 'ArtworkTraits'])
+            'MLBSerialNumber', 'DeviceColor', 'DeviceEnclosureColor',
+            'BasebandSerialNumber', 'WifiVendor'])
         if isinstance(mg, dict):
             for k, v in _jsonsafe(mg).items():
-                if k not in details:
+                if k not in details and v is not None and v != '':
                     details[k] = v
     except Exception:
         pass
@@ -251,7 +269,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split('?')[0]
         if path == '/health':
-            return self._json({'ok': True, 'agent': 'phonesinventory-device-agent', 'version': 3})
+            return self._json({'ok': True, 'agent': 'phonesinventory-device-agent', 'version': 4})
         if path == '/device':
             try:
                 return self._json(read_device())
