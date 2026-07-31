@@ -8251,6 +8251,24 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       <div id="rptCondSplit" class="resp-2col" style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:14px;"></div>
     </div>
 
+    <!-- 补货 & 滞销预警 -->
+    <div class="section" style="margin-bottom:14px;">
+      <div class="section-head">
+        <div class="section-title"><span class="zh">📦 补货 & 滞销预警</span><span class="en">Reorder & Aging Alerts</span>
+          <span class="count">· <span class="zh">近30天动销驱动</span><span class="en">30-day velocity</span></span></div>
+      </div>
+      <div class="resp-2col" style="padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <div style="font-size:12.5px;font-weight:700;color:#dc2626;margin-bottom:8px;">🔻 <span class="zh">该补货（在售≤2 且近期在卖）</span><span class="en">Reorder (≤2 in stock, selling)</span></div>
+          <div id="rptReorderList"></div>
+        </div>
+        <div>
+          <div style="font-size:12.5px;font-weight:700;color:#b45309;margin-bottom:8px;">🐌 <span class="zh">建议清仓（库龄≥90天）</span><span class="en">Clear (aged ≥90d)</span></div>
+          <div id="rptClearList"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- Two columns: Revenue chart + Store ranking -->
     <div class="resp-2col" style="display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px;">
 
@@ -10927,6 +10945,32 @@ function renderReportsPage() {
   rptRenderCategory(sales);
   rptRenderPayments(sales);
   rptRenderCondSplit(sales);
+  rptRenderAlerts();
+}
+function rptRenderAlerts() {
+  var reorderEl = document.getElementById('rptReorderList');
+  var clearEl = document.getElementById('rptClearList');
+  if (!reorderEl || !clearEl) return;
+  var avail = phones.filter(function(p){ return p && (p.status === 'available' || !p.status); });
+  var stock = {};
+  avail.forEach(function(p){ var k = (p.name || p.model || '') + '|' + (p.storage || ''); stock[k] = (stock[k] || 0) + 1; });
+  var cut = Date.now() - 30 * 86400000, sold30 = {};
+  getLocalData('pi_sales').forEach(function(s){
+    if (s.status === 'returned') return;
+    if (new Date(s.date || s.createdAt || 0).getTime() < cut) return;
+    var k = (s.phoneName || '') + '|' + (s.storage || ''); sold30[k] = (sold30[k] || 0) + 1;
+  });
+  var reorder = Object.keys(sold30).map(function(k){ return { k:k, sold:sold30[k], stock:stock[k] || 0 }; })
+    .filter(function(r){ return r.stock <= 2; }).sort(function(a,b){ return b.sold - a.sold; }).slice(0, 10);
+  reorderEl.innerHTML = reorder.length ? reorder.map(function(r){
+    var p = r.k.split('|');
+    return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;"><span style="font-weight:600;">' + escHtml(p[0]) + (p[1] ? ' ' + escHtml(p[1]) : '') + '</span><span style="color:var(--text-muted);"><span class="zh">在售</span><span class="en">stock</span> <b style="color:' + (r.stock === 0 ? '#dc2626' : '#b45309') + ';">' + r.stock + '</b> · <span class="zh">30天卖</span><span class="en">sold</span> ' + r.sold + '</span></div>';
+  }).join('') : '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;"><span class="zh">暂无补货预警</span><span class="en">None</span></div>';
+  var aged = avail.filter(function(p){ return rptAge(p) >= 90; }).sort(function(a,b){ return rptAge(b) - rptAge(a); }).slice(0, 10);
+  clearEl.innerHTML = aged.length ? aged.map(function(p){
+    var a = rptAge(p);
+    return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;"><span style="font-weight:600;">' + escHtml((p.name || p.model || '') + ' ' + (p.storage || '')) + '</span><span style="color:var(--text-muted);">' + escHtml(p.storeName || p.store || '') + ' · <b style="color:#dc2626;">' + a + 'd</b></span></div>';
+  }).join('') : '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;"><span class="zh">暂无滞销</span><span class="en">None</span></div>';
 }
 function rptRenderCondSplit(sales) {
   var box = document.getElementById('rptCondSplit'); if (!box) return;

@@ -424,10 +424,17 @@ class APIHandler(BaseHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-Auth-Token')
         self.end_headers()
 
+    MAX_BODY = 8 * 1024 * 1024  # 8 MB cap (Excel intake can be a few hundred KB)
+
     def read_body(self):
-        length = int(self.headers.get('Content-Length', 0))
-        if length == 0:
+        try:
+            length = int(self.headers.get('Content-Length', 0))
+        except (TypeError, ValueError):
+            length = 0
+        if length <= 0:
             return {}
+        if length > self.MAX_BODY:
+            raise ValueError('request body too large')
         return json.loads(self.rfile.read(length))
 
     def check_auth(self, method, path):
