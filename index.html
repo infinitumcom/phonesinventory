@@ -10691,6 +10691,13 @@ function renderStockRequests() {
 }
 
 // ===== Render Sales Page =====
+// HTML-escape any value before interpolating into innerHTML (XSS guard).
+function escHtml(v) {
+  if (v == null) return '';
+  return String(v).replace(/[&<>"']/g, function(ch){
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch];
+  });
+}
 function renderSalesPage() {
   var sales = getLocalData('pi_sales');
   var today = new Date(); today.setHours(0,0,0,0);
@@ -10750,19 +10757,19 @@ function renderSalesPage() {
           '<span class="status st-avail" style="font-size:9.5px;padding:1px 6px;">✓ <span class="zh">已完成</span><span class="en">Done</span></span>') + '</div>' +
       '</div>' +
       '<div class="cell-product">' +
-        '<div class="name">' + s.phoneName + (s.storage ? ' · ' + s.storage : '') + condTag + '</div>' +
-        '<div class="meta mono">' + s.imei + '</div>' +
+        '<div class="name">' + escHtml(s.phoneName) + (s.storage ? ' · ' + escHtml(s.storage) : '') + condTag + '</div>' +
+        '<div class="meta mono">' + escHtml(s.imei) + '</div>' +
       '</div>' +
       '<div>' +
-        '<div style="font-weight:600;font-size:12.5px;">' + s.customer + '</div>' +
-        '<div style="font-size:10.5px;color:var(--text-muted);">' + (s.customerPhone || '') + '</div>' +
+        '<div style="font-weight:600;font-size:12.5px;">' + escHtml(s.customer) + '</div>' +
+        '<div style="font-size:10.5px;color:var(--text-muted);">' + escHtml(s.customerPhone || '') + '</div>' +
       '</div>' +
       '<div>' +
-        '<div style="background:var(--success-soft);color:var(--success);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">' + payIcon + ' ' + payLabel + '</div>' +
+        '<div style="background:var(--success-soft);color:var(--success);padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;">' + payIcon + ' ' + escHtml(payLabel) + '</div>' +
       '</div>' +
       '<div style="font-size:11.5px;">' +
-        '<div style="font-weight:600;">' + (s.store || '') + '</div>' +
-        '<div style="color:var(--text-muted);font-size:10.5px;">' + s.seller + '</div>' +
+        '<div style="font-weight:600;">' + escHtml(s.store || '') + '</div>' +
+        '<div style="color:var(--text-muted);font-size:10.5px;">' + escHtml(s.seller) + '</div>' +
       '</div>' +
       '<div>' +
         '<div class="cell-price"><span class="ccy">$</span>' + (s.total||0).toLocaleString() + '</div>' +
@@ -11101,7 +11108,7 @@ function renderCustomersPage() {
         var initials = c.name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
         vh += '<div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--gold-soft);border-radius:8px;border:1px solid var(--gold);">' +
           '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--gold),var(--gold-deep));color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">' + initials + '</div>' +
-          '<div><div style="font-weight:600;font-size:12.5px;">' + c.name + '</div>' +
+          '<div><div style="font-weight:600;font-size:12.5px;">' + escHtml(c.name) + '</div>' +
           '<div style="font-size:10.5px;color:var(--gold-deep);">$' + c.totalSpent.toLocaleString() + ' · ' + c.purchases + ' <span class="zh">次</span><span class="en">orders</span></div></div></div>';
       });
       vh += '</div>';
@@ -11129,7 +11136,7 @@ function renderCustomersPage() {
       '<span style="background:var(--bg-tinted);color:var(--text-muted);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;">New</span>';
     html += '<div class="table-row body" style="grid-template-columns: 36px 1.4fr 1.2fr 100px 90px 110px 80px;">' +
       '<div style="display:flex;align-items:center;justify-content:center;"><div style="width:28px;height:28px;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;">' + initials + '</div></div>' +
-      '<div><div style="font-weight:600;font-size:12.5px;">' + c.name + '</div><div style="font-size:10.5px;color:var(--text-muted);">' + (c.phone || c.email || '—') + '</div></div>' +
+      '<div><div style="font-weight:600;font-size:12.5px;">' + escHtml(c.name) + '</div><div style="font-size:10.5px;color:var(--text-muted);">' + escHtml(c.phone || c.email || '—') + '</div></div>' +
       '<div><div style="font-size:12px;">' + (lastItem ? lastItem.phoneName : '—') + '</div><div style="font-size:10.5px;color:var(--text-muted);">' + lastDateStr + '</div></div>' +
       '<div style="font-weight:600;text-align:center;">' + c.purchases + '</div>' +
       '<div style="font-weight:700;font-family:\'JetBrains Mono\',monospace;font-size:12px;">$' + c.totalSpent.toLocaleString() + '</div>' +
@@ -12438,7 +12445,7 @@ function renderDeviceCard(d) {
   function row(label, val, valColor) {
     return '<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:12.5px;">' +
       '<span style="color:#6b7280;white-space:nowrap;">' + label + '</span>' +
-      '<span style="font-weight:600;color:' + (valColor || '#111') + ';text-align:right;font-family:\'JetBrains Mono\',monospace;word-break:break-all;">' + (val || '—') + '</span></div>';
+      '<span style="font-weight:600;color:' + (valColor || '#111') + ';text-align:right;font-family:\'JetBrains Mono\',monospace;word-break:break-all;">' + escHtml(val || '—') + '</span></div>';
   }
   window._tiDevice = d;
   var freePct = null, freeGB = null;
@@ -12505,7 +12512,7 @@ function openDeviceDetails() {
   function rowHtml(k) {
     var v = det[k]; if (v == null || v === '' || typeof v === 'object') return '';
     var label = TI_DETAIL_LABELS[k] || k;
-    return '<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12.5px;"><span style="color:#6b7280;white-space:nowrap;">' + label + '</span><span style="font-weight:600;font-family:\'JetBrains Mono\',monospace;text-align:right;word-break:break-all;color:#111;">' + String(v) + '</span></div>';
+    return '<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12.5px;"><span style="color:#6b7280;white-space:nowrap;">' + escHtml(label) + '</span><span style="font-weight:600;font-family:\'JetBrains Mono\',monospace;text-align:right;word-break:break-all;color:#111;">' + escHtml(v) + '</span></div>';
   }
   var rows = '';
   order.forEach(function(k){ if (det[k] != null && det[k] !== '') { rows += rowHtml(k); seen[k] = 1; } });
