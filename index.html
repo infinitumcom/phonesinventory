@@ -9039,7 +9039,7 @@ function openDrawer(idx) {
       </div>
       <div class="device-foot">
         <div>
-          <div class="device-price-label">${isZh?'售价':'Price'}</div>
+          <div class="device-price-label">${isZh?'建议零售价':'MSRP'}</div>
           <div class="device-price">${p.price > 0 ? '<span class="ccy">$</span>' + p.price.toLocaleString() : '<span style="color:var(--text-muted);">待定价</span>'}</div>
         </div>
         <span class="status ${s.cls}"><span class="dot"></span>${isZh?s.zh:s.en}</span>
@@ -11914,7 +11914,7 @@ function renderInventory() {
       '<div class="inv-store">' + p.storeName + '<span class="shelf">' + p.shelf + '</span></div>' +
       '<div class="inv-age ' + ageClass + '">' + ageDays + 'd</div>' +
       '<div class="inv-price-block">' +
-        '<div class="msrp-label"><span class="zh">售价</span><span class="en">Price</span></div>' +
+        '<div class="msrp-label"><span class="zh">建议零售价</span><span class="en">MSRP</span></div>' +
         '<div class="msrp">' + (p.price > 0 ? '<span class="ccy">$</span>' + p.price.toLocaleString() : '<span style="color:var(--text-muted);font-size:12px;">待定价</span>') + '</div>' +
         (p.cost > 0 ? '<div class="points-row" style="font-size:10px;color:var(--text-muted);">成本 $' + p.cost.toLocaleString() + '</div>' : '') +
       '</div>' +
