@@ -1906,9 +1906,27 @@ body[data-role="admin"] .staff-only { display: none !important; }
 .store-pill[data-store="las-vegas"]        { border-left-color: #ea580c; background: #fff7ed; }
 .store-pill[data-store="las-vegas"].active { background: #ffedd5; border-color: #ea580c; color: #ea580c; }
 
-/* HQ Warehouse — soft slate */
-.store-pill[data-store="hq-warehouse"]        { border-left-color: #64748b; background: #f8fafc; border-style: dashed; }
-.store-pill[data-store="hq-warehouse"].active { background: #e2e8f0; border-color: #64748b; color: #475569; border-style: dashed; }
+/* HQ Warehouse — prominent central hub card */
+.store-pill[data-store="hq-warehouse"] {
+  border: 2px solid #0f172a;
+  border-left: 4px solid #f59e0b;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.28);
+}
+.store-pill[data-store="hq-warehouse"] .pill-name { color: #fff; }
+.store-pill[data-store="hq-warehouse"]:hover {
+  transform: translateY(-2px);
+  border-color: #0f172a;
+  box-shadow: 0 7px 20px rgba(15, 23, 42, 0.38);
+}
+.store-pill[data-store="hq-warehouse"].active {
+  background: linear-gradient(135deg, #0f172a 0%, #020617 100%);
+  border-color: #f59e0b;
+  color: #fff;
+  box-shadow: 0 0 0 2px #f59e0b, 0 7px 20px rgba(15, 23, 42, 0.45);
+}
 
 /* ============= INVENTORY HERO — User Welcome Card (Staff version) ============= */
 .staff-hero {
@@ -7675,7 +7693,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="en">Request → Approve → Transit → Received · Avg 8min</span>
             </div>
           </div>
-          <button class="btn btn-primary" onclick="openNewTransferModal()"><span class="zh">+ 发起调拨</span><span class="en">+ New Transfer</span></button>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn" onclick="confirmAllIncomingTransfers()"><span class="zh">✓ 确认全部入库</span><span class="en">✓ Confirm All Incoming</span></button>
+            <button class="btn btn-primary" onclick="openNewTransferModal()"><span class="zh">+ 发起调拨</span><span class="en">+ New Transfer</span></button>
+          </div>
         </div>
 
         <div class="kpi-grid cols-4">
@@ -11313,8 +11334,13 @@ function openNewTransferModal(prefillImei, prefillTarget) {
     box.innerHTML =
       '<div style="font-weight:700;font-size:16px;margin-bottom:16px;"><span class="zh">发起调拨</span><span class="en">New Transfer</span></div>' +
       '<div style="margin-bottom:12px;">' +
-        '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;">IMEI</label>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">' +
+          '<label style="font-size:12px;font-weight:600;color:#666;">IMEI</label>' +
+          (prefillImei ? '' : '<label style="font-size:12px;color:#16a34a;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:4px;user-select:none;"><input type="checkbox" id="trBulkToggle" style="cursor:pointer;"> <span class="zh">批量</span><span class="en">Bulk</span></label>') +
+        '</div>' +
         '<input type="text" id="trImeiInput"' + imeiReadonly + ' placeholder="输入 15 位 IMEI / Enter 15-digit IMEI" maxlength="15" value="' + (prefillImei || '') + '">' +
+        '<textarea id="trImeiBulk" style="display:none;width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:13px;box-sizing:border-box;min-height:120px;font-family:monospace;resize:vertical;" placeholder="每行一个 IMEI，可用空格/逗号分隔&#10;One IMEI per line (space/comma also OK)"></textarea>' +
+        '<div id="trBulkHint" style="display:none;font-size:11px;color:#888;margin-top:4px;"><span class="zh">已识别 </span><span class="en">Detected </span><span id="trBulkCount" style="font-weight:700;color:#16a34a;">0</span><span class="zh"> 个有效 IMEI</span><span class="en"> valid IMEIs</span></div>' +
       '</div>' +
       '<div style="margin-bottom:12px;">' +
         '<label style="font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;"><span class="zh">目标门店</span><span class="en">Target Store</span></label>' +
@@ -11337,6 +11363,29 @@ function openNewTransferModal(prefillImei, prefillTarget) {
     // Bind buttons via addEventListener (not inline onclick)
     document.getElementById('trCancelBtn').addEventListener('click', closeNewTransferModal);
     document.getElementById('trSubmitBtn').addEventListener('click', submitNewTransfer);
+
+    // Bulk mode toggle: swap single IMEI input for a multi-line textarea.
+    var bulkToggle = document.getElementById('trBulkToggle');
+    if (bulkToggle) {
+      bulkToggle.addEventListener('change', function() {
+        var single = document.getElementById('trImeiInput');
+        var bulk = document.getElementById('trImeiBulk');
+        var hint = document.getElementById('trBulkHint');
+        if (this.checked) {
+          single.style.display = 'none';
+          bulk.style.display = 'block';
+          hint.style.display = 'block';
+          bulk.focus();
+        } else {
+          single.style.display = 'block';
+          bulk.style.display = 'none';
+          hint.style.display = 'none';
+        }
+      });
+      document.getElementById('trImeiBulk').addEventListener('input', function() {
+        document.getElementById('trBulkCount').textContent = parseImeiList(this.value).length;
+      });
+    }
   } catch(err) {
     alert('调拨弹窗错误 / Transfer error: ' + err.message);
   }
@@ -11346,13 +11395,128 @@ function closeNewTransferModal() {
   if (m) m.parentNode.removeChild(m);
 }
 function submitNewTransfer() {
-  var imei = document.getElementById('trImeiInput').value.trim();
   var target = document.getElementById('trTargetStore').value;
   var reason = document.getElementById('trReason').value.trim();
+  var bulkToggle = document.getElementById('trBulkToggle');
+  if (bulkToggle && bulkToggle.checked) {
+    var imeis = parseImeiList(document.getElementById('trImeiBulk').value);
+    if (!imeis.length) { showToast('请粘贴至少一个有效的 15 位 IMEI / Paste at least one valid 15-digit IMEI'); return; }
+    createTransferBatch(imeis, target, reason);
+    closeNewTransferModal();
+    renderTransferPage();
+    return;
+  }
+  var imei = document.getElementById('trImeiInput').value.trim();
   if (!imei) { showToast('请输入 IMEI / Enter IMEI'); return; }
   createTransfer(imei, target, reason);
   closeNewTransferModal();
   renderTransferPage();
+}
+
+// Parse a pasted blob into a deduped list of valid 15-digit IMEIs.
+function parseImeiList(text) {
+  if (!text) return [];
+  var out = [], seen = {};
+  text.split(/[\s,;]+/).forEach(function(tok) {
+    var d = tok.replace(/\D/g, '');
+    if (d.length === 15 && !seen[d]) { seen[d] = 1; out.push(d); }
+  });
+  return out;
+}
+
+// Bulk transfer: create many pending transfers to one target store in one call.
+function createTransferBatch(imeis, targetStore, reason) {
+  var acct = window._currentAccount || {};
+  var items = imeis.map(function(imei) { return { id: generateId('TR'), imei: imei }; });
+  apiCall('POST', '/transfer/batch', {
+    items: items,
+    toStore: targetStore,
+    requestedBy: acct.name || '',
+    reason: reason || ''
+  }).then(function(res) {
+    if (res.error) { showToast('批量调拨失败: ' + res.error); return; }
+    var created = res.created || [];
+    var skipped = res.skipped || [];
+    var transfers = getLocalData('pi_transfers');
+    created.forEach(function(c) {
+      var phone = null;
+      for (var i = 0; i < phones.length; i++) {
+        if (phones[i] && phones[i].imei === c.imei) { phone = phones[i]; break; }
+      }
+      transfers.unshift({
+        id: c.id,
+        date: new Date().toISOString(),
+        imei: c.imei,
+        phoneName: c.phoneName || (phone ? phone.name : ''),
+        storage: phone ? phone.storage : '',
+        color: phone ? phone.color : '',
+        price: phone ? (phone.msrp || phone.price || 0) : 0,
+        fromStore: normalizeStoreKey(c.fromStore || (phone ? (phone.store || phone.storeName || '') : '')),
+        fromStoreName: (phone && phone.storeName) ? phone.storeName : (c.fromStore || ''),
+        toStore: normalizeStoreKey(targetStore),
+        toStoreName: targetStore,
+        reason: reason || '',
+        requestedBy: acct.name || '',
+        status: 'pending'
+      });
+      if (phone) phone.status = 'transit';
+    });
+    setLocalData('pi_transfers', transfers);
+    renderDashboard();
+    try { renderInventory(); } catch(e){}
+    try { renderTransferPage(); } catch(e){}
+    var msg = '批量调拨：成功 ' + created.length + ' 台' + (skipped.length ? '，跳过 ' + skipped.length + ' 台' : '') +
+              ' / Created ' + created.length + (skipped.length ? ', skipped ' + skipped.length : '');
+    showToast(msg);
+    if (skipped.length) {
+      var lines = skipped.map(function(s) { return s.imei + '  —  ' + s.reason; }).join('\n');
+      setTimeout(function() { alert('以下 IMEI 未调拨 / Not transferred:\n\n' + lines); }, 300);
+    }
+  }).catch(function(e) {
+    showToast('批量调拨失败，请检查网络后重试 / Batch transfer failed, check network');
+  });
+}
+
+// Receiving-side bulk confirm: complete every pending transfer bound for my store.
+function confirmAllIncomingTransfers() {
+  var acct = window._currentAccount || {};
+  var isAdmin = acct.role === 'admin';
+  var myStoreKey = normalizeStoreKey(acct.store || '');
+  var mine = getLocalData('pi_transfers').filter(function(t) {
+    if (t.status !== 'pending') return false;
+    return isAdmin || (myStoreKey && (myStoreKey === t.toStore || myStoreKey === normalizeStoreKey(t.toStoreName || '')));
+  });
+  if (!mine.length) { showToast('没有待确认的入库调拨 / No incoming transfers to confirm'); return; }
+  if (!confirm('确认收货全部 ' + mine.length + ' 台调拨？\nConfirm receipt of all ' + mine.length + ' transfers?')) return;
+
+  var done = 0, failed = 0;
+  var chain = Promise.resolve();
+  mine.forEach(function(t) {
+    chain = chain.then(function() {
+      return apiCall('PUT', '/transfer/' + t.id, { status: 'completed', approvedBy: acct.name }).then(function(res) {
+        if (res && res.error) { failed++; return; }
+        done++;
+        var all = getLocalData('pi_transfers');
+        var x = all.find(function(y) { return y.id === t.id; });
+        if (x) x.status = 'completed';
+        setLocalData('pi_transfers', all);
+        for (var i = 0; i < phones.length; i++) {
+          if (phones[i] && phones[i].imei === t.imei) {
+            phones[i].status = 'available';
+            if (acct.store) phones[i].store = acct.store;
+            break;
+          }
+        }
+      }).catch(function() { failed++; });
+    });
+  });
+  chain.then(function() {
+    renderDashboard();
+    try { renderInventory(); } catch(e){}
+    try { renderTransferPage(); } catch(e){}
+    showToast('已确认 ' + done + ' 台' + (failed ? '，失败 ' + failed + ' 台' : '') +
+              ' / Confirmed ' + done + (failed ? ', failed ' + failed : ''));
+  });
 }
 
 // ===== Drawer Sell/Transfer Buttons =====

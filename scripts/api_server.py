@@ -396,6 +396,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.pin_reset_confirm()
         elif path == '/api/sale':
             return self.create_sale()
+        elif path == '/api/transfer/batch':
+            return self.create_transfer_batch()
         elif path == '/api/transfer':
             return self.create_transfer()
         elif path == '/api/stock-requests':
@@ -871,6 +873,83 @@ class APIHandler(BaseHTTPRequestHandler):
                 finally:
                     conn.close()
             return json_response(self, {'ok': True, 'id': data.get('id', '')})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def create_transfer_batch(self):
+        """Bulk transfer: create many pending transfers to one target store in a
+        single transaction. Each IMEI is validated independently; un-transferable
+        ones are skipped (with a reason) instead of failing the whole batch."""
+        try:
+            data = self.read_body()
+            items = data.get('items', [])
+            to_store = normalize_store_name(data.get('toStore', ''))
+            requested_by = data.get('requestedBy', '')
+            reason = data.get('reason', '')
+            if not items:
+                return json_response(self, {'error': 'items 为空 / No IMEIs provided'}, 400)
+            if not to_store:
+                return json_response(self, {'error': '目标门店必填 / Target store required'}, 400)
+
+            created, skipped = [], []
+            seen = set()
+            with db_lock:
+                conn = get_db()
+                try:
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    for item in items:
+                        imei = str(item.get('imei', '')).strip().replace(' ', '')
+                        tid = item.get('id', '')
+                        if not imei:
+                            continue
+                        if imei in seen:
+                            skipped.append({'imei': imei, 'reason': '重复 / Duplicate in list'})
+                            continue
+                        seen.add(imei)
+                        inv = conn.execute(
+                            "SELECT status, model, storage, store FROM inventory WHERE imei=?",
+                            (imei,)
+                        ).fetchone()
+                        if not inv:
+                            skipped.append({'imei': imei, 'reason': '不在库存 / Not in inventory'})
+                            continue
+                        if inv['status'] != 'available':
+                            msg = {
+                                'sold': '已售出 / Sold',
+                                'transit': '已在调拨中 / In transit',
+                                'reserved': '已预留 / Reserved',
+                            }.get(inv['status'], '当前不可调拨 / Not available')
+                            skipped.append({'imei': imei, 'reason': msg})
+                            continue
+                        from_store = inv['store'] or ''
+                        if from_store and normalize_store_name(from_store) == to_store:
+                            skipped.append({'imei': imei, 'reason': '已在目标门店 / Already at target store'})
+                            continue
+                        phone_name = ((inv['model'] or '') + (' ' + inv['storage'] if inv['storage'] else '')).strip()
+                        conn.execute("""
+                            INSERT INTO transfers (id, imei, phone_name, from_store, to_store,
+                                requested_by, status, notes, created_at, updated_at)
+                            VALUES (?,?,?,?,?,?,?,?,?,?)
+                        """, (tid, imei, phone_name, from_store, to_store,
+                              requested_by, 'pending', reason, now, now))
+                        conn.execute(
+                            "UPDATE inventory SET status='transit' WHERE imei=? AND status='available'",
+                            (imei,)
+                        )
+                        created.append({
+                            'id': tid, 'imei': imei, 'phoneName': phone_name,
+                            'fromStore': from_store, 'toStore': to_store,
+                        })
+                    conn.commit()
+                finally:
+                    conn.close()
+            return json_response(self, {
+                'ok': True,
+                'created': created,
+                'skipped': skipped,
+                'createdCount': len(created),
+                'skippedCount': len(skipped),
+            })
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
 
