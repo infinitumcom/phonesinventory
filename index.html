@@ -7981,7 +7981,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       <div class="page-actions">
         <button class="btn" onclick="openIMEIModal()"><span class="zh">🔍 IMEI 查询</span><span class="en">🔍 IMEI Check</span></button>
         <button class="btn" onclick="openQCQueue()" id="qcQueueBtn"><span class="zh">📋 检测队列</span><span class="en">📋 QC Queue</span><span class="chip-num" style="background:var(--warn);color:white;margin-left:5px;" id="qcQueueCount">0</span></button>
-        <button class="btn btn-primary" onclick="openNewTradeInModal()"><span class="zh">+ 新回收单</span><span class="en">+ New Trade-In</span></button>
+        <button class="btn btn-primary" onclick="openTradeInEval()"><span class="zh">🧮 评估估价</span><span class="en">🧮 Evaluate & Quote</span></button>
       </div>
     </div>
 
@@ -12105,6 +12105,128 @@ function reopenDefect(id) {
     loadServerDefects();
     showToast('已重新打开 / Reopened');
   }).catch(function(){ showToast('网络错误 / Network error'); });
+}
+
+// ===== Trade-In Evaluation Workstation (估价·质检·成交入库) =====
+// Coefficients are % of the reference resale price. Owner-tunable.
+var TRADEIN_GRADES = [
+  { v:'99新',     coef:0.78, zh:'99新 · 几乎无痕', en:'Like new' },
+  { v:'95新',     coef:0.72, zh:'95新 · 细微痕迹', en:'Excellent' },
+  { v:'9成新',    coef:0.65, zh:'9成新 · 轻微使用痕', en:'Good' },
+  { v:'8成新',    coef:0.55, zh:'8成新 · 明显划痕', en:'Fair' },
+  { v:'7成及以下', coef:0.42, zh:'7成及以下 · 多处磨损', en:'Worn' }
+];
+var TRADEIN_DEDUCT = [
+  { key:'bigDent',     zh:'外观明显大磕碰',            en:'Major dents',      rate:0.20 },
+  { key:'screenBad',   zh:'屏幕硬划痕 / 显示或触控损伤', en:'Screen damage',    rate:0.35 },
+  { key:'official',    zh:'官方拆修（功能正常）',       en:'Official repair',  rate:0.20 },
+  { key:'thirdRepair', zh:'第三方拆修 / 换非原厂件',     en:'3rd-party repair', rate:0.35 },
+  { key:'water',       zh:'进水浸液',                  en:'Water damage',     rate:0.35 }
+];
+function openTradeInEval() {
+  var old = document.getElementById('tradeInEvalModal'); if (old) old.parentNode.removeChild(old);
+  var overlay = document.createElement('div');
+  overlay.id = 'tradeInEvalModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:14px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) closeTradeInEval(); });
+  var inp = 'width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:7px 9px;border-radius:8px;font-size:13px;box-sizing:border-box;';
+  var lbl = 'font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:3px;';
+  var sel = inp + '-webkit-appearance:auto;appearance:auto;';
+  var storageOpts = ['64GB','128GB','256GB','512GB','1TB'].map(function(s){return '<option'+(s==='128GB'?' selected':'')+'>'+s+'</option>';}).join('');
+  var gradeOpts = TRADEIN_GRADES.map(function(g,i){ return '<option value="'+g.v+'"'+(i===2?' selected':'')+'>'+g.zh+'</option>'; }).join('');
+  var deductRows = TRADEIN_DEDUCT.map(function(d){ return '<label style="display:flex;align-items:center;gap:7px;font-size:12px;padding:5px 0;cursor:pointer;"><input type="checkbox" class="ti-ded" data-rate="'+d.rate+'" data-key="'+d.key+'" onchange="recalcTradeIn()"> <span class="zh">'+d.zh+'</span><span class="en">'+d.en+'</span> <span style="color:#dc2626;font-weight:600;margin-left:auto;">−'+Math.round(d.rate*100)+'%</span></label>'; }).join('');
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;padding:20px;max-width:720px;width:100%;max-height:94vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML =
+    '<div style="font-weight:700;font-size:16px;margin-bottom:14px;">🧮 <span class="zh">二手回收评估估价</span><span class="en">Trade-In Evaluation</span></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
+      // LEFT column: device + grade + deductions
+      '<div>' +
+        '<div style="font-size:12px;font-weight:700;color:#0d4f3c;margin-bottom:6px;">① <span class="zh">机器信息</span><span class="en">Device</span></div>' +
+        '<div style="display:flex;gap:6px;margin-bottom:8px;"><div style="flex:2;"><label style="'+lbl+'"><span class="zh">型号</span><span class="en">Model</span></label><input id="tiModel" list="tiModelList" style="'+inp+'" placeholder="iPhone 14" oninput="recalcTradeIn()"><datalist id="tiModelList"><option value="iPhone 12"><option value="iPhone 13"><option value="iPhone 14"><option value="iPhone 14 Plus"><option value="iPhone 15"><option value="iPhone 15 Pro"><option value="iPhone 15 Pro Max"><option value="iPhone 16"><option value="iPhone 16 Pro Max"></datalist></div><div style="flex:1;"><label style="'+lbl+'"><span class="zh">容量</span><span class="en">Storage</span></label><select id="tiStorage" style="'+sel+'">'+storageOpts+'</select></div></div>' +
+        '<div style="display:flex;gap:6px;margin-bottom:8px;"><div style="flex:1;"><label style="'+lbl+'"><span class="zh">颜色</span><span class="en">Color</span></label><input id="tiColor" style="'+inp+'" placeholder="—"></div><div style="flex:1;"><label style="'+lbl+'"><span class="zh">版本</span><span class="en">Region</span></label><select id="tiRegion" style="'+sel+'"><option value="us">美版 US</option><option value="cn">国行 CN</option><option value="hk">港版 HK</option></select></div></div>' +
+        '<div style="margin-bottom:10px;"><label style="'+lbl+'">IMEI</label><input id="tiImei" maxlength="15" style="'+inp+'font-family:monospace;" placeholder="15 位" oninput="recalcTradeIn()"></div>' +
+        '<div style="font-size:12px;font-weight:700;color:#0d4f3c;margin:10px 0 6px;">② <span class="zh">参考价 & 成色</span><span class="en">Price & grade</span></div>' +
+        '<div style="display:flex;gap:6px;margin-bottom:8px;"><div style="flex:1;"><label style="'+lbl+'"><span class="zh">参考零售价 $</span><span class="en">Ref. resale $</span></label><input id="tiRef" type="number" style="'+inp+'" placeholder="0" oninput="recalcTradeIn()"></div><div style="flex:1;"><label style="'+lbl+'"><span class="zh">电池健康 %</span><span class="en">Battery %</span></label><input id="tiBattery" type="number" style="'+inp+'" placeholder="—" oninput="recalcTradeIn()"></div></div>' +
+        '<div style="margin-bottom:8px;"><label style="'+lbl+'"><span class="zh">外观成色</span><span class="en">Appearance grade</span></label><select id="tiGrade" style="'+sel+'" onchange="recalcTradeIn()">'+gradeOpts+'</select></div>' +
+        '<div style="font-size:12px;font-weight:700;color:#0d4f3c;margin:10px 0 4px;">③ <span class="zh">扣项（质检发现）</span><span class="en">Deductions</span></div>' +
+        deductRows +
+      '</div>' +
+      // RIGHT column: source check + quote + submit
+      '<div>' +
+        '<div style="font-size:12px;font-weight:700;color:#0d4f3c;margin-bottom:6px;">④ <span class="zh">来源核验</span><span class="en">Source check</span></div>' +
+        '<label style="display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:#dc2626;background:#fef2f2;padding:8px;border-radius:8px;margin-bottom:8px;cursor:pointer;"><input type="checkbox" id="tiLock" onchange="recalcTradeIn()"> <span class="zh">已确认 iCloud/查找 已登出、无激活锁、非挂失机</span><span class="en">Activation lock removed & not lost/stolen</span></label>' +
+        '<div style="display:flex;gap:6px;margin-bottom:8px;"><div style="flex:1;"><label style="'+lbl+'"><span class="zh">卖家姓名</span><span class="en">Seller</span></label><input id="tiSeller" style="'+inp+'"></div><div style="flex:1;"><label style="'+lbl+'"><span class="zh">证件号</span><span class="en">ID #</span></label><input id="tiSellerId" style="'+inp+'"></div></div>' +
+        '<div style="margin-bottom:12px;"><label style="'+lbl+'"><span class="zh">来源 / 备注</span><span class="en">Source / note</span></label><input id="tiSource" style="'+inp+'" placeholder="自用机 / 发票…"></div>' +
+        '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;">' +
+          '<div style="font-size:12px;font-weight:700;color:#0d4f3c;margin-bottom:8px;">💰 <span class="zh">建议收购价</span><span class="en">Suggested buy price</span></div>' +
+          '<div id="tiBreakdown" style="font-size:12px;color:#444;line-height:1.9;"></div>' +
+          '<div style="border-top:1px dashed #bbf7d0;margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:12px;color:#666;"><span class="zh">建议收购价</span><span class="en">Buy price</span></span><span id="tiFinal" style="font-size:26px;font-weight:800;color:#16a34a;">$0</span></div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">' +
+          '<button id="tiCancelBtn" style="padding:9px 16px;border:1px solid #ddd;background:#f5f5f5;color:#333;border-radius:8px;font-size:13px;cursor:pointer;"><span class="zh">取消</span><span class="en">Cancel</span></button>' +
+          '<button id="tiSubmitBtn" disabled style="padding:9px 18px;border:none;background:#a7d3b6;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:not-allowed;"><span class="zh">成交并入库</span><span class="en">Acquire → stock</span></button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  document.getElementById('tiCancelBtn').addEventListener('click', closeTradeInEval);
+  document.getElementById('tiSubmitBtn').addEventListener('click', submitTradeIn);
+  recalcTradeIn();
+}
+function closeTradeInEval() { var m = document.getElementById('tradeInEvalModal'); if (m) m.parentNode.removeChild(m); }
+function recalcTradeIn() {
+  var ref = parseFloat((document.getElementById('tiRef')||{}).value) || 0;
+  var gradeV = (document.getElementById('tiGrade')||{}).value;
+  var g = TRADEIN_GRADES.filter(function(x){ return x.v === gradeV; })[0] || TRADEIN_GRADES[2];
+  var base = ref * g.coef;
+  var lines = ['<div><span class="zh">参考零售价</span><span class="en">Ref</span>: $'+ref.toFixed(0)+' × '+gradeV+' ('+Math.round(g.coef*100)+'%) = <b>$'+base.toFixed(0)+'</b></div>'];
+  var deductRate = 0;
+  document.querySelectorAll('.ti-ded').forEach(function(cb){
+    if (cb.checked) { var r = parseFloat(cb.dataset.rate)||0; deductRate += r; var lbl = cb.parentNode.querySelector('.zh').textContent; lines.push('<div style="color:#dc2626;">− '+lbl+' (−'+Math.round(r*100)+'%) = −$'+(r*ref).toFixed(0)+'</div>'); }
+  });
+  var bat = parseFloat((document.getElementById('tiBattery')||{}).value) || 0;
+  if (bat > 0 && bat < 80) { deductRate += 0.08; lines.push('<div style="color:#dc2626;">− 电池健康 '+bat+'% (<80%, −8%) = −$'+(0.08*ref).toFixed(0)+'</div>'); }
+  var final = Math.max(0, base - deductRate * ref);
+  document.getElementById('tiBreakdown').innerHTML = lines.join('');
+  document.getElementById('tiFinal').textContent = '$' + final.toFixed(0);
+  window._tiFinal = final; window._tiCoef = g.coef; window._tiBase = base; window._tiDeduct = deductRate * ref;
+  // enable submit only when key fields + lock check are set
+  var imei = ((document.getElementById('tiImei')||{}).value || '').replace(/\s/g,'');
+  var ok = /^\d{15}$/.test(imei) && ((document.getElementById('tiModel')||{}).value||'').trim() && ref > 0 && document.getElementById('tiLock').checked && final > 0;
+  var btn = document.getElementById('tiSubmitBtn');
+  if (ok) { btn.disabled = false; btn.style.background = '#16a34a'; btn.style.cursor = 'pointer'; }
+  else { btn.disabled = true; btn.style.background = '#a7d3b6'; btn.style.cursor = 'not-allowed'; }
+}
+function submitTradeIn() {
+  var imei = (document.getElementById('tiImei').value || '').replace(/\s/g, '');
+  var items = [];
+  document.querySelectorAll('.ti-ded').forEach(function(cb){ if (cb.checked) items.push(cb.dataset.key); });
+  var payload = {
+    imei: imei,
+    model: (document.getElementById('tiModel').value || '').trim(),
+    storage: document.getElementById('tiStorage').value,
+    color: (document.getElementById('tiColor').value || '').trim(),
+    region: document.getElementById('tiRegion').value,
+    grade: document.getElementById('tiGrade').value,
+    battery: (document.getElementById('tiBattery').value || '').trim(),
+    refPrice: parseFloat(document.getElementById('tiRef').value) || 0,
+    coefficient: window._tiCoef || 0,
+    deductions: window._tiDeduct || 0,
+    finalPrice: window._tiFinal || 0,
+    deductionItems: items,
+    checklist: { grade: document.getElementById('tiGrade').value, lockCleared: true },
+    sellerName: (document.getElementById('tiSeller').value || '').trim(),
+    sellerId: (document.getElementById('tiSellerId').value || '').trim(),
+    sellerSource: (document.getElementById('tiSource').value || '').trim()
+  };
+  var btn = document.getElementById('tiSubmitBtn'); btn.disabled = true;
+  apiCall('POST', '/tradein', payload).then(function(res){
+    if (res.error) { showToast('回收失败: ' + res.error); btn.disabled = false; return; }
+    closeTradeInEval();
+    try { window.loadServerInventory && window.loadServerInventory(); } catch(e){}
+    showToast('回收成交 $' + (payload.finalPrice).toFixed(0) + '，已入库 ' + res.store + ' / Acquired & stocked');
+  }).catch(function(){ showToast('回收失败，请检查网络 / Failed, check network'); var b=document.getElementById('tiSubmitBtn'); if(b)b.disabled=false; });
 }
 
 // ===== Drawer Sell/Transfer Buttons =====

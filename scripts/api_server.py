@@ -293,6 +293,31 @@ def init_api_tables():
         CREATE INDEX IF NOT EXISTS idx_defects_status ON defects(status);
         CREATE INDEX IF NOT EXISTS idx_defects_imei ON defects(imei);
 
+        CREATE TABLE IF NOT EXISTS tradeins (
+            id TEXT PRIMARY KEY,
+            imei TEXT,
+            model TEXT,
+            storage TEXT,
+            color TEXT,
+            region TEXT,
+            grade TEXT,
+            battery TEXT,
+            ref_price REAL,
+            coefficient REAL,
+            deductions REAL,
+            final_price REAL,
+            checklist TEXT,
+            deduction_items TEXT,
+            seller_name TEXT,
+            seller_id TEXT,
+            seller_source TEXT,
+            store TEXT,
+            staff TEXT,
+            status TEXT DEFAULT 'acquired',
+            created_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_tradeins_created ON tradeins(created_at);
+
         CREATE TABLE IF NOT EXISTS stock_requests (
             id TEXT PRIMARY KEY,
             requested_by TEXT,
@@ -415,6 +440,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.get_shipments(params)
         elif path == '/api/defects':
             return self.get_defects(params)
+        elif path == '/api/tradeins':
+            return self.get_tradeins(params)
         elif path == '/api/stock-requests':
             return self.get_stock_requests()
         elif path == '/api/sold-imeis':
@@ -448,6 +475,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.create_shipment()
         elif path == '/api/defects':
             return self.create_defect()
+        elif path == '/api/tradein':
+            return self.create_tradein()
         elif path == '/api/transfer/batch':
             return self.create_transfer_batch()
         elif path == '/api/transfer':
@@ -1365,6 +1394,100 @@ class APIHandler(BaseHTTPRequestHandler):
                     conn.close()
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
+
+    # ─── Trade-in acquisition (buy used phone from a customer) ───
+
+    def create_tradein(self):
+        """Record a trade-in acquisition (staff/admin) and put the unit straight
+        into inventory as used stock (cost = agreed buy price)."""
+        try:
+            data = self.read_body()
+            imei = str(data.get('imei', '')).strip().replace(' ', '')
+            with db_lock:
+                conn = get_db()
+                try:
+                    user = self._auth_user(conn)
+                    role = user['role'] if user else None
+                    if role not in ('admin', 'staff'):
+                        return json_response(self, {'error': '无权限回收 / Not allowed'}, 403)
+                    model = (data.get('model') or '').strip()
+                    storage = (data.get('storage') or '').strip()
+                    if len(imei) != 15 or not imei.isdigit():
+                        return json_response(self, {'error': 'IMEI 格式错误 / Invalid IMEI'}, 400)
+                    if not model or not storage:
+                        return json_response(self, {'error': '型号和容量必填 / Model & storage required'}, 400)
+                    if conn.execute("SELECT 1 FROM inventory WHERE imei=?", (imei,)).fetchone():
+                        return json_response(self, {'error': '此 IMEI 已在库存 / Already in inventory'}, 409)
+
+                    # Staff acquire into their own store; admin may pass one.
+                    store = normalize_store_name(data.get('store') or (user['store'] if user else '')) or (user['store'] if user else '')
+                    if role == 'staff':
+                        store = user['store']
+                    region = (data.get('region') or 'us').strip().lower()
+                    if region not in ('us', 'cn', 'hk'):
+                        region = 'us'
+                    color = (data.get('color') or '').strip()
+                    battery = str(data.get('battery') or '').strip()
+                    grade = (data.get('grade') or '').strip()
+                    try: final_price = float(data.get('finalPrice') or 0)
+                    except (TypeError, ValueError): final_price = 0
+                    who = (user['name'] if user else '')
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    tid = (data.get('id') or ('TI-' + imei[-6:] + '-' + now.replace('-', '').replace(':', '').replace(' ', '')[-6:])).strip()
+
+                    conn.execute("""
+                        INSERT INTO tradeins
+                        (id,imei,model,storage,color,region,grade,battery,ref_price,coefficient,
+                         deductions,final_price,checklist,deduction_items,seller_name,seller_id,
+                         seller_source,store,staff,status,created_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    """, (tid, imei, model, storage, color, region, grade, battery,
+                          float(data.get('refPrice') or 0), float(data.get('coefficient') or 0),
+                          float(data.get('deductions') or 0), final_price,
+                          json.dumps(data.get('checklist') or {}, ensure_ascii=False),
+                          json.dumps(data.get('deductionItems') or [], ensure_ascii=False),
+                          (data.get('sellerName') or '').strip(), (data.get('sellerId') or '').strip(),
+                          (data.get('sellerSource') or '').strip(), store, who, 'acquired', now))
+                    # Land the unit in inventory as used stock; cost = buy price.
+                    conn.execute("""
+                        INSERT INTO inventory
+                        (imei,imei2,serial,brand,model,storage,color,color_en,condition,battery_health,
+                         region,store,cost,price,status,scanned_by,scanned_at,raw_ocr,notes)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    """, (imei, '', '', 'Apple', model, storage, color, '', 'used', battery,
+                          region, store, final_price, 0.0, 'available', who, now, '',
+                          'trade-in ' + (grade or '')))
+                    conn.commit()
+                    return json_response(self, {'ok': True, 'id': tid, 'imei': imei, 'store': store})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def get_tradeins(self, params):
+        conn = None
+        try:
+            conn = get_db()
+            user = self._auth_user(conn)
+            role = user['role'] if user else None
+            if role == 'staff':
+                rows = conn.execute("SELECT * FROM tradeins WHERE store=? ORDER BY created_at DESC",
+                                    (user['store'],)).fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM tradeins ORDER BY created_at DESC").fetchall()
+            out = []
+            for r in rows:
+                d = dict(r)
+                for k in ('checklist', 'deduction_items'):
+                    try: d[k] = json.loads(d.get(k) or ('{}' if k == 'checklist' else '[]'))
+                    except Exception: d[k] = {} if k == 'checklist' else []
+                out.append(d)
+            return json_response(self, {'tradeins': out})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
 
     def create_transfer_batch(self):
         """Bulk transfer: create many pending transfers to one target store in a
