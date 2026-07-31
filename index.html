@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0d4f3c">
+<meta name="theme-color" content="#1e40af">
 <title>PhonesInventory · iFixForU 跨店手机库存管理系统</title>
+<link rel="icon" type="image/png" href="/img/logo.png">
+<link rel="apple-touch-icon" href="/img/logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -97,16 +99,13 @@ aside.sidebar {
 }
 .brand-mark {
   width: 32px; height: 32px;
-  background: var(--brand);
+  background: #fff;
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  color: white;
-  font-family: 'Inter', sans-serif;
-  font-weight: 800;
-  font-size: 17px;
-  letter-spacing: -0.02em;
+  overflow: hidden;
   box-shadow: var(--shadow-brand);
 }
+.brand-mark img { width: 100%; height: 100%; object-fit: contain; }
 .brand-name { font-weight: 700; font-size: 14px; letter-spacing: -0.01em; }
 .brand-name .light { color: var(--text-muted); font-weight: 400; }
 .brand-sub {
@@ -5031,12 +5030,13 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   text-align: center; margin-bottom: 28px;
 }
 .login-card .logo-mark {
-  width: 52px; height: 52px; border-radius: 14px;
-  background: var(--brand); color: #fff;
+  width: 64px; height: 64px; border-radius: 16px;
+  background: #fff;
   display: inline-flex; align-items: center; justify-content: center;
-  font-size: 24px; font-weight: 800; margin-bottom: 12px;
-  box-shadow: 0 4px 14px rgba(13,79,60,0.3);
+  overflow: hidden; margin-bottom: 12px;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.25);
 }
+.login-card .logo-mark img { width: 100%; height: 100%; object-fit: contain; }
 .login-card .logo-title {
   font-size: 18px; font-weight: 800; color: #1a1a1a; margin-bottom: 4px;
 }
@@ -5164,7 +5164,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
   <div class="login-bg-text">P</div>
   <div class="login-card">
     <div class="logo-row">
-      <div class="logo-mark">P</div>
+      <div class="logo-mark"><img src="/img/logo.png" alt="PhonesInventory"></div>
       <div class="logo-title">PhonesInventory</div>
       <div class="logo-sub">
         <span class="zh">iFixForU 跨店手机库存管理系统</span>
@@ -5623,7 +5623,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">P</div>
+      <div class="brand-mark"><img src="/img/logo.png" alt="PhonesInventory"></div>
       <div>
         <div class="brand-name">PhonesInventory<span class="light">.com</span></div>
         <div class="brand-sub">
