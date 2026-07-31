@@ -9067,8 +9067,8 @@ function openDrawer(idx) {
         <div class="info-cell"><div class="info-label">${isZh?'货位':'Shelf'}</div><div class="info-value mono">${p.shelf}</div></div>
         <div class="info-cell"><div class="info-label">${isZh?'入库日期':'Received'}</div><div class="info-value mono">${p.purchaseDate}</div></div>
         <div class="info-cell"><div class="info-label">${isZh?'来源':'Supplier'}</div><div class="info-value" style="font-size:12.5px;">${isZh?p.supplier:(p.supplierEn||p.supplier)}</div></div>
-        <div class="info-cell"><div class="info-label">${isZh?'进价':'Cost'}</div><div class="info-value mono">${p.cost > 0 ? '$' + p.cost : '—'}</div></div>
-        <div class="info-cell"><div class="info-label">${isZh?'毛利':'Profit'}</div><div class="info-value mono" style="color:var(--success);">${(p.price > 0 && p.cost > 0) ? '+$' + (p.price-p.cost) + ' (' + Math.round((p.price-p.cost)/p.price*100) + '%)' : '—'}</div></div>
+        <div class="info-cell admin-only"><div class="info-label">${isZh?'进价':'Cost'}</div><div class="info-value mono">${p.cost > 0 ? '$' + p.cost : '—'}</div></div>
+        <div class="info-cell admin-only"><div class="info-label">${isZh?'毛利':'Profit'}</div><div class="info-value mono" style="color:var(--success);">${(p.price > 0 && p.cost > 0) ? '+$' + (p.price-p.cost) + ' (' + Math.round((p.price-p.cost)/p.price*100) + '%)' : '—'}</div></div>
       </div>
     </div>
 

@@ -610,12 +610,25 @@ class APIHandler(BaseHTTPRequestHandler):
 
     # ─── Enriched phones list (replaces the public data/phones.js export) ───
 
+    def _is_admin(self, conn):
+        """True if the authenticated user is an admin. Used to gate owner-only
+        fields (e.g. cost) so staff devices never receive them."""
+        email = getattr(self, '_auth_email', None)
+        if not email:
+            return False
+        u = get_user(conn, email)
+        return bool(u and u['role'] == 'admin')
+
     def get_phones(self):
         conn = None
         try:
             conn = get_db()
             rows = conn.execute("SELECT * FROM inventory ORDER BY id DESC").fetchall()
-            return json_response(self, {'phones': export_inventory.build_phones(rows)})
+            phones = export_inventory.build_phones(rows)
+            if not self._is_admin(conn):
+                for p in phones:
+                    p['cost'] = 0  # cost is owner-only, never leaves the server for staff
+            return json_response(self, {'phones': phones})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
         finally:
@@ -649,6 +662,7 @@ class APIHandler(BaseHTTPRequestHandler):
 
             rows = conn.execute(query, args).fetchall()
 
+            is_admin = self._is_admin(conn)
             items = []
             for r in rows:
                 item = dict(r)
@@ -658,6 +672,8 @@ class APIHandler(BaseHTTPRequestHandler):
                 item['scannedAt'] = item.pop('scanned_at', '')
                 item['createdAt'] = item.pop('created_at', '')
                 item.pop('raw_ocr', None)  # Don't send raw OCR data
+                if not is_admin:
+                    item['cost'] = 0  # cost is owner-only
                 items.append(item)
 
             return json_response(self, {'inventory': items, 'total': len(items)})
