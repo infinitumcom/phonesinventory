@@ -11624,92 +11624,198 @@ function confirmAllIncomingTransfers() {
 }
 
 // ===== HK Warehouse Intake =====
+var HK_TEMPLATE_COLS = ['型号 Model','容量 Storage','颜色 Color','成色 Condition','版本 Region','电池寿命 Battery%','进价 Cost','建议零售价 MSRP','IMEI'];
+var HK_EXAMPLE_ROWS = [
+  ['iPhone 15 Pro','256GB','黑色 Black','used','us','92','420','780','357004283628528'],
+  ['iPhone 14','128GB','午夜 Midnight','used','us','88','267','450','351682572931780']
+];
 function openHkStockInModal() {
   var old = document.getElementById('hkStockInModal');
   if (old) old.parentNode.removeChild(old);
+  window._hkRows = [];
   var acct = window._currentAccount || {};
   var isAdmin = acct.role === 'admin';
-  var canSeeCost = isAdmin || acct.role === 'hk';
 
   var overlay = document.createElement('div');
   overlay.id = 'hkStockInModal';
-  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
   overlay.addEventListener('click', function(e){ if (e.target === overlay) closeHkStockInModal(); });
 
   var inp = 'width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;';
   var lbl = 'font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;';
-  var storageOpts = ['64GB','128GB','256GB','512GB','1TB'].map(function(s){return '<option value="'+s+'"'+(s==='128GB'?' selected':'')+'>'+s+'</option>';}).join('');
-  // Admin may target any store; HK is locked to 香港仓.
   var storeRow = isAdmin
-    ? '<div style="margin-bottom:10px;"><label style="'+lbl+'"><span class="zh">入库到</span><span class="en">Into store</span></label>' +
+    ? '<div style="margin-bottom:12px;"><label style="'+lbl+'"><span class="zh">入库到</span><span class="en">Into store</span></label>' +
       '<select id="hkStore" style="'+inp+'-webkit-appearance:auto;appearance:auto;">' +
       ['香港仓','HQ 总仓','Alhambra','Monterey Park','San Gabriel','Rowland Heights','Arcadia 1','Arcadia 2','Irvine','Rancho Cucamonga','Las Vegas']
         .map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('') + '</select></div>'
-    : '<div style="margin-bottom:10px;font-size:12px;color:#9f1239;font-weight:700;">🇭🇰 <span class="zh">入库到 香港仓</span><span class="en">Into HK Warehouse</span></div>';
+    : '<div style="margin-bottom:12px;font-size:12px;color:#9f1239;font-weight:700;">🇭🇰 <span class="zh">入库到 香港仓</span><span class="en">Into HK Warehouse</span></div>';
+
+  var thead = HK_TEMPLATE_COLS.map(function(c){ return '<th style="border:1px solid #e5e7eb;padding:5px 8px;background:#fef2f2;color:#9f1239;font-weight:700;white-space:nowrap;">'+c+'</th>'; }).join('');
+  function trow(a){ return '<tr>'+a.map(function(v){ return '<td style="border:1px solid #e5e7eb;padding:5px 8px;white-space:nowrap;color:#555;">'+v+'</td>'; }).join('')+'</tr>'; }
+  var tableHtml = '<div style="overflow:auto;border-radius:8px;border:1px solid #e5e7eb;margin-bottom:6px;"><table style="border-collapse:collapse;font-size:11.5px;min-width:100%;"><thead><tr>'+thead+'</tr></thead><tbody>'+HK_EXAMPLE_ROWS.map(trow).join('')+'</tbody></table></div>';
 
   var box = document.createElement('div');
-  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;padding:22px;max-width:460px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;padding:22px;max-width:700px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
   box.innerHTML =
-    '<div style="font-weight:700;font-size:16px;margin-bottom:16px;">🇭🇰 <span class="zh">香港仓入库</span><span class="en">HK Warehouse Intake</span></div>' +
+    '<div style="font-weight:700;font-size:16px;margin-bottom:14px;">🇭🇰 <span class="zh">香港仓入库 · Excel 上传</span><span class="en">HK Intake · Excel Upload</span></div>' +
     storeRow +
-    '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-      '<div style="flex:2;"><label style="'+lbl+'"><span class="zh">型号</span><span class="en">Model</span></label><input id="hkModel" style="'+inp+'" placeholder="iPhone 15 Pro" list="hkModelList"><datalist id="hkModelList"><option value="iPhone 13"><option value="iPhone 14"><option value="iPhone 14 Plus"><option value="iPhone 15"><option value="iPhone 15 Plus"><option value="iPhone 15 Pro"><option value="iPhone 15 Pro Max"><option value="iPhone 16"><option value="iPhone 16 Pro"><option value="iPhone 16 Pro Max"></datalist></div>' +
-      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">容量</span><span class="en">Storage</span></label><select id="hkStorage" style="'+inp+'-webkit-appearance:auto;appearance:auto;">'+storageOpts+'</select></div>' +
+    '<div style="font-size:12px;font-weight:600;color:#666;margin-bottom:6px;"><span class="zh">① 按此模板填写（每行一台手机，列名要对上）</span><span class="en">① Fill per this template — one row per phone</span></div>' +
+    tableHtml +
+    '<div style="font-size:11px;color:#888;margin-bottom:14px;"><span class="zh">成色填 used/二手 或 new/全新；版本填 us/美版、cn/国行、hk/港版。进价仅内部可见。</span><span class="en">condition: used/new · region: us/cn/hk · cost is internal-only</span></div>' +
+    '<div style="font-size:12px;font-weight:600;color:#666;margin-bottom:6px;"><span class="zh">② 下载模板填好，然后上传</span><span class="en">② Download, fill, then upload</span></div>' +
+    '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">' +
+      '<button onclick="downloadHkTemplate()" style="padding:8px 14px;border:1px solid #e11d48;background:#fff;color:#e11d48;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">⬇ <span class="zh">下载模板</span><span class="en">Template</span></button>' +
+      '<label style="padding:8px 14px;border:1px dashed #e11d48;background:#fff1f2;color:#9f1239;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">📎 <span class="zh">选择 Excel/CSV 文件</span><span class="en">Choose file</span><input type="file" id="hkFile" accept=".csv,.xlsx,.xls" style="display:none;" onchange="handleHkFile(this)"></label>' +
+      '<span id="hkFileName" style="font-size:12px;color:#888;"></span>' +
     '</div>' +
-    '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">成色</span><span class="en">Condition</span></label><select id="hkCondition" style="'+inp+'-webkit-appearance:auto;appearance:auto;"><option value="used"><span>二手 Used</span></option><option value="new">全新 New</option></select></div>' +
-      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">版本</span><span class="en">Region</span></label><select id="hkRegion" style="'+inp+'-webkit-appearance:auto;appearance:auto;"><option value="us">美版 US</option><option value="cn">国行 CN</option><option value="hk">港版 HK</option></select></div>' +
-      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">颜色</span><span class="en">Color</span></label><input id="hkColor" style="'+inp+'" placeholder="—"></div>' +
-    '</div>' +
-    (canSeeCost ?
-    '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
-      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">进价 $ (仅内部可见)</span><span class="en">Cost $ (internal)</span></label><input id="hkCost" type="number" style="'+inp+'" placeholder="0"></div>' +
-      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">建议零售价 $</span><span class="en">MSRP $</span></label><input id="hkPrice" type="number" style="'+inp+'" placeholder="0"></div>' +
-    '</div>' : '') +
-    '<div style="margin-bottom:8px;">' +
-      '<label style="'+lbl+'">IMEI <span style="color:#888;font-weight:400;">(<span class="zh">每行一个或空格/逗号分隔</span><span class="en">one per line / space / comma</span>)</span></label>' +
-      '<textarea id="hkImeis" style="'+inp+'min-height:130px;font-family:monospace;font-size:13px;resize:vertical;" placeholder="357004283628528&#10;351682572931780"></textarea>' +
-      '<div style="font-size:11px;color:#888;margin-top:4px;"><span class="zh">已识别 </span><span class="en">Detected </span><span id="hkImeiCount" style="font-weight:700;color:#e11d48;">0</span><span class="zh"> 个有效 IMEI</span><span class="en"> valid IMEIs</span></div>' +
-    '</div>' +
+    '<div id="hkPreview"></div>' +
     '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">' +
       '<button id="hkCancelBtn" style="padding:9px 16px;border:1px solid #ddd;background:#f5f5f5;color:#333;border-radius:8px;font-size:13px;cursor:pointer;"><span class="zh">取消</span><span class="en">Cancel</span></button>' +
-      '<button id="hkSubmitBtn" style="padding:9px 18px;border:none;background:#e11d48;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;"><span class="zh">入库</span><span class="en">Add to stock</span></button>' +
+      '<button id="hkSubmitBtn" disabled style="padding:9px 18px;border:none;background:#f3a4b5;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:not-allowed;"><span class="zh">确认入库</span><span class="en">Import</span></button>' +
     '</div>';
 
   overlay.appendChild(box);
   document.body.appendChild(overlay);
   document.getElementById('hkCancelBtn').addEventListener('click', closeHkStockInModal);
   document.getElementById('hkSubmitBtn').addEventListener('click', submitHkStockIn);
-  document.getElementById('hkImeis').addEventListener('input', function(){
-    document.getElementById('hkImeiCount').textContent = parseImeiList(this.value).length;
-  });
+}
+function downloadHkTemplate() {
+  var rows = [['型号','容量','颜色','成色','版本','电池寿命','进价','建议零售价','IMEI']].concat([
+    ['iPhone 15 Pro','256GB','黑色','used','us','92','420','780','357004283628528'],
+    ['iPhone 14','128GB','午夜','used','us','88','267','450','351682572931780']
+  ]);
+  var csv = '﻿' + rows.map(function(r){ return r.map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(','); }).join('\r\n');
+  var blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = '香港仓入库模板.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function hkMapHeader(h) {
+  h = String(h == null ? '' : h).trim().toLowerCase();
+  if (/型号|机型|model/.test(h)) return 'model';
+  if (/容量|内存|存储|storage|capacity/.test(h)) return 'storage';
+  if (/颜色|color/.test(h)) return 'color';
+  if (/成色|新旧|condition|grade/.test(h)) return 'condition';
+  if (/版本|地区|region/.test(h)) return 'region';
+  if (/电池|battery/.test(h)) return 'battery';
+  if (/进价|成本|cost/.test(h)) return 'cost';
+  if (/零售|售价|msrp|price/.test(h)) return 'price';
+  if (/imei|串号/.test(h)) return 'imei';
+  return null;
+}
+function hkLoadXlsxLib(cb) {
+  if (window.XLSX) { cb(null); return; }
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+  s.onload = function(){ cb(null); };
+  s.onerror = function(){ cb(new Error('load fail')); };
+  document.head.appendChild(s);
+}
+function hkParseCSV(text) {
+  var rows = [], row = [], cur = '', i = 0, q = false;
+  text = String(text).replace(/^﻿/, '');
+  while (i < text.length) {
+    var ch = text[i];
+    if (q) {
+      if (ch === '"') { if (text[i+1] === '"') { cur += '"'; i++; } else q = false; }
+      else cur += ch;
+    } else {
+      if (ch === '"') q = true;
+      else if (ch === ',') { row.push(cur); cur = ''; }
+      else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+      else if (ch === '\r') { /* skip */ }
+      else cur += ch;
+    }
+    i++;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows;
+}
+function handleHkFile(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  document.getElementById('hkFileName').textContent = file.name;
+  var ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (ext === 'csv') {
+    var reader = new FileReader();
+    reader.onload = function(e){ hkOnMatrix(hkParseCSV(e.target.result)); };
+    reader.readAsText(file, 'utf-8');
+  } else {
+    hkLoadXlsxLib(function(err){
+      if (err) { showToast('Excel 解析库加载失败，请把文件另存为 CSV 再上传 / Load failed — save as CSV'); return; }
+      var reader = new FileReader();
+      reader.onload = function(e){
+        try {
+          var wb = XLSX.read(new Uint8Array(e.target.result), { type:'array' });
+          var ws = wb.Sheets[wb.SheetNames[0]];
+          hkOnMatrix(XLSX.utils.sheet_to_json(ws, { header:1, defval:'' }));
+        } catch(ex){ showToast('解析失败 / Parse error: ' + ex.message); }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+}
+function hkOnMatrix(matrix) {
+  if (!matrix || !matrix.length) { showToast('文件为空 / Empty file'); return; }
+  var header = matrix[0] || [];
+  var map = header.map(hkMapHeader);
+  if (map.indexOf('imei') < 0 || map.indexOf('model') < 0) {
+    showToast('未识别到「型号」和「IMEI」列，请用模板列名 / Need Model & IMEI columns');
+    return;
+  }
+  var items = [];
+  for (var r = 1; r < matrix.length; r++) {
+    var cells = matrix[r]; if (!cells) continue;
+    var obj = {};
+    for (var c = 0; c < map.length; c++) { if (map[c]) obj[map[c]] = String(cells[c] == null ? '' : cells[c]).trim(); }
+    if (obj.condition) { var cc = obj.condition.toLowerCase(); obj.condition = /new|全新|新机/.test(cc) ? 'new' : 'used'; }
+    if (obj.region) { var rg = obj.region.toLowerCase(); obj.region = /cn|国行|大陆/.test(rg) ? 'cn' : (/hk|港/.test(rg) ? 'hk' : 'us'); }
+    if (!obj.imei && !obj.model) continue;
+    items.push(obj);
+  }
+  window._hkRows = items;
+  hkRenderPreview(items);
+}
+function hkIsValidRow(it) {
+  return /^\d{15}$/.test(String(it.imei || '').replace(/\s/g, '')) && it.model && it.storage;
+}
+function hkRenderPreview(items) {
+  var box = document.getElementById('hkPreview');
+  var valid = items.filter(hkIsValidRow);
+  var bad = items.length - valid.length;
+  var head = '<div style="font-size:13px;font-weight:700;margin:6px 0;"><span class="zh">识别到 </span><span class="en">Parsed </span><span style="color:#16a34a;">'+valid.length+'</span> <span class="zh">台可入库</span><span class="en"> ready</span>'+(bad?' · <span style="color:#dc2626;">'+bad+' <span class="zh">行有问题</span><span class="en"> problem rows</span></span>':'')+'</div>';
+  var cols = ['','型号','容量','颜色','成色','版本','电池','进价','零售','IMEI'];
+  var th = cols.map(function(c){ return '<th style="padding:3px 6px;border:1px solid #eee;background:#f9fafb;">'+c+'</th>'; }).join('');
+  var body = items.slice(0, 8).map(function(it){
+    var ok = hkIsValidRow(it);
+    var tds = [ok?'✅':'⚠️', it.model||'—', it.storage||'—', it.color||'', it.condition||'', it.region||'', it.battery||'', it.cost||'', it.price||'', it.imei||''];
+    return '<tr style="'+(ok?'':'background:#fef2f2;')+'">'+tds.map(function(v,i){ return '<td style="padding:3px 6px;border:1px solid #eee;'+(i===9?'font-family:monospace;':'')+'">'+v+'</td>'; }).join('')+'</tr>';
+  }).join('');
+  box.innerHTML = head + '<div style="overflow:auto;border:1px solid #eee;border-radius:8px;max-height:230px;"><table style="border-collapse:collapse;font-size:11px;width:100%;"><thead><tr>'+th+'</tr></thead><tbody>'+body+'</tbody></table></div>'+(items.length>8?'<div style="font-size:11px;color:#888;margin-top:4px;">… '+(items.length-8)+' <span class="zh">行更多</span><span class="en">more</span></div>':'');
+  var btn = document.getElementById('hkSubmitBtn');
+  if (valid.length) { btn.disabled = false; btn.style.background = '#e11d48'; btn.style.cursor = 'pointer'; var z = btn.querySelector('.zh'); if (z) z.textContent = '确认入库 '+valid.length+' 台'; }
+  else { btn.disabled = true; btn.style.background = '#f3a4b5'; btn.style.cursor = 'not-allowed'; }
 }
 function closeHkStockInModal() {
   var m = document.getElementById('hkStockInModal');
   if (m) m.parentNode.removeChild(m);
 }
 function submitHkStockIn() {
-  var model = (document.getElementById('hkModel').value || '').trim();
-  var storage = document.getElementById('hkStorage').value;
-  var imeis = parseImeiList(document.getElementById('hkImeis').value);
-  if (!model) { showToast('请输入型号 / Enter model'); return; }
-  if (!imeis.length) { showToast('请粘贴至少一个有效 IMEI / Paste at least one valid IMEI'); return; }
+  var rows = (window._hkRows || []).filter(hkIsValidRow).map(function(it){
+    return {
+      imei: String(it.imei).replace(/\s/g, ''),
+      model: it.model, storage: it.storage,
+      color: it.color || '', condition: it.condition || 'used',
+      region: it.region || 'us', battery: it.battery || '',
+      cost: parseFloat(it.cost) || 0, price: parseFloat(it.price) || 0
+    };
+  });
+  if (!rows.length) { showToast('没有可入库的行 / No valid rows'); return; }
   var storeEl = document.getElementById('hkStore');
-  var costEl = document.getElementById('hkCost');
-  var priceEl = document.getElementById('hkPrice');
-  var payload = {
-    model: model,
-    storage: storage,
-    condition: document.getElementById('hkCondition').value,
-    region: document.getElementById('hkRegion').value,
-    color: (document.getElementById('hkColor').value || '').trim(),
-    cost: costEl ? (parseFloat(costEl.value) || 0) : 0,
-    price: priceEl ? (parseFloat(priceEl.value) || 0) : 0,
-    imeis: imeis
-  };
+  var payload = { rows: rows };
   if (storeEl) payload.store = storeEl.value;
   var btn = document.getElementById('hkSubmitBtn');
-  btn.disabled = true; btn.textContent = '入库中… / Adding…';
+  btn.disabled = true;
   apiCall('POST', '/inventory/batch', payload).then(function(res){
     if (res.error) { showToast('入库失败: ' + res.error); btn.disabled = false; return; }
     closeHkStockInModal();
@@ -11718,8 +11824,8 @@ function submitHkStockIn() {
               ' / Added ' + (res.createdCount||0) + (res.skippedCount ? ', skipped ' + res.skippedCount : '');
     showToast(msg);
     if (res.skipped && res.skipped.length) {
-      var lines = res.skipped.map(function(s){ return s.imei + '  —  ' + s.reason; }).join('\n');
-      setTimeout(function(){ alert('以下 IMEI 未入库 / Not added:\n\n' + lines); }, 300);
+      var lines = res.skipped.map(function(s){ return (s.row ? ('第'+s.row+'行 ') : '') + (s.imei || '') + '  —  ' + s.reason; }).join('\n');
+      setTimeout(function(){ alert('以下未入库 / Skipped:\n\n' + lines); }, 300);
     }
   }).catch(function(e){
     showToast('入库失败，请检查网络 / Intake failed, check network');

@@ -985,6 +985,58 @@ class APIHandler(BaseHTTPRequestHandler):
                         return json_response(self, {'error': '无权限入库 / Not allowed to add stock'}, 403)
 
                     store = '香港仓' if role == 'hk' else normalize_store_name(data.get('store') or '香港仓')
+                    who = (user['name'] if user else '') or (getattr(self, '_auth_email', '') or '')
+                    intake_note = 'HK intake' if role == 'hk' else 'admin intake'
+
+                    # ── Per-row mode (Excel/CSV upload): each row carries its own spec ──
+                    rows = data.get('rows')
+                    if isinstance(rows, list) and rows:
+                        now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                        existing = {r[0] for r in conn.execute("SELECT imei FROM inventory")}
+                        created, skipped, seen = [], [], set()
+                        for idx, row in enumerate(rows):
+                            imei = str(row.get('imei', '')).strip().replace(' ', '')
+                            r_model = (row.get('model') or '').strip()
+                            r_storage = (row.get('storage') or '').strip()
+                            if not imei:
+                                skipped.append({'row': idx + 1, 'imei': '', 'reason': '缺 IMEI / Missing IMEI'}); continue
+                            if len(imei) != 15 or not imei.isdigit():
+                                skipped.append({'row': idx + 1, 'imei': imei, 'reason': '格式错误 / Invalid IMEI'}); continue
+                            if imei in existing or imei in seen:
+                                skipped.append({'row': idx + 1, 'imei': imei, 'reason': '已存在 / Duplicate'}); continue
+                            if not r_model or not r_storage:
+                                skipped.append({'row': idx + 1, 'imei': imei, 'reason': '缺型号或容量 / Missing model/storage'}); continue
+                            seen.add(imei)
+                            r_cond = (row.get('condition') or 'used').strip().lower()
+                            if r_cond not in ('new', 'used'):
+                                r_cond = 'used'
+                            r_region = (row.get('region') or ('hk' if role == 'hk' else 'us')).strip().lower()
+                            if r_region not in ('us', 'cn', 'hk'):
+                                r_region = 'us'
+                            try: r_cost = float(row.get('cost') or 0)
+                            except (TypeError, ValueError): r_cost = 0
+                            try: r_price = float(row.get('price') or 0)
+                            except (TypeError, ValueError): r_price = 0
+                            r_battery = str(row.get('battery') or '').strip()
+                            r_color = (row.get('color') or '').strip()
+                            r_store = store if role == 'hk' else normalize_store_name(row.get('store') or store)
+                            conn.execute("""
+                                INSERT INTO inventory
+                                (imei,imei2,serial,brand,model,storage,color,color_en,
+                                 condition,battery_health,region,store,
+                                 cost,price,status,scanned_by,scanned_at,raw_ocr,notes)
+                                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                            """, (imei, '', '', (row.get('brand') or 'Apple').strip(), r_model, r_storage,
+                                  r_color, '', r_cond, r_battery, r_region, r_store,
+                                  r_cost, r_price, 'available', who, now, '', intake_note))
+                            created.append(imei)
+                        conn.commit()
+                        return json_response(self, {
+                            'ok': True, 'store': store, 'mode': 'rows',
+                            'created': created, 'skipped': skipped,
+                            'createdCount': len(created), 'skippedCount': len(skipped),
+                        })
+
                     brand = (data.get('brand') or 'Apple').strip()
                     model = (data.get('model') or '').strip()
                     storage = (data.get('storage') or '').strip()
