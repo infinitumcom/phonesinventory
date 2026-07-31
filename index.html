@@ -1629,6 +1629,10 @@ body[data-role="hk"] .us-only { display: none !important; }
 body:not([data-role="hk"]) .hk-only { display: none !important; }
 /* HK intake button: HK team + admin only (staff use the Telegram bot) */
 body[data-role="staff"] .hk-stockin { display: none !important; }
+/* HK sees a trimmed app: only inventory / shipments / after-sales */
+body[data-role="hk"] .hk-hide { display: none !important; }
+/* HK store filter is limited to HK warehouse + HQ warehouse */
+body[data-role="hk"] .store-pill:not([data-store="hk-warehouse"]):not([data-store="hq-warehouse"]) { display: none !important; }
 
 /* Role toggle in topbar */
 .role-switch {
@@ -5631,7 +5635,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       <div class="sidebar-label">
         <span class="zh">管理</span><span class="en">Management</span>
       </div>
-      <div class="nav-item active" onclick="navTo(this, 'dashboard')">
+      <div class="nav-item active hk-hide" onclick="navTo(this, 'dashboard')">
         <div class="nav-icon-wrap icon-green">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
             <rect x="2" y="2" width="5" height="6" rx="1"/>
@@ -5690,7 +5694,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
         <span class="nav-text"><span class="zh">库存录入</span><span class="en">Stock In</span></span>
       </div>
-      <div class="nav-item" onclick="navTo(this, 'sale')">
+      <div class="nav-item hk-hide" onclick="navTo(this, 'sale')">
         <div class="nav-icon-wrap icon-orange">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M3 3l1.5 9h7L13 5H4M5.5 14a1 1 0 100-2 1 1 0 000 2zm5 0a1 1 0 100-2 1 1 0 000 2z"/>
@@ -5698,7 +5702,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
         <span class="nav-text"><span class="zh">新建销售</span><span class="en">New Sale</span></span>
       </div>
-      <div class="nav-item" onclick="navTo(this, 'sales')">
+      <div class="nav-item hk-hide" onclick="navTo(this, 'sales')">
         <div class="nav-icon-wrap icon-gold">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
             <rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 6h6M5 9h6M5 12h4"/>
@@ -5706,7 +5710,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
         <span class="nav-text"><span class="zh">销售记录</span><span class="en">Sales</span></span>
       </div>
-      <div class="nav-item" onclick="navTo(this, 'transfer')">
+      <div class="nav-item hk-hide" onclick="navTo(this, 'transfer')">
         <div class="nav-icon-wrap icon-blue">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M3 5h10l-2-2M13 11H3l2 2"/>
@@ -5725,7 +5729,16 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         <span class="nav-text"><span class="zh">跨境物流</span><span class="en">Shipments</span></span>
         <span class="nav-badge" id="navBadgeShipments" style="display:none;background:#e11d48;color:#fff;">0</span>
       </div>
-      <div class="nav-item" onclick="navTo(this, 'tradein')">
+      <div class="nav-item" onclick="navTo(this, 'aftersales')">
+        <div class="nav-icon-wrap" style="background:#fef3c7;color:#b45309;">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+            <path d="M8 1l2 3 3 .5-2 2.5.5 3L8 12l-3.5 2 .5-3-2-2.5 3-.5z"/>
+          </svg>
+        </div>
+        <span class="nav-text"><span class="zh">售后处理</span><span class="en">After-sales</span></span>
+        <span class="nav-badge" id="navBadgeDefects" style="display:none;background:#dc2626;color:#fff;">0</span>
+      </div>
+      <div class="nav-item hk-hide" onclick="navTo(this, 'tradein')">
         <div class="nav-icon-wrap icon-purple">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
             <path d="M5 3v3M5 6l-2-2m2 2l2-2M11 13v-3M11 10l-2 2m2-2l2 2"/>
@@ -7755,17 +7768,25 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           </div>
         </div>
 
-        <!-- Defective units / repair tickets (US reports · HK can see) -->
-        <div style="margin-top:30px;">
-          <h2 style="font-size:15px;font-weight:700;margin-bottom:4px;">🛠 <span class="zh">问题机 · 报修</span><span class="en">Defective Units · Repairs</span></h2>
-          <div class="page-subtitle" style="margin-bottom:12px;">
-            <span class="zh">美国收货发现问题 → 库存里点「报修」→ 香港仓在此看到是哪台</span>
-            <span class="en">US flags a bad unit → it shows here for the HK team to see</span>
-          </div>
-          <div id="defectsList">
-            <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
-              <span class="zh">暂无问题机</span><span class="en">No defective units</span>
+      </div>
+    </div>
+
+    <!-- ============= AFTER-SALES / REPAIRS ============= -->
+    <div class="page-content" id="page-aftersales">
+      <div class="content">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title">🛠 <span class="zh">售后处理</span><span class="en">After-sales & Repairs</span></h1>
+            <div class="page-subtitle">
+              <span class="zh">美国收货发现问题 → 在库存里点「报修」→ 问题机在此列出，香港仓可见是哪一台</span>
+              <span class="en">US flags a bad unit in inventory → it lists here; HK can see which unit</span>
             </div>
+          </div>
+        </div>
+        <div id="defectsList">
+          <div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+            <div style="font-size:28px;margin-bottom:8px;">🛠</div>
+            <span class="zh">暂无问题机</span><span class="en">No defective units</span>
           </div>
         </div>
       </div>
@@ -8534,7 +8555,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           </div>
           <span class="bnav-label"><span class="zh">库存</span><span class="en">Stock</span></span>
         </button>
-        <button class="mobile-bnav-item" onclick="navByName('sale'); setActiveBnav(this)">
+        <button class="mobile-bnav-item hk-hide" onclick="navByName('sale'); setActiveBnav(this)">
           <div class="bnav-icon-wrap">
             <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
               <rect x="3" y="3" width="10" height="10" rx="1"/><path d="M5 7h6M5 9h4"/>
@@ -8561,7 +8582,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           </div>
           <span class="bnav-label"><span class="zh">控台</span><span class="en">Hub</span></span>
         </button>
-        <button class="mobile-bnav-item" onclick="navByName('sales'); setActiveBnav(this)">
+        <button class="mobile-bnav-item hk-hide" onclick="navByName('sales'); setActiveBnav(this)">
           <div class="bnav-icon-wrap">
             <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
               <rect x="2" y="2" width="12" height="12" rx="1.5"/><path d="M5 6h6M5 9h6M5 12h4"/>
@@ -12014,6 +12035,9 @@ function loadServerDefects() {
   apiCall('GET', '/defects').then(function(res){
     window._defects = (res && res.defects) ? res.defects : [];
     renderDefectsList();
+    var open = window._defects.filter(function(d){ return d.status === 'open'; }).length;
+    var badge = document.getElementById('navBadgeDefects');
+    if (badge) { badge.textContent = open; badge.style.display = open ? '' : 'none'; }
   }).catch(function(e){ console.log('load defects failed', e); });
 }
 var DEFECT_STATUS = {
@@ -13121,11 +13145,13 @@ function setRole(btnOrNull, role, userAccount) {
   var stockinDate = document.getElementById('stockinDate');
   if (stockinDate) stockinDate.value = new Date().toISOString().split('T')[0];
 
-  // Staff should not see dashboard — redirect to inventory
-  if (role === 'staff') {
+  // Staff & HK should not land on dashboard — redirect to inventory
+  if (role === 'staff' || role === 'hk') {
     var lastPage = null;
     try { lastPage = sessionStorage.getItem('pi_current_page'); } catch(e){}
-    if (!lastPage || lastPage === 'dashboard') {
+    var hkHidden = { dashboard:1, sale:1, sales:1, transfer:1, tradein:1 };
+    var needRedirect = !lastPage || lastPage === 'dashboard' || (role === 'hk' && hkHidden[lastPage]);
+    if (needRedirect) {
       setTimeout(function() {
         var navEl = document.querySelector('.nav-item[onclick*="inventory"]');
         if (navEl) navTo(navEl, 'inventory');
@@ -13158,6 +13184,7 @@ function navTo(el, target) {
     sales: { zh:'销售记录', en:'Sales' },
     transfer: { zh:'跨店调拨', en:'Transfers' },
     shipments: { zh:'跨境物流', en:'Shipments' },
+    aftersales: { zh:'售后处理', en:'After-sales' },
     tradein: { zh:'二手回收', en:'Trade-In' },
     staff: { zh:'员工与积分', en:'Staff & Points' },
     customers: { zh:'客户档案', en:'Customers' },
@@ -13179,7 +13206,8 @@ function navTo(el, target) {
     if (target === 'reports') renderReportsPage();
     if (target === 'customers') renderCustomersPage();
     if (target === 'staff') renderStaffPage();
-    if (target === 'shipments') { loadServerShipments(); loadServerDefects(); }
+    if (target === 'shipments') { loadServerShipments(); }
+    if (target === 'aftersales') { loadServerDefects(); }
   } catch(e){}
 }
 

@@ -686,18 +686,22 @@ class APIHandler(BaseHTTPRequestHandler):
         try:
             conn = get_db()
             user = self._auth_user(conn)
-            # HK warehouse role only ever sees HK warehouse stock.
-            if user and user['role'] == 'hk':
+            role = user['role'] if user else None
+            # HK warehouse role sees only HK warehouse + HQ warehouse stock.
+            if role == 'hk':
                 rows = conn.execute(
-                    "SELECT * FROM inventory WHERE store=? ORDER BY id DESC",
-                    ('香港仓',)
+                    "SELECT * FROM inventory WHERE store IN ('香港仓','HQ 总仓') ORDER BY id DESC"
                 ).fetchall()
             else:
                 rows = conn.execute("SELECT * FROM inventory ORDER BY id DESC").fetchall()
             phones = export_inventory.build_phones(rows)
-            # cost is owner-only: admin sees all; HK sees only their own 香港仓 cost
-            # (they only ever receive 香港仓 rows); staff never see cost.
-            if not (user and user['role'] in ('admin', 'hk')):
+            # cost is owner-only. admin: all. HK: only its own 香港仓 cost (HQ masked).
+            # staff: never.
+            if role == 'hk':
+                for p in phones:
+                    if p.get('store') != '香港仓':
+                        p['cost'] = 0
+            elif role != 'admin':
                 for p in phones:
                     p['cost'] = 0
             return json_response(self, {'phones': phones})
@@ -722,10 +726,15 @@ class APIHandler(BaseHTTPRequestHandler):
             args = []
 
             user = self._auth_user(conn)
-            if user and user['role'] == 'hk':
-                # HK warehouse role is locked to HK warehouse stock only.
-                conditions.append("store = ?")
-                args.append('香港仓')
+            role = user['role'] if user else None
+            if role == 'hk':
+                # HK warehouse role is limited to HK + HQ warehouses.
+                norm = normalize_store_name(store) if (store and store != 'all') else None
+                if norm in ('香港仓', 'HQ 总仓'):
+                    conditions.append("store = ?")
+                    args.append(norm)
+                else:
+                    conditions.append("store IN ('香港仓','HQ 总仓')")
             elif store and store != 'all':
                 conditions.append("store = ?")
                 args.append(normalize_store_name(store))
@@ -739,7 +748,6 @@ class APIHandler(BaseHTTPRequestHandler):
 
             rows = conn.execute(query, args).fetchall()
 
-            can_see_cost = bool(user and user['role'] in ('admin', 'hk'))
             items = []
             for r in rows:
                 item = dict(r)
@@ -749,8 +757,14 @@ class APIHandler(BaseHTTPRequestHandler):
                 item['scannedAt'] = item.pop('scanned_at', '')
                 item['createdAt'] = item.pop('created_at', '')
                 item.pop('raw_ocr', None)  # Don't send raw OCR data
-                if not can_see_cost:
-                    item['cost'] = 0  # cost is owner-only (admin, or HK for own stock)
+                # cost is owner-only: admin all; HK only own 香港仓; staff none.
+                if role == 'admin':
+                    pass
+                elif role == 'hk':
+                    if item.get('store') != '香港仓':
+                        item['cost'] = 0
+                else:
+                    item['cost'] = 0
                 items.append(item)
 
             return json_response(self, {'inventory': items, 'total': len(items)})
