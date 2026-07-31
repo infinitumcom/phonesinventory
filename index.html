@@ -10698,6 +10698,41 @@ function escHtml(v) {
     return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch];
   });
 }
+// ===== Trade-In page (was a static shell) =====
+window._tradeins = [];
+function loadServerTradeins() {
+  apiCall('GET', '/tradeins').then(function(res){
+    window._tradeins = (res && res.tradeins) ? res.tradeins : [];
+    renderTradeInPage();
+  }).catch(function(){});
+}
+function renderTradeInPage() {
+  if (!document.querySelector('#page-tradein .kpi-value')) return;
+  var sales = getLocalData('pi_sales');
+  var now = new Date(), mStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  function inMonth(x) { var d = new Date(x || 0); return d >= mStart; }
+  var ti = window._tradeins || [];
+  var acqMTD = ti.filter(function(t){ return inMonth(t.created_at || t.createdAt); });
+  var paidOut = acqMTD.reduce(function(a,t){ return a + (t.final_price || t.finalPrice || 0); }, 0);
+  var usedAvail = phones.filter(function(p){ return p && p.cond === 'used' && (p.status === 'available' || !p.status); });
+  var listed = usedAvail.filter(function(p){ return (p.msrp || p.price || 0) > 0; });
+  var listedValue = listed.reduce(function(a,p){ return a + (p.msrp || p.price || 0); }, 0);
+  var pricedUsed = usedAvail.filter(function(p){ return (p.msrp || p.price || 0) > 0 && (p.cost || 0) > 0; });
+  var avgMargin = pricedUsed.length ? Math.round(pricedUsed.reduce(function(a,p){ return a + ((p.msrp || p.price) - p.cost); }, 0) / pricedUsed.length) : 0;
+  var openDefects = (window._defects || []).filter(function(d){ return d.status === 'open'; }).length;
+  var usedSoldMTD = sales.filter(function(s){ return s.cond === 'used' && s.status !== 'returned' && inMonth(s.date || s.createdAt); });
+  var soldRev = usedSoldMTD.reduce(function(a,s){ return a + (s.total || 0); }, 0);
+  var k = document.querySelectorAll('#page-tradein .kpi-value');
+  var m = document.querySelectorAll('#page-tradein .kpi-meta');
+  if (k[0]) k[0].textContent = acqMTD.length;
+  if (m[0]) m[0].innerHTML = '$' + Math.round(paidOut).toLocaleString() + ' <span class="zh">支出</span><span class="en">paid out</span>';
+  if (k[1]) k[1].textContent = listed.length;
+  if (m[1]) m[1].innerHTML = '$' + Math.round(listedValue).toLocaleString() + ' <span class="zh">挂牌价</span><span class="en">listed</span>';
+  if (k[2]) k[2].textContent = openDefects;
+  if (k[3]) k[3].innerHTML = '$' + avgMargin.toLocaleString();
+  if (k[4]) k[4].textContent = usedSoldMTD.length;
+  if (m[4]) m[4].textContent = '$' + Math.round(soldRev).toLocaleString();
+}
 function renderSalesPage() {
   var sales = getLocalData('pi_sales');
   var today = new Date(); today.setHours(0,0,0,0);
@@ -12894,10 +12929,10 @@ function getFilteredPhones() {
     if (INV_FILTERS.store !== 'all' && normalizeStoreKey(p.store || p.storeName || '') !== INV_FILTERS.store) return false;
     if (INV_FILTERS.region !== 'all' && p.region !== INV_FILTERS.region) return false;
     if (INV_FILTERS.status === 'available' && p.status !== 'available') return false;
-    if (INV_FILTERS.status === 'aged' && p.ageDays < 60) return false;
+    if (INV_FILTERS.status === 'aged' && rptAge(p) < 60) return false;
     if (INV_FILTERS.search) {
       const q = INV_FILTERS.search.toLowerCase();
-      const searchable = (p.name + ' ' + p.storage + ' ' + p.color + ' ' + p.colorEn + ' ' + p.imei + ' ' + p.storeName + ' ' + p.shelf).toLowerCase();
+      const searchable = [p.name, p.storage, p.color, p.colorEn, p.imei, p.storeName, p.shelf].map(function(x){ return x || ''; }).join(' ').toLowerCase();
       if (!searchable.includes(q)) return false;
     }
     return true;
@@ -13710,6 +13745,7 @@ function navTo(el, target) {
     if (target === 'staff') renderStaffPage();
     if (target === 'shipments') { loadServerShipments(); }
     if (target === 'aftersales') { loadServerDefects(); }
+    if (target === 'tradein') { loadServerTradeins(); }
   } catch(e){}
 }
 
@@ -13905,6 +13941,7 @@ if (!window.initDynamicUI) {
     try { loadServerTransfers(); } catch(e){}
     try { loadServerShipments(); } catch(e){}
     try { loadServerDefects(); } catch(e){}
+    try { loadServerTradeins(); } catch(e){}
 
     var h = new Date().getHours();
     var gZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';

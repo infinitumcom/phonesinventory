@@ -27,6 +27,7 @@ import mailer
 DEPLOY_DIR = env_loader.DEPLOY_DIR
 DB_PATH = os.path.join(DEPLOY_DIR, "data", "inventory.db")
 API_PORT = int(os.environ.get("API_PORT", "8580"))
+API_HOST = os.environ.get("API_HOST", "127.0.0.1")  # loopback: only nginx reaches it
 PST = timezone(timedelta(hours=-7))
 
 # ─── Auth config ───
@@ -379,10 +380,23 @@ def init_api_tables():
     conn.close()
 
 
+_CORS_ALLOWED = {
+    ALLOWED_ORIGIN, 'https://phonesinventory.com', 'https://www.phonesinventory.com',
+}
+_CORS_DEV_HOSTS = ('localhost', '127.0.0.1')
+
+
 def cors_origin(handler):
-    """Production locks CORS to the site origin; localhost allowed for dev."""
+    """Locks CORS to an exact allowlist; localhost/127.0.0.1 (any port) for dev.
+    Substring matching was unsafe (https://localhost.evil.com would pass)."""
     origin = handler.headers.get('Origin', '')
-    if 'localhost' in origin or '127.0.0.1' in origin:
+    if origin in _CORS_ALLOWED:
+        return origin
+    try:
+        host = origin.split('://', 1)[1].split('/', 1)[0].split(':', 1)[0]
+    except (IndexError, AttributeError):
+        host = ''
+    if host in _CORS_DEV_HOSTS:
         return origin
     return ALLOWED_ORIGIN
 
@@ -1989,7 +2003,7 @@ class APIHandler(BaseHTTPRequestHandler):
 
 def main():
     init_api_tables()
-    server = ThreadingHTTPServer(('0.0.0.0', API_PORT), APIHandler)
+    server = ThreadingHTTPServer((API_HOST, API_PORT), APIHandler)
     server.daemon_threads = True
     print(f"API Server running on port {API_PORT} (threaded)")
     print(f"Database: {DB_PATH}")
