@@ -1400,7 +1400,14 @@ class APIHandler(BaseHTTPRequestHandler):
         conn = None
         try:
             conn = get_db()
-            rows = conn.execute("SELECT * FROM defects ORDER BY created_at DESC").fetchall()
+            user = self._auth_user(conn)
+            role = user['role'] if user else None
+            if role == 'staff':
+                rows = conn.execute("SELECT * FROM defects WHERE store=? ORDER BY created_at DESC",
+                                    (user['store'],)).fetchall()
+            else:
+                # admin + hk see all (HK must see every defective unit it supplied)
+                rows = conn.execute("SELECT * FROM defects ORDER BY created_at DESC").fetchall()
             out = []
             for r in rows:
                 d = dict(r)

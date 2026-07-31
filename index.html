@@ -10733,6 +10733,42 @@ function renderTradeInPage() {
   if (k[4]) k[4].textContent = usedSoldMTD.length;
   if (m[4]) m[4].textContent = '$' + Math.round(soldRev).toLocaleString();
 }
+// ===== My Account page (was hardcoded zeros) =====
+function renderMyAccount() {
+  if (!document.querySelector('#page-myaccount .ma-stat-value')) return;
+  var acct = window._currentAccount || {};
+  var myName = acct.name || '', store = acct.store || '';
+  var now = new Date(), mStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  function inMonth(x){ return new Date(x || 0) >= mStart; }
+  var sales = getLocalData('pi_sales').filter(function(s){ return s.status !== 'returned'; });
+  var mine = sales.filter(function(s){ return s.seller === myName; });
+  var mineMTD = mine.filter(function(s){ return inMonth(s.date || s.createdAt); });
+  var newN = mineMTD.filter(function(s){ return s.cond === 'new'; }).length;
+  var usedN = mineMTD.filter(function(s){ return s.cond === 'used'; }).length;
+  var unitsMTD = mineMTD.length;
+  var ptsMTD = newN * 15 + usedN * 10;
+  var totalPts = mine.reduce(function(a,s){ return a + (s.cond === 'new' ? 15 : 10); }, 0);
+  var goal = 20, goalPct = Math.min(100, Math.round(unitsMTD / goal * 100));
+  var bySeller = {};
+  sales.filter(function(s){ return inMonth(s.date || s.createdAt) && (!store || s.store === store); })
+    .forEach(function(s){ if (s.seller) bySeller[s.seller] = (bySeller[s.seller] || 0) + 1; });
+  var ranking = Object.keys(bySeller).map(function(n){ return { n:n, c:bySeller[n] }; }).sort(function(a,b){ return b.c - a.c; });
+  var myRank = 0;
+  for (var i = 0; i < ranking.length; i++) { if (ranking[i].n === myName) { myRank = i + 1; break; } }
+  var vals = document.querySelectorAll('#page-myaccount .ma-stat-value');
+  var metas = document.querySelectorAll('#page-myaccount .ma-stat-meta');
+  if (vals[0]) vals[0].textContent = unitsMTD;
+  if (metas[0]) metas[0].innerHTML = '<span class="zh">' + newN + ' 新机 · ' + usedN + ' 二手</span><span class="en">' + newN + ' new · ' + usedN + ' used</span>';
+  if (vals[1]) vals[1].innerHTML = '<span class="pts-color">' + ptsMTD + ' <span style="font-size:14px;opacity:0.7;font-weight:600;">P</span></span>';
+  if (vals[2]) vals[2].textContent = goalPct + '%';
+  if (metas[2]) metas[2].innerHTML = '<span class="zh">' + unitsMTD + ' / ' + goal + ' 台 · 还需 ' + Math.max(0, goal - unitsMTD) + ' 台</span><span class="en">' + unitsMTD + ' / ' + goal + ' · ' + Math.max(0, goal - unitsMTD) + ' to go</span>';
+  var bar = document.querySelector('#page-myaccount .ma-stat-card:nth-child(3) > div:last-child > div');
+  if (bar) bar.style.width = goalPct + '%';
+  if (vals[3]) vals[3].textContent = myRank > 0 ? ('#' + myRank) : '--';
+  if (metas[3]) metas[3].innerHTML = ranking.length ? ('<span class="zh">本店 ' + ranking.length + ' 人</span><span class="en">of ' + ranking.length + '</span>') : '<span class="zh">暂无数据</span><span class="en">No data</span>';
+  var ptsNum = document.querySelector('#page-myaccount .ma-points-num');
+  if (ptsNum) ptsNum.textContent = totalPts;
+}
 function renderSalesPage() {
   var sales = getLocalData('pi_sales');
   var today = new Date(); today.setHours(0,0,0,0);
@@ -13746,6 +13782,7 @@ function navTo(el, target) {
     if (target === 'shipments') { loadServerShipments(); }
     if (target === 'aftersales') { loadServerDefects(); }
     if (target === 'tradein') { loadServerTradeins(); }
+    if (target === 'myaccount') { try { renderMyAccount(); } catch(e){} }
   } catch(e){}
 }
 
