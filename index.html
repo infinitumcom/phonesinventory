@@ -9566,24 +9566,28 @@ function renderDashboard() {
   }
 
   // --- Financial overview ---
+  // 预计利润只统计"已定价(有建议零售价)"的在库机；未定价的不算亏损。
+  // 库存总成本 = 全部在库成本(含未定价)。
   var totalCost = 0, totalMSRP = 0, newCount = 0, usedCount = 0;
-  var newCost = 0, newMSRP = 0, usedCost = 0, usedMSRP = 0;
+  var newCost = 0, newMSRP = 0, usedCost = 0, usedMSRP = 0, unpricedCount = 0;
   phones.forEach(function(p) {
     if (!p || p.status === 'sold') return;
     var cost = p.cost || 0;
     var msrp = p.msrp || p.price || 0;
-    totalCost += cost;
-    totalMSRP += msrp;
+    totalCost += cost;                 // 库存总成本：全部
+    if (msrp <= 0) { unpricedCount++; if (p.cond === 'new') newCount++; else usedCount++; return; }
+    totalMSRP += msrp;                 // 收入预期 / 利润：仅已定价
     if (p.cond === 'new') { newCount++; newCost += cost; newMSRP += msrp; }
     else { usedCount++; usedCost += cost; usedMSRP += msrp; }
   });
-  var totalProfit = totalMSRP - totalCost;
+  var totalProfit = totalMSRP - (newCost + usedCost);
   var totalMargin = totalMSRP > 0 ? Math.round(totalProfit / totalMSRP * 100) : 0;
 
   var finCards = document.querySelectorAll('#page-dashboard .fin-card-value');
   if (finCards[0]) finCards[0].innerHTML = totalCost > 0 ? '<span class="ccy">$</span>' + totalCost.toLocaleString() : '—';
   if (finCards[1]) finCards[1].innerHTML = totalMSRP > 0 ? '<span class="ccy">$</span>' + totalMSRP.toLocaleString() : '—';
-  if (finCards[2]) finCards[2].innerHTML = (totalCost > 0 || totalMSRP > 0) ? '<span class="ccy">$</span>' + totalProfit.toLocaleString() : '—';
+  if (finCards[2]) finCards[2].innerHTML = ((totalCost > 0 || totalMSRP > 0) ? '<span class="ccy">$</span>' + totalProfit.toLocaleString() : '—') +
+    (unpricedCount > 0 ? '<span style="font-size:11px;color:var(--warn);font-weight:600;margin-left:6px;">' + unpricedCount + ' <span class="zh">台未定价未计入</span><span class="en">unpriced excl.</span></span>' : '');
   // Update cost meta
   var finMetas = document.querySelectorAll('#page-dashboard .fin-card-meta');
   if (finMetas[0]) {
