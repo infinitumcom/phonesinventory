@@ -12441,8 +12441,61 @@ function renderDeviceCard(d) {
           '<div style="border-top:1px dashed #e5e7eb;padding-top:8px;">' + chk('系统', !!d.ios, '正常') + chk('激活', act, act ? '已激活' : '待激活') + chk('电池', bh == null || bh >= 80, bh == null ? '—' : (bh >= 80 ? '良好' : '偏弱'), bh != null && bh < 80) + '</div>' +
         '</div>' +
       '</div>' +
-      '<div style="background:#fffbeb;border-top:1px solid #fde68a;padding:8px 16px;font-size:11px;color:#92400e;">⚠️ 激活锁(ID锁)/保修/生产日期/五码匹配 设备读不到 → 用「🔍 IMEI 查询」(GSX)核对；主板/屏幕/摄像头走下方人工质检；收机前确认 iCloud「查找」已登出</div>' +
+      '<div style="background:#fffbeb;border-top:1px solid #fde68a;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;color:#92400e;">' +
+        '<span>⚠️ 激活锁/保修/生产日期/五码匹配 设备读不到 → 「🔍 IMEI 查询」(GSX)核对；收机前确认 iCloud「查找」已登出</span>' +
+        '<button onclick="openDeviceDetails()" style="flex:none;padding:5px 12px;border:1px solid #0d4f3c;background:#0d4f3c;color:#fff;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">📋 查看设备详情</button>' +
+      '</div>' +
     '</div>';
+}
+var TI_DETAIL_LABELS = {
+  DeviceName:'设备名称', ProductType:'产品类型', ProductName:'产品名', ProductVersion:'系统版本', BuildVersion:'系统编译',
+  SerialNumber:'序列号', MLBSerialNumber:'主板序列号', UniqueDeviceID:'UDID', UniqueChipID:'ECID',
+  ModelNumber:'型号', RegionInfo:'销售地区', HardwareModel:'硬件型号', DeviceColor:'颜色', DeviceEnclosureColor:'外壳颜色',
+  DeviceClass:'设备类别', CPUArchitecture:'CPU架构', ChipID:'芯片ID', BoardId:'主板ID',
+  ActivationState:'激活状态', TimeZone:'时区',
+  BasebandVersion:'基带版本', BasebandSerialNumber:'基带序列号', BasebandStatus:'基带状态', BasebandChipId:'基带芯片',
+  WiFiAddress:'WiFi地址', BluetoothAddress:'蓝牙地址', EthernetAddress:'以太网地址', WifiVendor:'WiFi厂商',
+  InternationalMobileEquipmentIdentity:'IMEI', InternationalMobileEquipmentIdentity2:'IMEI 2',
+  MobileEquipmentIdentifier:'MEID', IntegratedCircuitCardIdentity:'ICCID',
+  InternationalMobileSubscriberIdentity:'IMSI', PhoneNumber:'电话号码', TelephonyCapability:'通话功能',
+  TotalDiskCapacity:'硬盘容量', ProductionSOC:'量产芯片', HasSiDP:'SiDP'
+};
+function openDeviceDetails() {
+  var d = window._tiDevice;
+  if (!d || !d.details || !Object.keys(d.details).length) { showToast('无设备详情，请先「📲 读取设备」(需新版助手 v3) / No details — read device with the latest agent'); return; }
+  var det = d.details;
+  var order = ['DeviceName','ProductType','ProductVersion','BuildVersion','SerialNumber','MLBSerialNumber','UniqueDeviceID','UniqueChipID','ModelNumber','RegionInfo','DeviceColor','DeviceEnclosureColor','HardwareModel','DeviceClass','CPUArchitecture','ChipID','BoardId','ActivationState','TimeZone','BasebandVersion','BasebandSerialNumber','BasebandStatus','WiFiAddress','BluetoothAddress','EthernetAddress','WifiVendor','InternationalMobileEquipmentIdentity','InternationalMobileEquipmentIdentity2','MobileEquipmentIdentifier','IntegratedCircuitCardIdentity','InternationalMobileSubscriberIdentity','PhoneNumber','TelephonyCapability','TotalDiskCapacity'];
+  var seen = {};
+  function rowHtml(k) {
+    var v = det[k]; if (v == null || v === '' || typeof v === 'object') return '';
+    var label = TI_DETAIL_LABELS[k] || k;
+    return '<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12.5px;"><span style="color:#6b7280;white-space:nowrap;">' + label + '</span><span style="font-weight:600;font-family:\'JetBrains Mono\',monospace;text-align:right;word-break:break-all;color:#111;">' + String(v) + '</span></div>';
+  }
+  var rows = '';
+  order.forEach(function(k){ if (det[k] != null && det[k] !== '') { rows += rowHtml(k); seen[k] = 1; } });
+  Object.keys(det).sort().forEach(function(k){ if (!seen[k]) rows += rowHtml(k); });
+
+  var old = document.getElementById('deviceDetailsModal'); if (old) old.parentNode.removeChild(old);
+  var overlay = document.createElement('div');
+  overlay.id = 'deviceDetailsModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.parentNode.removeChild(overlay); });
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;max-width:640px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML =
+    '<div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">' +
+      '<div style="font-weight:800;font-size:15px;">📋 设备详情 · ' + tiModelName(d) + '</div>' +
+      '<button onclick="tiCopyDetails()" style="padding:5px 12px;border:1px solid #ddd;background:#f5f5f5;border-radius:7px;font-size:12px;cursor:pointer;">📄 复制全部</button>' +
+    '</div>' +
+    '<div style="padding:8px 20px 16px;overflow:auto;">' + rows + '</div>' +
+    '<div style="padding:12px 20px;border-top:1px solid #eee;text-align:right;"><button onclick="document.getElementById(\'deviceDetailsModal\').remove()" style="padding:8px 18px;border:none;background:#0d4f3c;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">关闭</button></div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+function tiCopyDetails() {
+  var d = window._tiDevice; if (!d) return;
+  var txt = JSON.stringify(d.details || {}, null, 2);
+  try { navigator.clipboard.writeText(txt); showToast('已复制设备详情 / Copied'); }
+  catch(e) { showToast('复制失败，请手动 / Copy failed'); }
 }
 
 // ===== Drawer Sell/Transfer Buttons =====
