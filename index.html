@@ -9054,6 +9054,18 @@ The more detail you provide, the easier it is to handle this issue."></textarea>
 
       <div class="modal-field">
         <div class="modal-field-label">
+          <span><span class="zh">故障照片</span><span class="en">Photos</span></span>
+          <span class="hint"><span class="zh">最多6张 · 香港团队会收到</span><span class="en">up to 6 · sent to HK team</span></span>
+        </div>
+        <label style="display:inline-flex;align-items:center;gap:6px;padding:9px 15px;border:1.5px dashed var(--border-strong);border-radius:9px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text-muted);">
+          📷 <span class="zh">添加照片</span><span class="en">Add photos</span>
+          <input type="file" id="rmPhotos" accept="image/*" multiple style="display:none;" onchange="handleDefectPhotos(this)">
+        </label>
+        <div id="rmPhotoPreview" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;"></div>
+      </div>
+
+      <div class="modal-field">
+        <div class="modal-field-label">
           <span><span class="zh">建议处理方式</span><span class="en">Suggested Action</span></span>
           <span class="hint"><span class="zh">选填 · 等管理员确认</span><span class="en">optional · admin will confirm</span></span>
         </div>
@@ -12861,6 +12873,8 @@ function openReportModal(btn) {
     now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) + ' ' +
     pad(now.getHours()) + ':' + pad(now.getMinutes());
 
+  window._defectPhotos = [];
+  try { renderDefectPhotos(); } catch(e){}
   document.getElementById('reportModal').classList.add('show');
 }
 
@@ -12888,7 +12902,8 @@ function submitDefectiveReport() {
 
   apiCall('POST', '/defects', {
     imei: imei, phoneName: modal.dataset.phoneName || '',
-    issues: issues, severity: severity, description: description
+    issues: issues, severity: severity, description: description,
+    photos: window._defectPhotos || []
   }).then(function(res){
     if (res.error) { showToast('报修失败: ' + res.error); return; }
     closeReportModal();
@@ -12901,6 +12916,40 @@ function submitDefectiveReport() {
     setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.classList.remove('toast-danger'); }, 300); }, 3000);
   }).catch(function(){ showToast('报修失败，请检查网络 / Report failed, check network'); });
 }
+// ===== Defect photo upload (compress → base64, preview, sent to HK Telegram) =====
+window._defectPhotos = window._defectPhotos || [];
+function handleDefectPhotos(input) {
+  var files = Array.prototype.slice.call(input.files || []);
+  input.value = '';
+  files.forEach(function(file){
+    if (!/^image\//.test(file.type)) return;
+    if ((window._defectPhotos || []).length >= 6) { showToast('最多 6 张 / Max 6 photos'); return; }
+    var reader = new FileReader();
+    reader.onload = function(e){
+      var img = new Image();
+      img.onload = function(){
+        var max = 1000, scale = Math.min(1, max / Math.max(img.width, img.height));
+        var cw = Math.round(img.width * scale), ch = Math.round(img.height * scale);
+        var canvas = document.createElement('canvas'); canvas.width = cw; canvas.height = ch;
+        canvas.getContext('2d').drawImage(img, 0, 0, cw, ch);
+        var durl = canvas.toDataURL('image/jpeg', 0.7);
+        window._defectPhotos.push(durl);
+        renderDefectPhotos();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function renderDefectPhotos() {
+  var box = document.getElementById('rmPhotoPreview'); if (!box) return;
+  box.innerHTML = (window._defectPhotos || []).map(function(d, i){
+    return '<div style="position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--border);">' +
+      '<img src="' + d + '" style="width:100%;height:100%;object-fit:cover;">' +
+      '<button onclick="removeDefectPhoto(' + i + ')" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border:none;border-radius:50%;background:rgba(0,0,0,0.6);color:#fff;font-size:11px;line-height:1;cursor:pointer;">×</button></div>';
+  }).join('');
+}
+function removeDefectPhoto(i) { window._defectPhotos.splice(i, 1); renderDefectPhotos(); }
 
 document.addEventListener('click', e => {
   const chip = e.target.closest('#reportModal .issue-chip');

@@ -37,6 +37,66 @@ DEFAULT_PIN = "888888"
 IMEI_API_KEY = os.environ.get("IMEI_API_KEY", "")
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "https://phonesinventory.com")
 
+# HK team Telegram bot — notified on new defect/repair reports (env-gated).
+HK_BOT_TOKEN = os.environ.get("HK_BOT_TOKEN", "")
+HK_CHAT_ID = os.environ.get("HK_CHAT_ID", "")
+
+
+def _decode_data_url(durl):
+    try:
+        b64 = durl.split(',', 1)[1] if ',' in durl else durl
+        return base64.b64decode(b64)
+    except Exception:
+        return None
+
+
+def notify_hk_defect(defect):
+    """Push a defect report (caption + photos) to the HK team Telegram.
+    No-op until HK_BOT_TOKEN and HK_CHAT_ID are configured. Runs in a thread."""
+    if not HK_BOT_TOKEN or not HK_CHAT_ID:
+        return
+    try:
+        import requests
+        issues = defect.get('issues') or []
+        if isinstance(issues, str):
+            try: issues = json.loads(issues)
+            except Exception: issues = [issues]
+        sev = {'minor': '轻微', 'moderate': '中等', 'severe': '严重', 'dead': '无法使用'}.get(
+            defect.get('severity', ''), defect.get('severity', ''))
+        caption = (
+            "🔧 报修通知 / Repair report\n"
+            "📱 " + str(defect.get('phone_name') or '') + "\n"
+            "IMEI: " + str(defect.get('imei', '')) + "\n"
+            "📍 " + str(defect.get('store', '')) + "\n"
+            "⚠️ 故障: " + ("、".join(issues) if issues else '-') + (("  (" + sev + ")") if sev else "") + "\n"
+            "📝 " + (str(defect.get('description') or '') or '-') + "\n"
+            "👤 " + str(defect.get('reported_by') or '')
+        )
+        photos = defect.get('photos') or []
+        if isinstance(photos, str):
+            try: photos = json.loads(photos)
+            except Exception: photos = []
+        imgs = [b for b in (_decode_data_url(p) for p in photos) if b]
+        base = "https://api.telegram.org/bot" + HK_BOT_TOKEN
+        if not imgs:
+            requests.post(base + "/sendMessage", data={'chat_id': HK_CHAT_ID, 'text': caption}, timeout=20)
+        elif len(imgs) == 1:
+            requests.post(base + "/sendPhoto", data={'chat_id': HK_CHAT_ID, 'caption': caption},
+                          files={'photo': ('defect.jpg', imgs[0], 'image/jpeg')}, timeout=30)
+        else:
+            media, files = [], {}
+            for i, b in enumerate(imgs[:10]):
+                key = 'photo%d' % i
+                files[key] = (key + '.jpg', b, 'image/jpeg')
+                item = {'type': 'photo', 'media': 'attach://' + key}
+                if i == 0:
+                    item['caption'] = caption
+                media.append(item)
+            requests.post(base + "/sendMediaGroup",
+                          data={'chat_id': HK_CHAT_ID, 'media': json.dumps(media)}, files=files, timeout=40)
+    except Exception as e:
+        print("[HK-notify] failed:", e)
+
 # Endpoints reachable without a token
 PUBLIC_PATHS = {
     ('POST', '/api/login'),
@@ -1397,6 +1457,13 @@ class APIHandler(BaseHTTPRequestHandler):
                     # Take the unit off the sales floor (skip if already sold).
                     conn.execute("UPDATE inventory SET status='defect' WHERE imei=? AND status != 'sold'", (imei,))
                     conn.commit()
+                    # Notify the HK team on Telegram (photos + details), non-blocking.
+                    threading.Thread(target=notify_hk_defect, args=({
+                        'imei': imei, 'phone_name': phone_name, 'store': inv['store'] or '',
+                        'issues': issues, 'severity': (data.get('severity') or '').strip(),
+                        'description': (data.get('description') or '').strip(),
+                        'reported_by': (user['name'] if user else ''), 'photos': photos,
+                    },), daemon=True).start()
                     return json_response(self, {'ok': True, 'id': did, 'imei': imei})
                 finally:
                     conn.close()
