@@ -1627,6 +1627,8 @@ body[data-role="hk"] .admin-only { display: none !important; }
 body[data-role="hk"] .us-only { display: none !important; }
 /* Conversely, HK-only sections are hidden for everyone except HK */
 body:not([data-role="hk"]) .hk-only { display: none !important; }
+/* HK intake button: HK team + admin only (staff use the Telegram bot) */
+body[data-role="staff"] .hk-stockin { display: none !important; }
 
 /* Role toggle in topbar */
 .role-switch {
@@ -7201,6 +7203,13 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
           </div>
 
+          <!-- HK warehouse intake (visible to HK team + admin) -->
+          <div class="hk-stockin" style="margin-bottom:12px;">
+            <button class="btn btn-primary" onclick="openHkStockInModal()" style="background:#e11d48;border-color:#e11d48;">
+              🇭🇰 <span class="zh">香港仓入库</span><span class="en">HK Warehouse Intake</span>
+            </button>
+          </div>
+
           <!-- Store selector with NEW/USED counts per store — 5×2 grid -->
           <div class="stores-row">
             <button class="store-pill active" data-store="all" onclick="setActiveStore(this)">
@@ -11560,6 +11569,110 @@ function confirmAllIncomingTransfers() {
     try { renderTransferPage(); } catch(e){}
     showToast('已确认 ' + done + ' 台' + (failed ? '，失败 ' + failed + ' 台' : '') +
               ' / Confirmed ' + done + (failed ? ', failed ' + failed : ''));
+  });
+}
+
+// ===== HK Warehouse Intake =====
+function openHkStockInModal() {
+  var old = document.getElementById('hkStockInModal');
+  if (old) old.parentNode.removeChild(old);
+  var acct = window._currentAccount || {};
+  var isAdmin = acct.role === 'admin';
+  var canSeeCost = isAdmin || acct.role === 'hk';
+
+  var overlay = document.createElement('div');
+  overlay.id = 'hkStockInModal';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) closeHkStockInModal(); });
+
+  var inp = 'width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;';
+  var lbl = 'font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;';
+  var storageOpts = ['64GB','128GB','256GB','512GB','1TB'].map(function(s){return '<option value="'+s+'"'+(s==='128GB'?' selected':'')+'>'+s+'</option>';}).join('');
+  // Admin may target any store; HK is locked to 香港仓.
+  var storeRow = isAdmin
+    ? '<div style="margin-bottom:10px;"><label style="'+lbl+'"><span class="zh">入库到</span><span class="en">Into store</span></label>' +
+      '<select id="hkStore" style="'+inp+'-webkit-appearance:auto;appearance:auto;">' +
+      ['香港仓','HQ 总仓','Alhambra','Monterey Park','San Gabriel','Rowland Heights','Arcadia 1','Arcadia 2','Irvine','Rancho Cucamonga','Las Vegas']
+        .map(function(s){return '<option value="'+s+'">'+s+'</option>';}).join('') + '</select></div>'
+    : '<div style="margin-bottom:10px;font-size:12px;color:#9f1239;font-weight:700;">🇭🇰 <span class="zh">入库到 香港仓</span><span class="en">Into HK Warehouse</span></div>';
+
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;padding:22px;max-width:460px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML =
+    '<div style="font-weight:700;font-size:16px;margin-bottom:16px;">🇭🇰 <span class="zh">香港仓入库</span><span class="en">HK Warehouse Intake</span></div>' +
+    storeRow +
+    '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+      '<div style="flex:2;"><label style="'+lbl+'"><span class="zh">型号</span><span class="en">Model</span></label><input id="hkModel" style="'+inp+'" placeholder="iPhone 15 Pro" list="hkModelList"><datalist id="hkModelList"><option value="iPhone 13"><option value="iPhone 14"><option value="iPhone 14 Plus"><option value="iPhone 15"><option value="iPhone 15 Plus"><option value="iPhone 15 Pro"><option value="iPhone 15 Pro Max"><option value="iPhone 16"><option value="iPhone 16 Pro"><option value="iPhone 16 Pro Max"></datalist></div>' +
+      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">容量</span><span class="en">Storage</span></label><select id="hkStorage" style="'+inp+'-webkit-appearance:auto;appearance:auto;">'+storageOpts+'</select></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">成色</span><span class="en">Condition</span></label><select id="hkCondition" style="'+inp+'-webkit-appearance:auto;appearance:auto;"><option value="used"><span>二手 Used</span></option><option value="new">全新 New</option></select></div>' +
+      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">版本</span><span class="en">Region</span></label><select id="hkRegion" style="'+inp+'-webkit-appearance:auto;appearance:auto;"><option value="us">美版 US</option><option value="cn">国行 CN</option><option value="hk">港版 HK</option></select></div>' +
+      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">颜色</span><span class="en">Color</span></label><input id="hkColor" style="'+inp+'" placeholder="—"></div>' +
+    '</div>' +
+    (canSeeCost ?
+    '<div style="display:flex;gap:8px;margin-bottom:10px;">' +
+      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">进价 $ (仅内部可见)</span><span class="en">Cost $ (internal)</span></label><input id="hkCost" type="number" style="'+inp+'" placeholder="0"></div>' +
+      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">建议零售价 $</span><span class="en">MSRP $</span></label><input id="hkPrice" type="number" style="'+inp+'" placeholder="0"></div>' +
+    '</div>' : '') +
+    '<div style="margin-bottom:8px;">' +
+      '<label style="'+lbl+'">IMEI <span style="color:#888;font-weight:400;">(<span class="zh">每行一个或空格/逗号分隔</span><span class="en">one per line / space / comma</span>)</span></label>' +
+      '<textarea id="hkImeis" style="'+inp+'min-height:130px;font-family:monospace;font-size:13px;resize:vertical;" placeholder="357004283628528&#10;351682572931780"></textarea>' +
+      '<div style="font-size:11px;color:#888;margin-top:4px;"><span class="zh">已识别 </span><span class="en">Detected </span><span id="hkImeiCount" style="font-weight:700;color:#e11d48;">0</span><span class="zh"> 个有效 IMEI</span><span class="en"> valid IMEIs</span></div>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">' +
+      '<button id="hkCancelBtn" style="padding:9px 16px;border:1px solid #ddd;background:#f5f5f5;color:#333;border-radius:8px;font-size:13px;cursor:pointer;"><span class="zh">取消</span><span class="en">Cancel</span></button>' +
+      '<button id="hkSubmitBtn" style="padding:9px 18px;border:none;background:#e11d48;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;"><span class="zh">入库</span><span class="en">Add to stock</span></button>' +
+    '</div>';
+
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  document.getElementById('hkCancelBtn').addEventListener('click', closeHkStockInModal);
+  document.getElementById('hkSubmitBtn').addEventListener('click', submitHkStockIn);
+  document.getElementById('hkImeis').addEventListener('input', function(){
+    document.getElementById('hkImeiCount').textContent = parseImeiList(this.value).length;
+  });
+}
+function closeHkStockInModal() {
+  var m = document.getElementById('hkStockInModal');
+  if (m) m.parentNode.removeChild(m);
+}
+function submitHkStockIn() {
+  var model = (document.getElementById('hkModel').value || '').trim();
+  var storage = document.getElementById('hkStorage').value;
+  var imeis = parseImeiList(document.getElementById('hkImeis').value);
+  if (!model) { showToast('请输入型号 / Enter model'); return; }
+  if (!imeis.length) { showToast('请粘贴至少一个有效 IMEI / Paste at least one valid IMEI'); return; }
+  var storeEl = document.getElementById('hkStore');
+  var costEl = document.getElementById('hkCost');
+  var priceEl = document.getElementById('hkPrice');
+  var payload = {
+    model: model,
+    storage: storage,
+    condition: document.getElementById('hkCondition').value,
+    region: document.getElementById('hkRegion').value,
+    color: (document.getElementById('hkColor').value || '').trim(),
+    cost: costEl ? (parseFloat(costEl.value) || 0) : 0,
+    price: priceEl ? (parseFloat(priceEl.value) || 0) : 0,
+    imeis: imeis
+  };
+  if (storeEl) payload.store = storeEl.value;
+  var btn = document.getElementById('hkSubmitBtn');
+  btn.disabled = true; btn.textContent = '入库中… / Adding…';
+  apiCall('POST', '/inventory/batch', payload).then(function(res){
+    if (res.error) { showToast('入库失败: ' + res.error); btn.disabled = false; return; }
+    closeHkStockInModal();
+    try { window.loadServerInventory && window.loadServerInventory(); } catch(e){}
+    var msg = '入库成功 ' + (res.createdCount||0) + ' 台' + (res.skippedCount ? '，跳过 ' + res.skippedCount + ' 台' : '') +
+              ' / Added ' + (res.createdCount||0) + (res.skippedCount ? ', skipped ' + res.skippedCount : '');
+    showToast(msg);
+    if (res.skipped && res.skipped.length) {
+      var lines = res.skipped.map(function(s){ return s.imei + '  —  ' + s.reason; }).join('\n');
+      setTimeout(function(){ alert('以下 IMEI 未入库 / Not added:\n\n' + lines); }, 300);
+    }
+  }).catch(function(e){
+    showToast('入库失败，请检查网络 / Intake failed, check network');
+    var b = document.getElementById('hkSubmitBtn'); if (b) b.disabled = false;
   });
 }
 

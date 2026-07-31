@@ -398,6 +398,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.pin_reset_confirm()
         elif path == '/api/sale':
             return self.create_sale()
+        elif path == '/api/inventory/batch':
+            return self.create_inventory_batch()
         elif path == '/api/transfer/batch':
             return self.create_transfer_batch()
         elif path == '/api/transfer':
@@ -639,9 +641,11 @@ class APIHandler(BaseHTTPRequestHandler):
             else:
                 rows = conn.execute("SELECT * FROM inventory ORDER BY id DESC").fetchall()
             phones = export_inventory.build_phones(rows)
-            if not (user and user['role'] == 'admin'):
+            # cost is owner-only: admin sees all; HK sees only their own 香港仓 cost
+            # (they only ever receive 香港仓 rows); staff never see cost.
+            if not (user and user['role'] in ('admin', 'hk')):
                 for p in phones:
-                    p['cost'] = 0  # cost is owner-only, never leaves the server for staff
+                    p['cost'] = 0
             return json_response(self, {'phones': phones})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
@@ -681,7 +685,7 @@ class APIHandler(BaseHTTPRequestHandler):
 
             rows = conn.execute(query, args).fetchall()
 
-            is_admin = bool(user and user['role'] == 'admin')
+            can_see_cost = bool(user and user['role'] in ('admin', 'hk'))
             items = []
             for r in rows:
                 item = dict(r)
@@ -691,8 +695,8 @@ class APIHandler(BaseHTTPRequestHandler):
                 item['scannedAt'] = item.pop('scanned_at', '')
                 item['createdAt'] = item.pop('created_at', '')
                 item.pop('raw_ocr', None)  # Don't send raw OCR data
-                if not is_admin:
-                    item['cost'] = 0  # cost is owner-only
+                if not can_see_cost:
+                    item['cost'] = 0  # cost is owner-only (admin, or HK for own stock)
                 items.append(item)
 
             return json_response(self, {'inventory': items, 'total': len(items)})
@@ -908,6 +912,78 @@ class APIHandler(BaseHTTPRequestHandler):
                 finally:
                     conn.close()
             return json_response(self, {'ok': True, 'id': data.get('id', '')})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def create_inventory_batch(self):
+        """Bulk add units to inventory (HK warehouse intake / admin restock).
+        HK role is locked to 香港仓; admin may target any store. One shared
+        spec (brand/model/storage/condition/region/color/cost/price) applied to
+        a pasted list of IMEIs. Duplicates and malformed IMEIs are skipped."""
+        try:
+            data = self.read_body()
+            with db_lock:
+                conn = get_db()
+                try:
+                    user = self._auth_user(conn)
+                    role = user['role'] if user else None
+                    if role not in ('hk', 'admin'):
+                        return json_response(self, {'error': '无权限入库 / Not allowed to add stock'}, 403)
+
+                    store = '香港仓' if role == 'hk' else normalize_store_name(data.get('store') or '香港仓')
+                    brand = (data.get('brand') or 'Apple').strip()
+                    model = (data.get('model') or '').strip()
+                    storage = (data.get('storage') or '').strip()
+                    color = (data.get('color') or '').strip()
+                    condition = (data.get('condition') or 'used').strip().lower()
+                    if condition not in ('new', 'used'):
+                        condition = 'used'
+                    region = (data.get('region') or ('hk' if role == 'hk' else 'us')).strip().lower()
+                    if region not in ('us', 'cn', 'hk'):
+                        region = 'hk'
+                    try: cost = float(data.get('cost') or 0)
+                    except (TypeError, ValueError): cost = 0
+                    try: price = float(data.get('price') or 0)
+                    except (TypeError, ValueError): price = 0
+                    imeis = data.get('imeis', [])
+                    who = (user['name'] if user else '') or (getattr(self, '_auth_email', '') or '')
+
+                    if not model or not storage:
+                        return json_response(self, {'error': '型号和容量必填 / Model & storage required'}, 400)
+                    if not imeis:
+                        return json_response(self, {'error': 'IMEI 为空 / No IMEIs provided'}, 400)
+
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    existing = {r[0] for r in conn.execute("SELECT imei FROM inventory")}
+                    created, skipped, seen = [], [], set()
+                    for raw in imeis:
+                        imei = str(raw).strip().replace(' ', '')
+                        if not imei:
+                            continue
+                        if len(imei) != 15 or not imei.isdigit():
+                            skipped.append({'imei': imei, 'reason': '格式错误 / Invalid IMEI'}); continue
+                        if imei in existing or imei in seen:
+                            skipped.append({'imei': imei, 'reason': '已存在 / Duplicate'}); continue
+                        seen.add(imei)
+                        conn.execute("""
+                            INSERT INTO inventory
+                            (imei,imei2,serial,brand,model,storage,color,color_en,
+                             condition,battery_health,region,store,
+                             cost,price,status,scanned_by,scanned_at,raw_ocr,notes)
+                            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        """, (imei, '', '', brand, model, storage, color, '',
+                              condition, '', region, store,
+                              cost, price, 'available', who, now, '',
+                              'HK intake' if role == 'hk' else 'admin intake'))
+                        created.append(imei)
+                    conn.commit()
+                    return json_response(self, {
+                        'ok': True, 'store': store,
+                        'created': created, 'skipped': skipped,
+                        'createdCount': len(created), 'skippedCount': len(skipped),
+                    })
+                finally:
+                    conn.close()
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
 
