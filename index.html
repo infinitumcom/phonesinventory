@@ -8222,6 +8222,14 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       <button class="chip" onclick="navByName('customers')"><span class="zh">客户分析</span><span class="en">Customer Analysis</span></button>
     </div>
 
+    <!-- Period selector -->
+    <div class="filters" style="margin-bottom:14px;">
+      <span style="font-size:12px;color:var(--text-muted);align-self:center;margin-right:2px;"><span class="zh">统计范围</span><span class="en">Period</span>:</span>
+      <button class="chip btn-sm rpt-period" data-period="30" onclick="setReportPeriod(this,'30')"><span class="zh">近 30 天</span><span class="en">30d</span></button>
+      <button class="chip btn-sm rpt-period" data-period="90" onclick="setReportPeriod(this,'90')"><span class="zh">近 90 天</span><span class="en">90d</span></button>
+      <button class="chip btn-sm rpt-period active" data-period="all" onclick="setReportPeriod(this,'all')"><span class="zh">全部</span><span class="en">All</span></button>
+    </div>
+
     <!-- Top KPI -->
     <div class="kpi-grid cols-4">
       <div class="kpi"><div class="kpi-label"><span class="zh">本月营收</span><span class="en">Revenue MTD</span></div><div class="kpi-value" id="rptKpiRev"><span class="ccy">$</span>0</div><div class="kpi-meta" id="rptKpiRevMeta">--</div></div>
@@ -8239,7 +8247,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <div class="section-title">
             <span class="zh">营收趋势</span>
             <span class="en">Revenue Trend</span>
-            <span class="count">· <span class="zh">最近 30 天</span><span class="en">Last 30 days</span></span>
+            <span class="count">· <span class="zh">最近 6 个月</span><span class="en">Last 6 months</span></span>
           </div>
           <div class="filters">
             <button class="chip btn-sm active" onclick="showToast('功能开发中 / Coming soon')">30d</button>
@@ -8275,7 +8283,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <span class="en">Store Ranking MTD</span>
           </div>
         </div>
-        <div style="padding:6px 0;">
+        <div id="rptStoreRanking" style="padding:6px 0;">
           <div style="padding:10px 18px;display:grid;grid-template-columns:24px 1fr 70px;gap:10px;align-items:center;border-bottom:1px solid var(--border-soft);">
             <div style="font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:800;color:var(--gold-deep);">1</div>
             <div>
@@ -8373,7 +8381,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         <button class="btn btn-sm" onclick="showToast('功能开发中 / Coming soon')">⚙️ <span class="zh">配置预警</span><span class="en">Configure alerts</span></button>
       </div>
 
-      <div style="padding:18px 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+      <div id="rptAgingBuckets" style="padding:18px 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
         <div style="background:var(--success-soft);border-radius:9px;padding:14px 16px;">
           <div style="font-size:10.5px;color:var(--success);text-transform:uppercase;letter-spacing:0.07em;font-weight:700;">0-30 <span class="zh">天</span><span class="en">days</span></div>
           <div style="font-family:'Inter',sans-serif;font-size:28px;font-weight:800;letter-spacing:-0.02em;line-height:1;margin-top:6px;color:var(--success);">0</div>
@@ -8426,7 +8434,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <div></div>
         </div>
 
-        <div style="padding:30px 22px;text-align:center;color:var(--text-muted);font-size:13px;">
+        <div id="rptAgingTable" style="padding:30px 22px;text-align:center;color:var(--text-muted);font-size:13px;">
           <span class="zh">暂无滞销库存</span>
           <span class="en">No aged stock items</span>
         </div>
@@ -10759,74 +10767,172 @@ function renderSalesPage() {
 }
 
 // ===== Reports Page — Revenue Chart from real sales data =====
+var _rptPeriod = 'all';
+function setReportPeriod(btn, p) {
+  _rptPeriod = p;
+  document.querySelectorAll('.rpt-period').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  renderReportsPage();
+}
+function setReportTab(btn, tab) {
+  document.querySelectorAll('#reportTabFilters .chip').forEach(function(c){ c.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  var map = { revenue:'revChartArea', stores:'rptStoreRanking', aging:'rptAgingBuckets', profit:'catProfitIphoneNew' };
+  var el = document.getElementById(map[tab]);
+  if (el) { try { el.scrollIntoView({ behavior:'smooth', block:'center' }); } catch(e){} }
+}
+function rptSet(id, val, isHtml) { var el = document.getElementById(id); if (!el) return; if (isHtml) el.innerHTML = val; else el.textContent = val; }
+function rptSaleDate(s) { return new Date(s.date || s.createdAt || s.created_at || 0); }
+function rptSaleBrand(s) {
+  var n = String(s.phoneName || s.phone_name || s.name || '').toLowerCase();
+  if (n.indexOf('iphone') >= 0) return 'iPhone';
+  if (n.indexOf('samsung') >= 0 || n.indexOf('galaxy') >= 0) return 'Samsung';
+  if (n.indexOf('pixel') >= 0 || n.indexOf('google') >= 0) return 'Google';
+  return 'Other';
+}
+function rptAge(p) {
+  if (typeof p.ageDays === 'number') return p.ageDays;
+  if (p.purchaseDate) return Math.max(0, Math.floor((Date.now() - new Date(p.purchaseDate).getTime()) / 86400000));
+  return 0;
+}
+function rptPeriodSales(sales) {
+  var arr = sales.filter(function(s){ return s.status !== 'returned'; });
+  if (_rptPeriod === 'all') return arr;
+  var cut = Date.now() - parseInt(_rptPeriod, 10) * 86400000;
+  return arr.filter(function(s){ return rptSaleDate(s).getTime() >= cut; });
+}
 function renderReportsPage() {
-  var sales = getLocalData('pi_sales');
+  if (!document.getElementById('revChartBars')) return;
+  var allSales = getLocalData('pi_sales');
+  var sales = rptPeriodSales(allSales);
+
+  rptRenderChart(allSales);
+
+  var rev = sales.reduce(function(a,s){ return a + (s.total||0); }, 0);
+  var profit = sales.reduce(function(a,s){ return a + (s.profit||0); }, 0);
+  rptSet('rptKpiRev', '<span class="ccy">$</span>' + Math.round(rev).toLocaleString(), true);
+  rptSet('rptKpiProfit', '<span class="ccy">$</span>' + Math.round(profit).toLocaleString(), true);
+  rptSet('rptKpiRevMeta', sales.length + ' <span class="zh">单</span><span class="en">orders</span>', true);
+  rptSet('rptKpiProfitMeta', rev > 0 ? (Math.round(profit/rev*100) + '% <span class="zh">毛利率</span><span class="en">margin</span>') : '--', true);
+
+  var avail = phones.filter(function(p){ return p && (p.status === 'available' || !p.status); });
+  var agedUnits = 0, agedCost = 0;
+  avail.forEach(function(p){ if (rptAge(p) >= 60) { agedUnits++; agedCost += (p.cost||0); } });
+  rptSet('rptKpiAgedCost', '<span class="ccy">$</span>' + Math.round(agedCost).toLocaleString(), true);
+  rptSet('rptKpiAgedMeta', agedUnits + ' <span class="zh">部 ≥60天</span><span class="en">phones ≥60d</span>', true);
+
+  var soldUnits = sales.length;
+  var sellThrough = (soldUnits + avail.length) > 0 ? Math.round(soldUnits / (soldUnits + avail.length) * 100) : 0;
+  rptSet('rptKpiTurnover', sellThrough + '%', false);
+  rptSet('rptKpiTurnoverMeta', '<span class="zh">已售 </span>' + soldUnits + ' <span class="zh">· 在库 </span>' + avail.length, true);
+
+  rptRenderStores(sales);
+  rptRenderAging(avail);
+  rptRenderCategory(sales);
+  rptRenderPayments(sales);
+}
+function rptRenderChart(allSales) {
   var barsEl = document.getElementById('revChartBars');
   var datesEl = document.getElementById('revChartDates');
   var emptyEl = document.getElementById('revChartEmpty');
   if (!barsEl) return;
-
-  // Build daily revenue for last 30 days
-  var days = 30;
-  var today = new Date(); today.setHours(0,0,0,0);
-  var dailyRev = [];
-  for (var i = days - 1; i >= 0; i--) {
-    var d = new Date(today); d.setDate(d.getDate() - i);
-    dailyRev.push({ date: d, rev: 0 });
-  }
-  sales.forEach(function(s) {
-    var sd = new Date(s.date); sd.setHours(0,0,0,0);
-    for (var i = 0; i < dailyRev.length; i++) {
-      if (dailyRev[i].date.getTime() === sd.getTime()) {
-        dailyRev[i].rev += (s.total || 0);
-        break;
-      }
-    }
+  var now = new Date(); var months = [];
+  for (var i = 5; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push({ y:d.getFullYear(), m:d.getMonth(), rev:0 }); }
+  allSales.forEach(function(s){
+    if (s.status === 'returned') return;
+    var d = rptSaleDate(s);
+    for (var i = 0; i < months.length; i++) { if (months[i].y === d.getFullYear() && months[i].m === d.getMonth()) { months[i].rev += (s.total||0); break; } }
   });
-
-  var maxRev = Math.max.apply(null, dailyRev.map(function(d){ return d.rev; }));
-  var totalRev = dailyRev.reduce(function(a,b){ return a + b.rev; }, 0);
-
-  // If no sales at all, show empty state
-  if (totalRev === 0) {
-    barsEl.innerHTML = '';
-    datesEl.innerHTML = '';
-    if (emptyEl) { emptyEl.style.display = 'block'; barsEl.parentElement.style.position = 'relative'; barsEl.style.height = '180px'; }
-    return;
-  }
+  var mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var max = Math.max.apply(null, months.map(function(m){ return m.rev; }));
+  var total = months.reduce(function(a,m){ return a + m.rev; }, 0);
+  if (total === 0) { barsEl.innerHTML = ''; datesEl.innerHTML = ''; if (emptyEl) { emptyEl.style.display = 'block'; barsEl.parentElement.style.position = 'relative'; } return; }
   if (emptyEl) emptyEl.style.display = 'none';
-
-  // Render bars
-  var peakIdx = dailyRev.reduce(function(best, d, idx) { return d.rev > dailyRev[best].rev ? idx : best; }, 0);
-  var barsHtml = '';
-  dailyRev.forEach(function(d, idx) {
-    var pct = maxRev > 0 ? Math.max(2, Math.round(d.rev / maxRev * 100)) : 2;
-    var isPeak = idx === peakIdx && d.rev > 0;
-    var grad = isPeak ? 'linear-gradient(180deg,var(--gold) 0%,var(--gold-soft) 100%)' : 'linear-gradient(180deg,var(--brand) 0%,var(--brand-soft) 100%)';
-    barsHtml += '<div style="flex:1;background:' + grad + ';height:' + pct + '%;border-radius:2px 2px 0 0;" title="$' + d.rev.toLocaleString() + '"></div>';
+  var peak = months.reduce(function(b,m,i){ return m.rev > months[b].rev ? i : b; }, 0);
+  barsEl.innerHTML = months.map(function(m,i){
+    var pct = max > 0 ? Math.max(2, Math.round(m.rev / max * 100)) : 2;
+    var grad = i === peak ? 'linear-gradient(180deg,var(--gold),var(--gold-soft))' : 'linear-gradient(180deg,var(--brand),var(--brand-soft))';
+    return '<div style="flex:1;background:' + grad + ';height:' + pct + '%;border-radius:3px 3px 0 0;" title="' + mn[m.m] + ' $' + Math.round(m.rev).toLocaleString() + '"></div>';
+  }).join('');
+  datesEl.innerHTML = months.map(function(m){ return '<span>' + mn[m.m] + '</span>'; }).join('');
+}
+function rptRenderStores(sales) {
+  var el = document.getElementById('rptStoreRanking'); if (!el) return;
+  var byStore = {};
+  sales.forEach(function(s){ var k = s.storeName || s.store || '—'; byStore[k] = (byStore[k]||0) + (s.total||0); });
+  var arr = Object.keys(byStore).map(function(k){ return { store:k, rev:byStore[k] }; }).sort(function(a,b){ return b.rev - a.rev; });
+  if (!arr.length) { el.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text-muted);font-size:13px;"><span class="zh">该时段暂无销售</span><span class="en">No sales in period</span></div>'; return; }
+  var max = arr[0].rev || 1;
+  el.innerHTML = arr.map(function(r,i){
+    var pct = Math.round(r.rev / max * 100); var gold = i === 0;
+    return '<div style="padding:10px 18px;display:grid;grid-template-columns:24px 1fr 80px;gap:10px;align-items:center;border-bottom:1px solid var(--border-soft);">' +
+      '<div style="font-family:\'JetBrains Mono\',monospace;font-size:14px;font-weight:800;color:' + (gold?'var(--gold-deep)':'var(--text-muted)') + ';">' + (i+1) + '</div>' +
+      '<div><div style="font-weight:600;font-size:12.5px;">' + r.store + '</div><div style="height:5px;background:var(--bg-soft);border-radius:3px;margin-top:4px;overflow:hidden;"><div style="width:' + pct + '%;height:100%;background:' + (gold?'linear-gradient(90deg,var(--gold),var(--gold-deep))':'linear-gradient(90deg,var(--brand),var(--success))') + ';border-radius:3px;"></div></div></div>' +
+      '<div style="text-align:right;font-family:\'JetBrains Mono\',monospace;font-weight:700;font-size:12px;color:var(--brand);">$' + Math.round(r.rev).toLocaleString() + '</div></div>';
+  }).join('');
+}
+function rptRenderAging(avail) {
+  var buckets = [
+    { lbl:'0-30', min:0, max:30, color:'var(--success)', bg:'var(--success-soft)', zh:'健康库存', en:'Healthy' },
+    { lbl:'31-60', min:31, max:60, color:'var(--info)', bg:'var(--info-soft)', zh:'需关注', en:'Watch' },
+    { lbl:'61-90', min:61, max:90, color:'var(--warn)', bg:'var(--warn-soft)', zh:'建议降价', en:'Discount' },
+    { lbl:'90+', min:91, max:1e9, color:'var(--danger)', bg:'var(--danger-soft)', zh:'必须处理', en:'Must clear' }
+  ];
+  buckets.forEach(function(b){ b.count = 0; b.cost = 0; });
+  avail.forEach(function(p){ var a = rptAge(p); for (var i = 0; i < buckets.length; i++) { if (a >= buckets[i].min && a <= buckets[i].max) { buckets[i].count++; buckets[i].cost += (p.cost||0); break; } } });
+  var maxCount = Math.max(1, Math.max.apply(null, buckets.map(function(b){ return b.count; })));
+  var el = document.getElementById('rptAgingBuckets');
+  if (el) el.innerHTML = buckets.map(function(b){
+    return '<div style="background:' + b.bg + ';border-radius:9px;padding:14px 16px;"><div style="font-size:10.5px;color:' + b.color + ';text-transform:uppercase;letter-spacing:0.07em;font-weight:700;">' + b.lbl + ' <span class="zh">天</span><span class="en">days</span></div><div style="font-size:28px;font-weight:800;line-height:1;margin-top:6px;color:' + b.color + ';">' + b.count + '</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;"><span class="zh">' + b.zh + '</span><span class="en">' + b.en + '</span> · $' + Math.round(b.cost).toLocaleString() + '</div><div style="height:5px;background:rgba(0,0,0,0.05);border-radius:3px;margin-top:8px;overflow:hidden;"><div style="width:' + Math.round(b.count/maxCount*100) + '%;height:100%;background:' + b.color + ';"></div></div></div>';
+  }).join('');
+  var aged = avail.filter(function(p){ return rptAge(p) >= 60; }).sort(function(a,b){ return rptAge(b) - rptAge(a); }).slice(0, 15);
+  var t = document.getElementById('rptAgingTable'); if (!t) return;
+  if (!aged.length) { t.style.padding = '30px 22px'; t.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;"><span class="zh">暂无滞销库存（≥60天）</span><span class="en">No aged stock ≥60d</span></div>'; return; }
+  t.style.padding = '0';
+  t.innerHTML = aged.map(function(p){
+    var a = rptAge(p);
+    return '<div style="padding:11px 22px;display:grid;grid-template-columns:1.5fr 1fr 100px 100px 100px 90px;gap:10px;align-items:center;border-bottom:1px solid var(--border-soft);font-size:12px;"><div style="font-weight:600;">' + (p.name||p.model||'') + ' ' + (p.storage||'') + '</div><div style="color:var(--text-muted);">' + (p.storeName||p.store||'') + '</div><div class="mono">$' + (p.cost||0) + '</div><div class="mono">$' + (p.msrp||p.price||0) + '</div><div style="color:' + (a>=90?'var(--danger)':'var(--warn)') + ';font-weight:700;">' + a + 'd</div><div></div></div>';
+  }).join('');
+}
+function rptRenderCategory(sales) {
+  var cat = { iphoneNew:0, iphoneUsed:0, samsung:0, google:0 };
+  sales.forEach(function(s){
+    var b = rptSaleBrand(s); var pf = (s.profit||0);
+    if (b === 'iPhone') { if ((s.cond||'') === 'new') cat.iphoneNew += pf; else cat.iphoneUsed += pf; }
+    else if (b === 'Samsung') cat.samsung += pf;
+    else if (b === 'Google') cat.google += pf;
   });
-  barsEl.innerHTML = barsHtml;
-
-  // Render date labels (show 5 evenly spaced)
-  var labels = [];
-  for (var i = 0; i < 5; i++) {
-    var idx = Math.round(i * (days - 1) / 4);
-    var dd = dailyRev[idx].date;
-    var m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dd.getMonth()];
-    labels.push('<span>' + m + ' ' + dd.getDate() + '</span>');
-  }
-  datesEl.innerHTML = labels.join('');
-
-  // Update KPIs
-  var monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  var mtdRev = 0, mtdProfit = 0, mtdSales = 0;
-  sales.forEach(function(s) {
-    var d = new Date(s.date);
-    if (d >= monthStart) { mtdSales++; mtdRev += (s.total||0); mtdProfit += (s.profit||0); }
+  var max = Math.max(1, cat.iphoneNew, cat.iphoneUsed, cat.samsung, cat.google);
+  function setCat(idV, idB, v) { rptSet(idV, '$' + Math.round(v).toLocaleString(), false); var bar = document.getElementById(idB); if (bar) bar.style.width = Math.round(Math.max(0,v)/max*100) + '%'; }
+  setCat('catProfitIphoneNew', 'catBarIphoneNew', cat.iphoneNew);
+  setCat('catProfitIphoneUsed', 'catBarIphoneUsed', cat.iphoneUsed);
+  setCat('catProfitSamsung', 'catBarSamsung', cat.samsung);
+  setCat('catProfitGoogle', 'catBarGoogle', cat.google);
+}
+function rptRenderPayments(sales) {
+  var pm = { Card:0, Cash:0, Zelle:0, Wechat:0 }, splitAmt = 0, splitCount = 0, total = 0;
+  sales.forEach(function(s){
+    var methods = s.paymentMethods || []; var amt = (s.total||0); total += amt;
+    if (methods.length > 1) { splitAmt += amt; splitCount++; return; }
+    var m = String(methods[0] || '').toLowerCase();
+    if (/现金|cash/.test(m)) pm.Cash += amt;
+    else if (/zelle/.test(m)) pm.Zelle += amt;
+    else if (/微信|支付宝|wechat|alipay/.test(m)) pm.Wechat += amt;
+    else pm.Card += amt;
   });
-  var reportKpis = document.querySelectorAll('#page-reports .kpi-value');
-  if (reportKpis[0]) reportKpis[0].innerHTML = '<span class="ccy">$</span>' + mtdRev.toLocaleString();
-  if (reportKpis[1]) reportKpis[1].innerHTML = '<span class="ccy">$</span>' + mtdProfit.toLocaleString();
+  function pct(v){ return total > 0 ? Math.round(v/total*100) : 0; }
+  rptSet('pmPctCard', pct(pm.Card)+'%'); rptSet('pmAmtCard', '$'+Math.round(pm.Card).toLocaleString());
+  rptSet('pmPctCash', pct(pm.Cash)+'%'); rptSet('pmAmtCash', '$'+Math.round(pm.Cash).toLocaleString());
+  rptSet('pmPctZelle', pct(pm.Zelle)+'%'); rptSet('pmAmtZelle', '$'+Math.round(pm.Zelle).toLocaleString());
+  rptSet('pmPctWechat', pct(pm.Wechat)+'%'); rptSet('pmAmtWechat', '$'+Math.round(pm.Wechat).toLocaleString());
+  rptSet('pmPctSplit', pct(splitAmt)+'%');
+  rptSet('pmAmtSplit', '<span class="zh">组合支付 · $'+Math.round(splitAmt).toLocaleString()+' · '+splitCount+' 单</span><span class="en">Split · $'+Math.round(splitAmt).toLocaleString()+' · '+splitCount+' orders</span>', true);
+}
+function exportReportCSV() { try { exportSalesCSV(); } catch(e) { showToast('导出失败 / Export failed'); } }
+function exportAllData() {
+  try { exportInventoryCSV(); } catch(e) {}
+  setTimeout(function(){ try { exportSalesCSV(); } catch(e) {} }, 500);
+  showToast('已导出库存 + 销售 CSV / Exported inventory + sales');
 }
 
 // ===== Export CSV =====
