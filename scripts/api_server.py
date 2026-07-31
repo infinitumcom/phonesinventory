@@ -253,6 +253,27 @@ def init_api_tables():
         );
         CREATE INDEX IF NOT EXISTS idx_transfers_status ON transfers(status);
 
+        CREATE TABLE IF NOT EXISTS shipments (
+            id TEXT PRIMARY KEY,
+            tracking_no TEXT,
+            carrier TEXT,
+            from_store TEXT,
+            to_store TEXT,
+            imeis TEXT,
+            qty INTEGER DEFAULT 0,
+            received_imeis TEXT,
+            status TEXT DEFAULT 'draft',
+            notes TEXT,
+            created_by TEXT,
+            received_by TEXT,
+            shipped_at TEXT,
+            received_at TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_shipments_status ON shipments(status);
+        CREATE INDEX IF NOT EXISTS idx_shipments_tracking ON shipments(tracking_no);
+
         CREATE TABLE IF NOT EXISTS stock_requests (
             id TEXT PRIMARY KEY,
             requested_by TEXT,
@@ -371,6 +392,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.get_sales(params)
         elif path == '/api/transfers':
             return self.get_transfers(params)
+        elif path == '/api/shipments':
+            return self.get_shipments(params)
         elif path == '/api/stock-requests':
             return self.get_stock_requests()
         elif path == '/api/sold-imeis':
@@ -400,6 +423,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.create_sale()
         elif path == '/api/inventory/batch':
             return self.create_inventory_batch()
+        elif path == '/api/shipments':
+            return self.create_shipment()
         elif path == '/api/transfer/batch':
             return self.create_transfer_batch()
         elif path == '/api/transfer':
@@ -417,7 +442,10 @@ class APIHandler(BaseHTTPRequestHandler):
         if self.check_auth('PUT', path) is None:
             return
 
-        if path.startswith('/api/transfer/'):
+        if path.startswith('/api/shipments/'):
+            shipment_id = path.split('/')[-1]
+            return self.update_shipment(shipment_id)
+        elif path.startswith('/api/transfer/'):
             transfer_id = path.split('/')[-1]
             return self.update_transfer(transfer_id)
         elif path.startswith('/api/sale/'):
@@ -982,6 +1010,159 @@ class APIHandler(BaseHTTPRequestHandler):
                         'created': created, 'skipped': skipped,
                         'createdCount': len(created), 'skippedCount': len(skipped),
                     })
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    # ─── Cross-border shipments (香港仓 → HQ) ───
+
+    def create_shipment(self):
+        """HK (or admin) creates a shipment from 香港仓. IMEIs must be 香港仓
+        stock and available. With a tracking_no it goes straight to 'shipped'
+        (locking those units as transit); otherwise it stays 'draft'."""
+        try:
+            data = self.read_body()
+            with db_lock:
+                conn = get_db()
+                try:
+                    user = self._auth_user(conn)
+                    role = user['role'] if user else None
+                    if role not in ('hk', 'admin'):
+                        return json_response(self, {'error': '无权限发货 / Not allowed to ship'}, 403)
+                    sid = (data.get('id') or '').strip()
+                    if not sid:
+                        return json_response(self, {'error': 'shipment id required'}, 400)
+                    from_store = '香港仓' if role == 'hk' else normalize_store_name(data.get('fromStore') or '香港仓')
+                    to_store = normalize_store_name(data.get('toStore') or 'HQ 总仓')
+                    carrier = (data.get('carrier') or '').strip()
+                    tracking = (data.get('trackingNo') or '').strip()
+                    notes = (data.get('notes') or '').strip()
+
+                    valid, skipped, seen = [], [], set()
+                    for r in data.get('imeis', []):
+                        imei = str(r).strip().replace(' ', '')
+                        if not imei:
+                            continue
+                        if imei in seen:
+                            skipped.append({'imei': imei, 'reason': '重复 / Duplicate'}); continue
+                        seen.add(imei)
+                        inv = conn.execute("SELECT status, store FROM inventory WHERE imei=?", (imei,)).fetchone()
+                        if not inv:
+                            skipped.append({'imei': imei, 'reason': '不在库存 / Not found'}); continue
+                        if normalize_store_name(inv['store']) != from_store:
+                            skipped.append({'imei': imei, 'reason': '不在' + from_store + ' / Not in warehouse'}); continue
+                        if inv['status'] != 'available':
+                            skipped.append({'imei': imei, 'reason': '不可发货(' + inv['status'] + ') / Not available'}); continue
+                        valid.append(imei)
+
+                    if not valid:
+                        return json_response(self, {'error': '没有可发货的 IMEI / No shippable IMEIs', 'skipped': skipped}, 400)
+
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    status = 'shipped' if tracking else 'draft'
+                    shipped_at = now if tracking else ''
+                    conn.execute("""
+                        INSERT INTO shipments
+                        (id,tracking_no,carrier,from_store,to_store,imeis,qty,received_imeis,
+                         status,notes,created_by,shipped_at,created_at,updated_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    """, (sid, tracking, carrier, from_store, to_store, json.dumps(valid), len(valid), '[]',
+                          status, notes, (user['name'] if user else ''), shipped_at, now, now))
+                    if status == 'shipped':
+                        for imei in valid:
+                            conn.execute("UPDATE inventory SET status='transit' WHERE imei=? AND status='available'", (imei,))
+                    conn.commit()
+                    return json_response(self, {'ok': True, 'id': sid, 'status': status,
+                                                'qty': len(valid), 'shippedImeis': valid, 'skipped': skipped})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def get_shipments(self, params):
+        conn = None
+        try:
+            conn = get_db()
+            rows = conn.execute("SELECT * FROM shipments ORDER BY created_at DESC").fetchall()
+            out = []
+            for r in rows:
+                d = dict(r)
+                try: d['imeis'] = json.loads(d.get('imeis') or '[]')
+                except Exception: d['imeis'] = []
+                try: d['receivedImeis'] = json.loads(d.pop('received_imeis', None) or '[]')
+                except Exception: d['receivedImeis'] = []
+                d['trackingNo'] = d.pop('tracking_no', '')
+                d['fromStore'] = d.pop('from_store', '')
+                d['toStore'] = d.pop('to_store', '')
+                d['createdBy'] = d.pop('created_by', '')
+                d['receivedBy'] = d.pop('received_by', '')
+                d['shippedAt'] = d.pop('shipped_at', '')
+                d['receivedAt'] = d.pop('received_at', '')
+                d['createdAt'] = d.pop('created_at', '')
+                d['updatedAt'] = d.pop('updated_at', '')
+                out.append(d)
+            return json_response(self, {'shipments': out})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
+
+    def update_shipment(self, sid):
+        """Ship a draft (HK), or receive/清点 a shipment (US HQ). Receiving moves
+        the box's IMEIs from 香港仓 to the destination store and makes them
+        available. Cancelling unlocks any in-transit units."""
+        try:
+            data = self.read_body()
+            new_status = data.get('status', '')
+            with db_lock:
+                conn = get_db()
+                try:
+                    user = self._auth_user(conn)
+                    role = user['role'] if user else None
+                    row = conn.execute("SELECT * FROM shipments WHERE id=?", (sid,)).fetchone()
+                    if not row:
+                        return json_response(self, {'error': 'Shipment not found'}, 404)
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    imeis = json.loads(row['imeis'] or '[]')
+
+                    if new_status == 'shipped':
+                        if role not in ('hk', 'admin'):
+                            return json_response(self, {'error': '无权限 / Not allowed'}, 403)
+                        tracking = (data.get('trackingNo') or row['tracking_no'] or '').strip()
+                        carrier = (data.get('carrier') or row['carrier'] or '').strip()
+                        conn.execute("UPDATE shipments SET status='shipped', tracking_no=?, carrier=?, shipped_at=?, updated_at=? WHERE id=?",
+                                     (tracking, carrier, now, now, sid))
+                        for imei in imeis:
+                            conn.execute("UPDATE inventory SET status='transit' WHERE imei=? AND status='available'", (imei,))
+
+                    elif new_status == 'received':
+                        if role not in ('admin', 'staff'):
+                            return json_response(self, {'error': '仅美国 HQ 可清点收货 / Only US side can receive'}, 403)
+                        to_store = normalize_store_name(row['to_store'] or 'HQ 总仓')
+                        verified = data.get('receivedImeis')
+                        target = verified if (isinstance(verified, list) and verified) else imeis
+                        moved = []
+                        for imei in target:
+                            conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=? AND status != 'sold'",
+                                         (to_store, imei))
+                            moved.append(imei)
+                        conn.execute("UPDATE shipments SET status='received', received_by=?, received_imeis=?, received_at=?, updated_at=? WHERE id=?",
+                                     ((user['name'] if user else ''), json.dumps(moved), now, now, sid))
+
+                    elif new_status == 'cancelled':
+                        if role not in ('hk', 'admin'):
+                            return json_response(self, {'error': '无权限 / Not allowed'}, 403)
+                        for imei in imeis:
+                            conn.execute("UPDATE inventory SET status='available' WHERE imei=? AND status='transit'", (imei,))
+                        conn.execute("UPDATE shipments SET status='cancelled', updated_at=? WHERE id=?", (now, sid))
+
+                    else:
+                        return json_response(self, {'error': 'Invalid status: ' + str(new_status)}, 400)
+
+                    conn.commit()
+                    return json_response(self, {'ok': True, 'id': sid, 'status': new_status})
                 finally:
                     conn.close()
         except Exception as e:

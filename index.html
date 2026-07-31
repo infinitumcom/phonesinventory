@@ -5716,6 +5716,15 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         <span class="nav-badge warn" style="display:none;">0</span>
         <span class="nav-badge" id="navBadgeStockReq" style="display:none;background:#3b82f6;color:#fff;">0</span>
       </div>
+      <div class="nav-item" onclick="navTo(this, 'shipments')">
+        <div class="nav-icon-wrap" style="background:#fee2e2;color:#e11d48;">
+          <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
+            <path d="M1 4h9v7H1zM10 6h3l2 2v3h-5z"/><circle cx="4" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/>
+          </svg>
+        </div>
+        <span class="nav-text"><span class="zh">跨境物流</span><span class="en">Shipments</span></span>
+        <span class="nav-badge" id="navBadgeShipments" style="display:none;background:#e11d48;color:#fff;">0</span>
+      </div>
       <div class="nav-item" onclick="navTo(this, 'tradein')">
         <div class="nav-icon-wrap icon-purple">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7">
@@ -7718,6 +7727,33 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           </div>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ============= CROSS-BORDER SHIPMENTS (香港仓 → HQ) ============= -->
+    <div class="page-content" id="page-shipments">
+      <div class="content">
+        <div class="page-head">
+          <div>
+            <h1 class="page-title"><span class="zh">跨境物流</span><span class="en">Cross-Border Shipments</span></h1>
+            <div class="page-subtitle">
+              <span class="zh">香港仓发货 → 填邮寄单号 → 美国 HQ 清点收货 → 自动入 HQ 库存</span>
+              <span class="en">HK ships → tracking # → US HQ counts & confirms → auto into HQ stock</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary hk-stockin" onclick="openNewShipmentModal()" style="background:#e11d48;border-color:#e11d48;"><span class="zh">+ 新建发货单</span><span class="en">+ New Shipment</span></button>
+          </div>
+        </div>
+        <div style="margin:8px 0 16px;">
+          <input type="text" id="shipmentSearch" class="search-input" oninput="renderShipmentsPage()" placeholder="🔍 搜索 单号 / 邮寄单号 / IMEI  ·  Search ID / tracking # / IMEI" style="max-width:460px;">
+        </div>
+        <div id="shipmentsList">
+          <div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+            <div style="font-size:28px;margin-bottom:8px;">📦</div>
+            <span class="zh">暂无发货单</span><span class="en">No shipments yet</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -11676,6 +11712,181 @@ function submitHkStockIn() {
   });
 }
 
+// ===== Cross-Border Shipments (香港仓 → HQ) =====
+window._shipments = [];
+function loadServerShipments() {
+  apiCall('GET', '/shipments').then(function(res){
+    window._shipments = (res && res.shipments) ? res.shipments : [];
+    renderShipmentsPage();
+    // sidebar badge = shipments awaiting US receipt
+    var pending = window._shipments.filter(function(s){ return s.status === 'shipped'; }).length;
+    var badge = document.getElementById('navBadgeShipments');
+    if (badge) { badge.textContent = pending; badge.style.display = pending ? '' : 'none'; }
+  }).catch(function(e){ console.log('load shipments failed', e); });
+}
+var SHIP_STATUS = {
+  draft:     { zh:'草稿', en:'Draft', bg:'#f3f4f6', c:'#6b7280' },
+  shipped:   { zh:'已发货·在途', en:'Shipped', bg:'#dbeafe', c:'#2563eb' },
+  received:  { zh:'已清点入库', en:'Received', bg:'#dcfce7', c:'#16a34a' },
+  cancelled: { zh:'已取消', en:'Cancelled', bg:'#fee2e2', c:'#dc2626' }
+};
+function renderShipmentsPage() {
+  var box = document.getElementById('shipmentsList');
+  if (!box) return;
+  var acct = window._currentAccount || {};
+  var canShip = acct.role === 'hk' || acct.role === 'admin';
+  var canReceive = acct.role === 'admin' || acct.role === 'staff';
+  var q = (document.getElementById('shipmentSearch') || {}).value || '';
+  q = q.trim().toLowerCase();
+  var list = window._shipments.filter(function(s){
+    if (!q) return true;
+    return (s.id||'').toLowerCase().indexOf(q) >= 0 ||
+           (s.trackingNo||'').toLowerCase().indexOf(q) >= 0 ||
+           (s.imeis||[]).some(function(i){ return String(i).indexOf(q) >= 0; });
+  });
+  if (!list.length) {
+    box.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:28px;margin-bottom:8px;">📦</div><span class="zh">暂无发货单</span><span class="en">No shipments</span></div>';
+    return;
+  }
+  var html = '';
+  list.forEach(function(s){
+    var st = SHIP_STATUS[s.status] || SHIP_STATUS.draft;
+    var badge = '<span style="background:'+st.bg+';color:'+st.c+';padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700;"><span class="zh">'+st.zh+'</span><span class="en">'+st.en+'</span></span>';
+    var track = s.trackingNo ? ('<span class="mono" style="font-size:12px;">🚚 '+ (s.carrier?s.carrier+' ':'') + s.trackingNo +'</span>') : '<span style="color:var(--text-muted);font-size:12px;"><span class="zh">未填单号</span><span class="en">no tracking</span></span>';
+    var actions = '';
+    if (s.status === 'draft' && canShip) {
+      actions += '<button class="btn btn-sm btn-primary" onclick="shipShipmentPrompt(\''+s.id+'\')"><span class="zh">填单号发货</span><span class="en">Ship</span></button>';
+      actions += '<button class="btn btn-sm" onclick="cancelShipment(\''+s.id+'\')" style="color:#ef4444;border-color:#fca5a5;"><span class="zh">取消</span><span class="en">Cancel</span></button>';
+    } else if (s.status === 'shipped' && canReceive) {
+      actions += '<button class="btn btn-sm btn-success" onclick="receiveShipment(\''+s.id+'\')" style="background:var(--success);color:#fff;border:none;"><span class="zh">✓ 清点收货</span><span class="en">✓ Receive</span></button>';
+    }
+    actions += '<button class="btn btn-sm" onclick="toggleShipmentImeis(\''+s.id+'\')"><span class="zh">清单 '+s.qty+' 台</span><span class="en">'+s.qty+' units</span></button>';
+    var imeiList = '<div id="ship-imeis-'+s.id+'" style="display:none;margin-top:10px;padding:10px;background:var(--bg-tinted);border-radius:8px;font-family:monospace;font-size:11.5px;line-height:1.7;max-height:180px;overflow:auto;">'+
+      (s.imeis||[]).map(function(i){ var got=(s.receivedImeis||[]).indexOf(i)>=0; return (got?'✅ ':'• ')+i; }).join('<br>')+'</div>';
+    html += '<div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:11px;padding:14px 18px;margin-bottom:10px;">'+
+      '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;">'+
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">'+
+          '<span class="mono" style="font-weight:700;font-size:12px;">'+s.id+'</span>'+badge+
+          '<span style="background:var(--bg-tinted);padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:600;">📍 '+s.fromStore+'</span><span style="color:var(--brand);">→</span>'+
+          '<span style="background:var(--brand-soft);color:var(--brand);padding:3px 9px;border-radius:5px;font-size:11.5px;font-weight:600;">📍 '+s.toStore+'</span>'+
+        '</div>'+
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;">'+actions+'</div>'+
+      '</div>'+
+      '<div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--text-muted);">'+
+        track + '<span>· '+s.qty+' <span class="zh">台</span><span class="en">units</span></span>'+
+        (s.createdBy?'<span>· '+s.createdBy+'</span>':'')+
+        (s.shippedAt?'<span>· <span class="zh">发</span><span class="en">shipped</span> '+s.shippedAt.slice(0,10)+'</span>':'')+
+        (s.receivedAt?'<span>· <span class="zh">收</span><span class="en">recv</span> '+s.receivedAt.slice(0,10)+(s.receivedBy?' '+s.receivedBy:'')+'</span>':'')+
+      '</div>'+ imeiList +
+    '</div>';
+  });
+  box.innerHTML = html;
+}
+function toggleShipmentImeis(id) {
+  var el = document.getElementById('ship-imeis-'+id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+function openNewShipmentModal() {
+  var old = document.getElementById('newShipmentModal'); if (old) old.parentNode.removeChild(old);
+  var acct = window._currentAccount || {};
+  var isAdmin = acct.role === 'admin';
+  var overlay = document.createElement('div');
+  overlay.id = 'newShipmentModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) closeNewShipmentModal(); });
+  var inp = 'width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;';
+  var lbl = 'font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;padding:22px;max-width:460px;width:100%;max-height:90vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML =
+    '<div style="font-weight:700;font-size:16px;margin-bottom:16px;">🚚 <span class="zh">新建发货单</span><span class="en">New Shipment</span></div>' +
+    (isAdmin ? '<div style="margin-bottom:10px;"><label style="'+lbl+'"><span class="zh">发货仓</span><span class="en">From</span></label><input id="shpFrom" style="'+inp+'" value="香港仓"></div>' : '<div style="margin-bottom:10px;font-size:12px;color:#9f1239;font-weight:700;">🇭🇰 <span class="zh">发货仓：香港仓</span><span class="en">From: HK Warehouse</span></div>') +
+    '<div style="display:flex;gap:8px;margin-bottom:10px;">'+
+      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">目标仓</span><span class="en">To</span></label><input id="shpTo" style="'+inp+'" value="HQ 总仓"></div>'+
+      '<div style="flex:1;"><label style="'+lbl+'"><span class="zh">承运商</span><span class="en">Carrier</span></label><input id="shpCarrier" style="'+inp+'" placeholder="SF / UPS / DHL"></div>'+
+    '</div>'+
+    '<div style="margin-bottom:10px;"><label style="'+lbl+'"><span class="zh">邮寄单号</span><span class="en">Tracking #</span> <span style="color:#888;font-weight:400;">(<span class="zh">留空=先存草稿</span><span class="en">blank = save draft</span>)</span></label><input id="shpTracking" style="'+inp+'" placeholder="SF1234567890"></div>'+
+    '<div style="margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;"><label style="'+lbl+'margin:0;">IMEI <span style="color:#888;font-weight:400;">(<span class="zh">香港仓在库</span><span class="en">HK stock</span>)</span></label><button onclick="fillHkAvailableImeis()" style="font-size:11px;padding:3px 8px;border:1px solid #ddd;background:#f5f5f5;border-radius:6px;cursor:pointer;"><span class="zh">填入全部在库</span><span class="en">Fill all</span></button></div>'+
+    '<textarea id="shpImeis" style="'+inp+'min-height:120px;font-family:monospace;font-size:13px;resize:vertical;" placeholder="每行一个 IMEI"></textarea>'+
+    '<div style="font-size:11px;color:#888;margin-top:4px;"><span class="zh">已识别 </span><span class="en">Detected </span><span id="shpCount" style="font-weight:700;color:#e11d48;">0</span></div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;">'+
+      '<button id="shpCancelBtn" style="padding:9px 16px;border:1px solid #ddd;background:#f5f5f5;color:#333;border-radius:8px;font-size:13px;cursor:pointer;"><span class="zh">取消</span><span class="en">Cancel</span></button>'+
+      '<button id="shpSubmitBtn" style="padding:9px 18px;border:none;background:#e11d48;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;"><span class="zh">创建</span><span class="en">Create</span></button>'+
+    '</div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  document.getElementById('shpCancelBtn').addEventListener('click', closeNewShipmentModal);
+  document.getElementById('shpSubmitBtn').addEventListener('click', submitNewShipment);
+  document.getElementById('shpImeis').addEventListener('input', function(){ document.getElementById('shpCount').textContent = parseImeiList(this.value).length; });
+}
+function closeNewShipmentModal() { var m = document.getElementById('newShipmentModal'); if (m) m.parentNode.removeChild(m); }
+function fillHkAvailableImeis() {
+  var avail = phones.filter(function(p){ return (p.store === '香港仓' || normalizeStoreKey(p.store) === 'hk-warehouse') && (p.status === 'available' || !p.status); });
+  var ta = document.getElementById('shpImeis');
+  ta.value = avail.map(function(p){ return p.imei; }).join('\n');
+  document.getElementById('shpCount').textContent = parseImeiList(ta.value).length;
+}
+function submitNewShipment() {
+  var imeis = parseImeiList(document.getElementById('shpImeis').value);
+  if (!imeis.length) { showToast('请粘贴至少一个 IMEI / Add at least one IMEI'); return; }
+  var fromEl = document.getElementById('shpFrom');
+  var payload = {
+    id: generateId('SH'),
+    toStore: (document.getElementById('shpTo').value || 'HQ 总仓').trim(),
+    carrier: (document.getElementById('shpCarrier').value || '').trim(),
+    trackingNo: (document.getElementById('shpTracking').value || '').trim(),
+    imeis: imeis
+  };
+  if (fromEl) payload.fromStore = fromEl.value.trim();
+  var btn = document.getElementById('shpSubmitBtn'); btn.disabled = true;
+  apiCall('POST', '/shipments', payload).then(function(res){
+    if (res.error) { showToast('创建失败: ' + res.error); btn.disabled = false; return; }
+    closeNewShipmentModal();
+    try { window.loadServerInventory && window.loadServerInventory(); } catch(e){}
+    loadServerShipments();
+    var msg = (res.status === 'shipped' ? '发货单已创建并发货 ' : '草稿已保存 ') + (res.qty||0) + ' 台' +
+              ((res.skipped&&res.skipped.length)?'，跳过 '+res.skipped.length:'') +
+              ' / ' + (res.status==='shipped'?'Shipped ':'Draft ') + (res.qty||0);
+    showToast(msg);
+    if (res.skipped && res.skipped.length) {
+      var lines = res.skipped.map(function(s){ return s.imei+'  —  '+s.reason; }).join('\n');
+      setTimeout(function(){ alert('以下 IMEI 未加入 / Skipped:\n\n'+lines); }, 300);
+    }
+  }).catch(function(){ showToast('创建失败，请检查网络 / Failed, check network'); var b=document.getElementById('shpSubmitBtn'); if(b)b.disabled=false; });
+}
+function shipShipmentPrompt(id) {
+  var tracking = prompt('邮寄单号 / Tracking number:');
+  if (tracking === null) return;
+  tracking = tracking.trim();
+  if (!tracking) { showToast('单号不能为空 / Tracking required'); return; }
+  var carrier = prompt('承运商 / Carrier (SF/UPS/DHL...):') || '';
+  apiCall('PUT', '/shipments/' + id, { status:'shipped', trackingNo:tracking, carrier:carrier.trim() }).then(function(res){
+    if (res.error) { showToast('发货失败: '+res.error); return; }
+    try { window.loadServerInventory && window.loadServerInventory(); } catch(e){}
+    loadServerShipments();
+    showToast('已标记发货 / Marked shipped');
+  }).catch(function(){ showToast('网络错误 / Network error'); });
+}
+function receiveShipment(id) {
+  var s = window._shipments.find(function(x){ return x.id === id; });
+  var n = s ? s.qty : '';
+  if (!confirm('确认清点收货 '+n+' 台？机器将从香港仓转入 '+(s?s.toStore:'HQ')+'。\nConfirm receipt of '+n+' units into '+(s?s.toStore:'HQ')+'?')) return;
+  apiCall('PUT', '/shipments/' + id, { status:'received' }).then(function(res){
+    if (res.error) { showToast('收货失败: '+res.error); return; }
+    try { window.loadServerInventory && window.loadServerInventory(); } catch(e){}
+    loadServerShipments();
+    showToast('已清点入库，库存转入 '+(s?s.toStore:'HQ')+' / Received into '+(s?s.toStore:'HQ'));
+  }).catch(function(){ showToast('网络错误 / Network error'); });
+}
+function cancelShipment(id) {
+  if (!confirm('确认取消此发货单？\nCancel this shipment?')) return;
+  apiCall('PUT', '/shipments/' + id, { status:'cancelled' }).then(function(res){
+    if (res.error) { showToast('取消失败: '+res.error); return; }
+    try { window.loadServerInventory && window.loadServerInventory(); } catch(e){}
+    loadServerShipments();
+    showToast('已取消 / Cancelled');
+  }).catch(function(){ showToast('网络错误 / Network error'); });
+}
+
 // ===== Drawer Sell/Transfer Buttons =====
 function drawerStartSale() {
   var imeiEl = document.querySelector('#drawerBody .mono');
@@ -12734,6 +12945,7 @@ function navTo(el, target) {
     sale: { zh:'新建销售', en:'New Sale' },
     sales: { zh:'销售记录', en:'Sales' },
     transfer: { zh:'跨店调拨', en:'Transfers' },
+    shipments: { zh:'跨境物流', en:'Shipments' },
     tradein: { zh:'二手回收', en:'Trade-In' },
     staff: { zh:'员工与积分', en:'Staff & Points' },
     customers: { zh:'客户档案', en:'Customers' },
@@ -12755,6 +12967,7 @@ function navTo(el, target) {
     if (target === 'reports') renderReportsPage();
     if (target === 'customers') renderCustomersPage();
     if (target === 'staff') renderStaffPage();
+    if (target === 'shipments') { loadServerShipments(); }
   } catch(e){}
 }
 
@@ -12948,6 +13161,7 @@ if (!window.initDynamicUI) {
     try { loadServerInventory(); } catch(e){}
     try { loadServerSales(); } catch(e){}
     try { loadServerTransfers(); } catch(e){}
+    try { loadServerShipments(); } catch(e){}
 
     var h = new Date().getHours();
     var gZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';
