@@ -14,9 +14,9 @@ localhost 暴露一个只读 HTTP 接口，供 PhonesInventory 网页「评估�
 
 安全: 只监听回环地址、只读、不上传任何数据；CORS 只放行 ALLOWED_ORIGINS。
 """
+import asyncio
 import json
 import sys
-import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 PORT = 8767
@@ -52,96 +52,91 @@ def _storage_from_bytes(total):
     return ('1TB' if best == 1024 else str(best) + 'GB')
 
 
-def read_device():
-    """读取第一台已连接并信任的 iOS 设备。返回 dict 或抛错信息 dict。"""
-    try:
-        from pymobiledevice3.usbmux import list_devices
-    except Exception:
-        return {'ok': False, 'code': 'no_deps',
-                'error': '未安装依赖，请先运行: pip install pymobiledevice3'}
+async def _read_device_async():
+    from pymobiledevice3.usbmux import list_devices
+    from pymobiledevice3.lockdown import create_using_usbmux
+    from pymobiledevice3.services.diagnostics import DiagnosticsService
 
-    try:
-        devices = list_devices()
-    except Exception as e:
-        return {'ok': False, 'code': 'usbmux_error',
-                'error': 'USB 服务不可用 (Windows 需装 Apple Mobile Device Support): ' + str(e)}
-
+    devices = await list_devices()
     if not devices:
         return {'ok': False, 'code': 'no_device', 'error': '未检测到设备，请插好数据线'}
-
     udid = getattr(devices[0], 'serial', None) or getattr(devices[0], 'udid', None)
+
     try:
-        from pymobiledevice3.lockdown import create_using_usbmux
-        lockdown = create_using_usbmux(serial=udid)
+        lockdown = await create_using_usbmux(serial=udid)
     except Exception as e:
         msg = str(e).lower()
-        if 'pair' in msg or 'trust' in msg or 'password' in msg:
-            return {'ok': False, 'code': 'need_trust',
-                    'error': '请在手机上点“信任此电脑”后重试'}
+        if any(k in msg for k in ('pair', 'trust', 'passcode', 'password')):
+            return {'ok': False, 'code': 'need_trust', 'error': '请在手机上点“信任此电脑”后重试'}
         return {'ok': False, 'code': 'lockdown_error', 'error': '连接失败: ' + str(e)}
 
-    def gv(key, domain=None):
+    async def gv(key, domain=None):
         try:
-            return lockdown.get_value(domain, key) if domain else lockdown.get_value('', key)
+            return await lockdown.get_value(domain, key)
         except Exception:
-            try:
-                return (lockdown.all_values or {}).get(key)
-            except Exception:
-                return None
+            return None
 
-    product_type = gv('ProductType') or ''
+    product_type = (await gv('ProductType')) or ''
     info = {
         'ok': True,
         'udid': udid,
         'productType': product_type,
         'model': MODEL_NAMES.get(product_type, product_type),
-        'serial': gv('SerialNumber'),
-        'imei': gv('InternationalMobileEquipmentIdentity'),
-        'imei2': gv('InternationalMobileEquipmentIdentity2'),
-        'ios': gv('ProductVersion'),
-        'deviceName': gv('DeviceName'),
-        'modelNumber': gv('ModelNumber'),
-        'regionInfo': gv('RegionInfo'),
-        'activationState': gv('ActivationState'),
+        'serial': await gv('SerialNumber'),
+        'imei': await gv('InternationalMobileEquipmentIdentity'),
+        'imei2': await gv('InternationalMobileEquipmentIdentity2'),
+        'ios': await gv('ProductVersion'),
+        'deviceName': await gv('DeviceName'),
+        'modelNumber': await gv('ModelNumber'),
+        'regionInfo': await gv('RegionInfo'),
+        'activationState': await gv('ActivationState'),
     }
 
-    # 容量
     try:
-        total = gv('TotalDiskCapacity', 'com.apple.disk_usage')
-        info['storage'] = _storage_from_bytes(total)
+        info['storage'] = _storage_from_bytes(await gv('TotalDiskCapacity', 'com.apple.disk_usage'))
     except Exception:
         info['storage'] = ''
 
-    # 电池: 循环次数 + 健康度
     info['batteryCycle'] = None
     info['batteryHealth'] = None
     try:
-        from pymobiledevice3.services.diagnostics import DiagnosticsService
         diag = DiagnosticsService(lockdown)
-        bat = {}
-        try:
-            bat = diag.get_battery() or {}
-        except Exception:
-            try:
-                io = diag.ioregistry(plane=None, name='AppleSmartBattery') or {}
-                bat = io if isinstance(io, dict) else {}
-            except Exception:
-                bat = {}
-        cyc = bat.get('CycleCount')
-        raw_max = bat.get('AppleRawMaxCapacity') or bat.get('MaxCapacity')
-        design = bat.get('DesignCapacity')
-        if cyc is not None:
-            info['batteryCycle'] = cyc
-        if raw_max and design:
-            info['batteryHealth'] = round(raw_max / design * 100)
+        bat = await diag.get_battery() or {}
+        if isinstance(bat, dict):
+            cyc = bat.get('CycleCount')
+            raw_max = bat.get('AppleRawMaxCapacity') or bat.get('MaxCapacity') or bat.get('NominalChargeCapacity')
+            design = bat.get('DesignCapacity')
+            if cyc is not None:
+                info['batteryCycle'] = cyc
+            if raw_max and design:
+                info['batteryHealth'] = round(raw_max / design * 100)
     except Exception:
         pass
 
     try:
-        lockdown.close()
+        res = lockdown.close()
+        if asyncio.iscoroutine(res):
+            await res
     except Exception:
         pass
     return info
+
+
+def read_device():
+    """读取第一台已连接并信任的 iOS 设备。返回 dict（含错误码）。"""
+    try:
+        import pymobiledevice3  # noqa: F401
+    except Exception:
+        return {'ok': False, 'code': 'no_deps',
+                'error': '未安装依赖，请先运行: pip install pymobiledevice3'}
+    try:
+        return asyncio.run(_read_device_async())
+    except Exception as e:
+        msg = str(e).lower()
+        if any(k in msg for k in ('pair', 'trust', 'passcode', 'password')):
+            return {'ok': False, 'code': 'need_trust', 'error': '请在手机上点“信任此电脑”后重试'}
+        return {'ok': False, 'code': 'usbmux_error',
+                'error': 'USB 服务不可用 (Windows 需装 Apple Mobile Device Support): ' + str(e)}
 
 
 class Handler(BaseHTTPRequestHandler):
