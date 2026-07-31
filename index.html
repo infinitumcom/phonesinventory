@@ -1622,6 +1622,11 @@ body[data-lang="zh"] .en { display: none; }
 /* ============= ROLE-BASED VISIBILITY ============= */
 body[data-role="staff"] .admin-only { display: none !important; }
 body[data-role="admin"] .staff-only { display: none !important; }
+/* HK warehouse role: not admin, and US-store-only sections are hidden */
+body[data-role="hk"] .admin-only { display: none !important; }
+body[data-role="hk"] .us-only { display: none !important; }
+/* Conversely, HK-only sections are hidden for everyone except HK */
+body:not([data-role="hk"]) .hk-only { display: none !important; }
 
 /* Role toggle in topbar */
 .role-switch {
@@ -1926,6 +1931,28 @@ body[data-role="admin"] .staff-only { display: none !important; }
   border-color: #d97706;
   color: #78350f;
   box-shadow: 0 0 0 2px #f59e0b, 0 6px 18px rgba(245, 158, 11, 0.45);
+}
+
+/* HK Warehouse — overseas supply hub card (bright HK red) */
+.store-pill[data-store="hk-warehouse"] {
+  border: 2px solid #e11d48;
+  border-left: 4px solid #be123c;
+  background: linear-gradient(135deg, #fff1f2 0%, #fecdd3 100%);
+  color: #9f1239;
+  font-weight: 700;
+  box-shadow: 0 3px 12px rgba(225, 29, 72, 0.26);
+}
+.store-pill[data-store="hk-warehouse"] .pill-name { color: #9f1239; }
+.store-pill[data-store="hk-warehouse"]:hover {
+  transform: translateY(-2px);
+  border-color: #be123c;
+  box-shadow: 0 6px 18px rgba(225, 29, 72, 0.4);
+}
+.store-pill[data-store="hk-warehouse"].active {
+  background: linear-gradient(135deg, #fecdd3 0%, #fda4af 100%);
+  border-color: #be123c;
+  color: #881337;
+  box-shadow: 0 0 0 2px #e11d48, 0 6px 18px rgba(225, 29, 72, 0.45);
 }
 
 /* ============= INVENTORY HERO — User Welcome Card (Staff version) ============= */
@@ -5156,6 +5183,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         <option value="Rancho Cucamonga">Rancho Cucamonga (99 Ranch)</option>
         <option value="Las Vegas">Las Vegas</option>
         <option value="HQ">HQ 总仓 / Warehouse</option>
+        <option value="HK">香港仓 / HK Warehouse</option>
       </select>
     </div>
 
@@ -5258,7 +5286,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     'jason@ifixforu.com':    { name:'Jason Zeng',  role:'staff', store:'Las Vegas' },
     'chester@ifixforu.com':  { name:'Chester',     role:'staff', store:'Alhambra' },
     'grace@ifixforu.com':    { name:'Grace',       role:'staff', store:'Las Vegas' },
-    'bobby@ifixforu.com':    { name:'Bobby',       role:'staff', store:'Monterey Park' }
+    'bobby@ifixforu.com':    { name:'Bobby',       role:'staff', store:'Monterey Park' },
+    'hk@ifixforu.com':       { name:'HK Team',     role:'hk',    store:'香港仓' }
   };
   // Staff page renders from this directory
   window.LOGIN_ACCOUNTS = ACCOUNTS;
@@ -7216,6 +7245,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </button>
             <button class="store-pill" data-store="hq-warehouse" onclick="setActiveStore(this)">
               <div class="pill-name">🏢 <span class="zh">HQ 总仓</span><span class="en">HQ Warehouse</span></div>
+              <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
+            </button>
+            <button class="store-pill" data-store="hk-warehouse" onclick="setActiveStore(this)">
+              <div class="pill-name">🇭🇰 <span class="zh">香港仓</span><span class="en">HK Warehouse</span></div>
               <div class="pill-counts"><span class="new-c">NEW 0</span><span class="used-c">USED 0</span></div>
             </button>
           </div>
@@ -9214,6 +9247,16 @@ const STORE_DATA = {
     todaySold: 0, todayRev: 0,
     mtdSold: 0, mtdRank: 0,
     cash: 0, taxRate: 0, taxRateLabel: 'N/A'
+  },
+  'hk-warehouse': {
+    nameZh: '香港仓', nameEn: 'HK Warehouse',
+    addr: 'Hong Kong Supply Warehouse',
+    phone: '',
+    mgr: 'HK Team',
+    stock: 0, stockNew: 0, stockUsed: 0,
+    todaySold: 0, todayRev: 0,
+    mtdSold: 0, mtdRank: 0,
+    cash: 0, taxRate: 0, taxRateLabel: 'N/A'
   }
 };
 
@@ -9232,7 +9275,8 @@ function normalizeStoreKey(raw) {
     'irvine': 'irvine', 'irvine (99 ranch)': 'irvine',
     'rancho cucamonga': 'rancho-cucamonga', 'rancho cucamonga (99 ranch)': 'rancho-cucamonga',
     'las vegas': 'las-vegas',
-    'hq': 'hq-warehouse', 'hq 总仓': 'hq-warehouse', 'hq warehouse': 'hq-warehouse'
+    'hq': 'hq-warehouse', 'hq 总仓': 'hq-warehouse', 'hq warehouse': 'hq-warehouse',
+    'hk': 'hk-warehouse', '香港仓': 'hk-warehouse', 'hk warehouse': 'hk-warehouse', 'hk 仓': 'hk-warehouse'
   };
   var key = raw.toLowerCase().trim();
   if (map[key]) return map[key];

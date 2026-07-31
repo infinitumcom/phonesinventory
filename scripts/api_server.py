@@ -59,6 +59,7 @@ SEED_USERS = [
     ('chester@ifixforu.com', 'Chester', 'staff', 'Alhambra'),
     ('grace@ifixforu.com', 'Grace', 'staff', 'Las Vegas'),
     ('bobby@ifixforu.com', 'Bobby', 'staff', 'Monterey Park'),
+    ('hk@ifixforu.com', 'HK Team', 'hk', '香港仓'),
 ]
 
 db_lock = threading.Lock()
@@ -151,6 +152,7 @@ STORE_KEY_TO_NAME = {
     'rancho-cucamonga': 'Rancho Cucamonga',
     'las-vegas': 'Las Vegas',
     'hq-warehouse': 'HQ 总仓',
+    'hk-warehouse': '香港仓',
 }
 
 def normalize_store_name(raw):
@@ -610,22 +612,34 @@ class APIHandler(BaseHTTPRequestHandler):
 
     # ─── Enriched phones list (replaces the public data/phones.js export) ───
 
+    def _auth_user(self, conn):
+        """Return the authenticated user's row (email/name/role/store) or None."""
+        email = getattr(self, '_auth_email', None)
+        if not email:
+            return None
+        return get_user(conn, email)
+
     def _is_admin(self, conn):
         """True if the authenticated user is an admin. Used to gate owner-only
         fields (e.g. cost) so staff devices never receive them."""
-        email = getattr(self, '_auth_email', None)
-        if not email:
-            return False
-        u = get_user(conn, email)
+        u = self._auth_user(conn)
         return bool(u and u['role'] == 'admin')
 
     def get_phones(self):
         conn = None
         try:
             conn = get_db()
-            rows = conn.execute("SELECT * FROM inventory ORDER BY id DESC").fetchall()
+            user = self._auth_user(conn)
+            # HK warehouse role only ever sees HK warehouse stock.
+            if user and user['role'] == 'hk':
+                rows = conn.execute(
+                    "SELECT * FROM inventory WHERE store=? ORDER BY id DESC",
+                    ('香港仓',)
+                ).fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM inventory ORDER BY id DESC").fetchall()
             phones = export_inventory.build_phones(rows)
-            if not self._is_admin(conn):
+            if not (user and user['role'] == 'admin'):
                 for p in phones:
                     p['cost'] = 0  # cost is owner-only, never leaves the server for staff
             return json_response(self, {'phones': phones})
@@ -649,7 +663,12 @@ class APIHandler(BaseHTTPRequestHandler):
             conditions = []
             args = []
 
-            if store and store != 'all':
+            user = self._auth_user(conn)
+            if user and user['role'] == 'hk':
+                # HK warehouse role is locked to HK warehouse stock only.
+                conditions.append("store = ?")
+                args.append('香港仓')
+            elif store and store != 'all':
                 conditions.append("store = ?")
                 args.append(normalize_store_name(store))
             if status:
@@ -662,7 +681,7 @@ class APIHandler(BaseHTTPRequestHandler):
 
             rows = conn.execute(query, args).fetchall()
 
-            is_admin = self._is_admin(conn)
+            is_admin = bool(user and user['role'] == 'admin')
             items = []
             for r in rows:
                 item = dict(r)
