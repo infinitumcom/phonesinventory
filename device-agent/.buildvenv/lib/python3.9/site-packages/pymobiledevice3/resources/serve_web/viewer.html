@@ -1,0 +1,117 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>iPhone screen</title>
+<link rel="stylesheet" href="/viewer.css"></head>
+<body class="frame-on">
+<div id="workspace">
+ <!-- Left tray: utility actions. Collapsible so the canvas can keep
+      the full viewport width when needed; pinned to the page flow
+      (not position:fixed) so a wide / rotated canvas can't slide
+      underneath it. -->
+ <aside id="left-tray" class="tray">
+  <button class="tray-toggle btn" data-tray="left" title="Collapse this panel" aria-label="Collapse left panel">‹</button>
+  <div class="tray-content">
+   <button class="btn" id="screenshot" type="button" title="Save current frame as PNG (Ctrl+P)">Screenshot</button>
+   <button class="btn" id="rotate-left" type="button" title="Rotate device 90° CCW">Rotate ↺</button>
+   <button class="btn" id="rotate-right" type="button" title="Rotate device 90° CW">Rotate ↻</button>
+   <button class="btn" id="sound-toggle" type="button">Enable Sound</button>
+   <button class="btn" id="style-toggle" type="button" title="toggle dark/light user-interface style">Style: ?</button>
+   <button class="btn" id="frame-toggle" type="button" title="toggle cosmetic iPhone bezel around the canvas">Frame: ?</button>
+   <button class="btn" id="reload-window" type="button" title="Reload this viewer page">Reload</button>
+   <button class="btn" id="restart" type="button" title="full DisplayService restart">Force Restart</button>
+   <button class="btn" id="help-toggle" type="button" title="Show keyboard shortcuts and tips (?)">?</button>
+  </div>
+ </aside>
+
+ <div id="stage-wrap">
+  <div id="stage">
+   <!-- Left side of the device: mute switch + volume rocker -->
+   <div id="side-left" class="side">
+    <button class="btn" data-btn="mute" title="Ctrl+\">Mute</button>
+    <button class="btn" data-btn="volume-up" title="Ctrl+]">Vol +</button>
+    <button class="btn" data-btn="volume-down" title="Ctrl+[">Vol -</button>
+   </div>
+   <div id="device-frame">
+    <canvas id="c" tabindex="0"></canvas>
+    <div id="offline-overlay" class="hidden"><span>Stream offline — waiting for frames…</span></div>
+   </div>
+   <!-- Right side of the device: side button (lock) and Siri -->
+   <div id="side-right" class="side">
+    <button class="btn" data-btn="lock" title="Ctrl+L">Lock</button>
+    <button class="btn" data-btn="siri" title="Ctrl+S">Siri</button>
+   </div>
+  </div>
+  <div id="bottom-row">
+   <button class="btn" data-swipe="left" title="Swipe left across the middle of the screen">Swipe ←</button>
+   <button class="btn" data-btn="home" title="Ctrl+H">Home</button>
+   <button class="btn" data-swipe="right" title="Swipe right across the middle of the screen">Swipe →</button>
+  </div>
+ </div>
+
+ <!-- Right tray: accessibility settings + clipboard. Same collapse model. -->
+ <aside id="right-tray" class="tray">
+  <button class="tray-toggle btn" data-tray="right" title="Collapse this panel" aria-label="Collapse right panel">›</button>
+  <div class="tray-content">
+   <h3>Clipboard
+    <button class="btn" id="clipboard-toggle" type="button" title="Toggle the clipboard panel. When off, send/get are disabled.">on</button>
+   </h3>
+   <div id="clipboard-panel">
+    <textarea id="clipboard-text" rows="3" placeholder="Text staged for device / device clipboard contents"></textarea>
+    <div class="clipboard-row">
+     <button class="btn" id="clipboard-send" type="button" title="Copy the text above onto the device pasteboard">→ Send to device</button>
+     <button class="btn" id="clipboard-get" type="button" title="Pull the device pasteboard into the text area (and the browser clipboard)">← Get from device</button>
+    </div>
+   </div>
+   <h3>Accessibility</h3>
+   <div id="accessibility-list">loading…</div>
+   <button class="btn" id="accessibility-reset" type="button" title="Reset all accessibility settings to defaults">Reset all</button>
+  </div>
+ </aside>
+</div>
+
+<div id="fps">— fps</div>
+<div id="kb-indicator" class="hidden" aria-hidden="true" title="Keystrokes are being forwarded to the device">
+ <svg viewBox="0 0 48 28" width="48" height="28" aria-hidden="true">
+  <rect x="1" y="1" width="46" height="26" rx="4" ry="4" fill="none" stroke="currentColor" stroke-width="1.5"/>
+  <!-- top row -->
+  <rect x="4"  y="5" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="10" y="5" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="16" y="5" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="22" y="5" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="28" y="5" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="34" y="5" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="40" y="5" width="4" height="4" rx="1" fill="currentColor"/>
+  <!-- middle row -->
+  <rect x="6"  y="11" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="12" y="11" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="18" y="11" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="24" y="11" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="30" y="11" width="4" height="4" rx="1" fill="currentColor"/>
+  <rect x="36" y="11" width="4" height="4" rx="1" fill="currentColor"/>
+  <!-- space bar row -->
+  <rect x="4"  y="17" width="6" height="4" rx="1" fill="currentColor"/>
+  <rect x="12" y="17" width="24" height="4" rx="1" fill="currentColor"/>
+  <rect x="38" y="17" width="6" height="4" rx="1" fill="currentColor"/>
+ </svg>
+</div>
+<div id="status">connecting...</div>
+<div id="help-overlay" class="hidden" aria-hidden="true">
+ <div id="help-modal" role="dialog" aria-modal="true" aria-label="Shortcuts and tips">
+  <button id="help-close" class="btn" type="button" aria-label="Close">×</button>
+  <h2>Shortcuts</h2>
+  <table>
+   <tr><th>Key</th><th>Action</th></tr>
+   <tr><td>Ctrl + H</td><td>Home</td></tr>
+   <tr><td>Ctrl + L</td><td>Lock / Power</td></tr>
+   <tr><td>Ctrl + ]</td><td>Volume Up</td></tr>
+   <tr><td>Ctrl + [</td><td>Volume Down</td></tr>
+   <tr><td>Ctrl + \</td><td>Mute</td></tr>
+   <tr><td>Ctrl + S</td><td>Siri</td></tr>
+   <tr><td>Ctrl + P</td><td>Screenshot</td></tr>
+   <tr><td>?</td><td>Show this help</td></tr>
+   <tr><td>Esc</td><td>Close this help</td></tr>
+  </table>
+  <p>Click + drag on the canvas to interact with the touchscreen. Letter / arrow / modifier keys are forwarded to the device whenever the canvas has focus — a green keyboard badge in the top-right of the viewport lights up while that's the case. Click outside the canvas (a tray button, the clipboard textarea, anywhere on the page chrome) to drop capture so Ctrl-L, Cmd-W and other browser shortcuts work normally; clicking back onto the canvas resumes capture. Rotate ↺ / ↻ flip the device 90° (both the device and the canvas). The right-side panel toggles iOS appearance + accessibility knobs (light/dark, dynamic text size, reduce motion, reduce transparency, increase contrast, button borders, color filter, liquid-glass opacity) via the CoreDevice <code>ConfigurationService</code>.</p>
+ </div>
+</div>
+<script src="/viewer.js"></script>
+</body></html>

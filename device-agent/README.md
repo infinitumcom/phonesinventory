@@ -5,25 +5,29 @@
 
 不越狱，走苹果官方 usbmux/lockdown 协议，只读、只监听本机 127.0.0.1、不上传数据。
 
-## 运行
+## 门店用（Windows · 免安装 exe，推荐）
 
-### macOS
-1. 装 Python 3（`brew install python` 或官网）
-2. 双击 `run-mac.command`（首次自动装依赖）
-   - 若提示“无法打开”，右键→打开，或终端 `chmod +x run-mac.command`
+门店电脑无需装 Python，只需要一个 exe：
 
-### Windows
-1. 装 Python 3（勾选 Add to PATH）
-2. 装 **Apple Mobile Device Support**（安装 iTunes 即带，或单独驱动）
-3. 双击 `run-windows.bat`
+1. **先在门店电脑装一次 Apple Mobile Device Support**（装 iTunes 即自带，或单独装 Apple 的 USB 驱动）——这是 iPhone USB 通信必需
+2. 拿到 `PhonesInventory-DeviceAgent.exe`（见下方“怎么拿到 exe”），拷到门店电脑
+3. 双击运行，保持黑窗口开着
+4. iPhone 插线 → 手机点“信任此电脑” → 网页点「📲 读取设备」
 
-### 手动
+### 怎么拿到这个 exe
+本项目已配好云端自动打包（`.github/workflows/build-agent.yml`），在 GitHub 上一键出 exe：
+
+- 打开仓库 → **Actions** 标签 → 左侧 **Build Device Agent (Windows)** → 右侧 **Run workflow** → 跑完后在该次运行页面底部 **Artifacts** 下载 `PhonesInventory-DeviceAgent-windows`（解压得到 exe）
+- 或本地在任意 Windows 机器上双击 `build-windows.bat` 自己打（需装 Python 3），产出 `dist\PhonesInventory-DeviceAgent.exe`
+
+> exe 是 Windows 免安装单文件，但仍依赖上面第 1 步的 Apple USB 驱动。
+
+## 开发者运行（源码，Mac/Windows）
 ```
 pip install -r requirements.txt
-python3 agent.py
+python3 agent.py       # Windows: python agent.py
 ```
-
-启动后监听 `http://127.0.0.1:8767`，保持这个窗口开着即可。
+Mac 也可双击 `run-mac.command`。启动后监听 `http://127.0.0.1:8767`，保持窗口开着。
 
 ## 接口
 - `GET /health` → Agent 是否在运行

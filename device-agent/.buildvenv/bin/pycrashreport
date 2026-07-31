@@ -1,0 +1,6 @@
+#!/Users/Apple/phonesinventory/device-agent/.buildvenv/bin/python3
+import sys
+from pycrashreport.__main__ import cli
+if __name__ == '__main__':
+    sys.argv[0] = sys.argv[0].removesuffix('.exe')
+    sys.exit(cli())
