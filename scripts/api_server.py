@@ -354,6 +354,17 @@ def init_api_tables():
             attempts INTEGER DEFAULT 0
         );
     """)
+    # inventory table is created by inventory_bot.py; ensure its hot-path indexes
+    # exist regardless (imei is looked up on nearly every write). Guarded so a
+    # not-yet-created inventory table (fresh setup) doesn't break API startup.
+    try:
+        conn.executescript("""
+            CREATE INDEX IF NOT EXISTS idx_inv_imei ON inventory(imei);
+            CREATE INDEX IF NOT EXISTS idx_inv_store_status ON inventory(store, status);
+            CREATE INDEX IF NOT EXISTS idx_inv_status ON inventory(status);
+        """)
+    except Exception:
+        pass
     # Seed login accounts (never overwrites existing rows)
     conn.executemany(
         "INSERT OR IGNORE INTO users (email, name, role, store) VALUES (?,?,?,?)",

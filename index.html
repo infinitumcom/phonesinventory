@@ -9138,6 +9138,7 @@ const condMap = {
 
 function openDrawer(idx) {
   const p = phones[idx]; if (!p) return;
+  window._drawerPhone = p;
   const isZh = document.body.dataset.lang === 'zh';
   const c = condMap[p.cond];
   const s = statusMap[p.status];
@@ -9471,7 +9472,7 @@ function computeStoreStats() {
       STORE_DATA[sk].todaySold++;
       STORE_DATA[sk].todayRev += (s.total || 0);
     }
-    if (s.paymentMethods && s.paymentMethods.indexOf('Cash') >= 0) {
+    if (s.paymentMethods && s.paymentMethods.some(function(m){ return /现金|cash/i.test(String(m)); })) {
       STORE_DATA[sk].cash += (s.total || 0);
     }
   });
@@ -12531,6 +12532,74 @@ function tiCopyDetails() {
   var txt = JSON.stringify(d.details || {}, null, 2);
   try { navigator.clipboard.writeText(txt); showToast('已复制设备详情 / Copied'); }
   catch(e) { showToast('复制失败，请手动 / Copy failed'); }
+}
+
+// ===== Previously-undefined buttons (now safe / implemented) =====
+function exportDailyReport() { try { exportReportCSV(); } catch(e) { showToast('导出失败 / Export failed'); } }
+function openQCQueue() { showToast('检测队列开发中；问题机请在「售后处理」页处理 / QC queue coming soon — use After-sales'); }
+function importExcelCSV() { showToast('批量导入请用「香港仓入库」的 Excel 上传 / Use HK Warehouse Intake for Excel import'); }
+function sortStoreCards(mode, btn) {
+  try {
+    if (btn && btn.parentElement) btn.parentElement.querySelectorAll('button').forEach(function(b){ b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+  } catch(e){}
+  window._storeSortMode = mode;
+  var grid = document.getElementById('storeCardsGrid') || document.querySelector('#page-dashboard .store-cards');
+  if (!grid || !grid.children || !grid.children.length) return;
+  var cards = Array.prototype.slice.call(grid.children);
+  cards.sort(function(a, b){
+    var ka = normalizeStoreKey(a.getAttribute('data-store') || ((a.querySelector('.store-name') || {}).textContent) || '');
+    var kb = normalizeStoreKey(b.getAttribute('data-store') || ((b.querySelector('.store-name') || {}).textContent) || '');
+    var da = STORE_DATA[ka] || {}, dbb = STORE_DATA[kb] || {};
+    return mode === 'stock' ? ((dbb.stock || 0) - (da.stock || 0)) : ((dbb.mtdRev || 0) - (da.mtdRev || 0));
+  });
+  cards.forEach(function(c){ grid.appendChild(c); });
+}
+function openEditModal() {
+  var p = window._drawerPhone;
+  if (!p) { showToast('请先打开一台机器 / Open a phone first'); return; }
+  if (((window._currentAccount || {}).role) !== 'admin') { showToast('仅管理员可编辑 / Admin only'); return; }
+  var old = document.getElementById('invEditModal'); if (old) old.parentNode.removeChild(old);
+  var overlay = document.createElement('div');
+  overlay.id = 'invEditModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
+  var inp = 'width:100%;color:#222;background:#f9f9f9;border:1px solid #ddd;padding:8px 10px;border-radius:8px;font-size:14px;box-sizing:border-box;';
+  var lbl = 'font-size:12px;font-weight:600;color:#666;display:block;margin-bottom:4px;';
+  var sel = inp + '-webkit-appearance:auto;appearance:auto;';
+  var stores = ['Alhambra','Monterey Park','San Gabriel','Rowland Heights','Arcadia 1','Arcadia 2','Irvine','Rancho Cucamonga','Las Vegas','HQ 总仓','香港仓'];
+  var curStore = p.storeName || p.store || '';
+  var storeOpts = stores.map(function(s){ return '<option' + (s === curStore ? ' selected' : '') + '>' + s + '</option>'; }).join('');
+  var condV = p.cond || 'used', regionV = p.region || 'us';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;padding:22px;max-width:440px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML =
+    '<div style="font-weight:700;font-size:16px;margin-bottom:6px;">✏️ 编辑库存 · ' + (p.name || p.model || '') + '</div>' +
+    '<div style="font-size:11px;color:#888;margin-bottom:14px;font-family:monospace;">IMEI ' + p.imei + '</div>' +
+    '<div style="margin-bottom:10px;"><label style="' + lbl + '">门店 Store</label><select id="ieStore" style="' + sel + '">' + storeOpts + '</select></div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:10px;"><div style="flex:1;"><label style="' + lbl + '">成色 Condition</label><select id="ieCond" style="' + sel + '"><option value="used"' + (condV === 'used' ? ' selected' : '') + '>二手 Used</option><option value="new"' + (condV === 'new' ? ' selected' : '') + '>全新 New</option></select></div>' +
+    '<div style="flex:1;"><label style="' + lbl + '">版本 Region</label><select id="ieRegion" style="' + sel + '"><option value="us"' + (regionV === 'us' ? ' selected' : '') + '>美版 US</option><option value="cn"' + (regionV === 'cn' ? ' selected' : '') + '>国行 CN</option><option value="hk"' + (regionV === 'hk' ? ' selected' : '') + '>港版 HK</option></select></div></div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:16px;"><div style="flex:1;"><label style="' + lbl + '">进价 Cost $</label><input id="ieCost" type="number" style="' + inp + '" value="' + (p.cost || 0) + '"></div>' +
+    '<div style="flex:1;"><label style="' + lbl + '">建议零售价 $</label><input id="iePrice" type="number" style="' + inp + '" value="' + (p.msrp || p.price || 0) + '"></div></div>' +
+    '<div style="display:flex;gap:8px;justify-content:flex-end;"><button onclick="document.getElementById(\'invEditModal\').remove()" style="padding:9px 16px;border:1px solid #ddd;background:#f5f5f5;border-radius:8px;font-size:13px;cursor:pointer;">取消</button>' +
+    '<button id="ieSaveBtn" style="padding:9px 18px;border:none;background:#0d4f3c;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">保存</button></div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  document.getElementById('ieSaveBtn').addEventListener('click', function(){
+    var payload = {
+      store: document.getElementById('ieStore').value,
+      condition: document.getElementById('ieCond').value,
+      region: document.getElementById('ieRegion').value,
+      cost: parseFloat(document.getElementById('ieCost').value) || 0,
+      price: parseFloat(document.getElementById('iePrice').value) || 0
+    };
+    apiCall('PUT', '/inventory/' + p.imei, payload).then(function(res){
+      if (res.error) { showToast('保存失败: ' + res.error); return; }
+      var m = document.getElementById('invEditModal'); if (m) m.remove();
+      try { closeDrawer(); } catch(e){}
+      try { window.loadServerInventory && window.loadServerInventory(); } catch(e){}
+      showToast('已保存 / Saved');
+    }).catch(function(){ showToast('网络错误 / Network error'); });
+  });
 }
 
 // ===== Drawer Sell/Transfer Buttons =====
