@@ -7979,6 +7979,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
       </div>
       <div class="page-actions">
+        <a class="btn" href="/download/phonesinventory-device-agent.zip" download style="text-decoration:none;" title="首次使用先下载并运行读机助手"><span class="zh">⬇️ 下载读机助手</span><span class="en">⬇️ Device Agent</span></a>
         <button class="btn" onclick="openIMEIModal()"><span class="zh">🔍 IMEI 查询</span><span class="en">🔍 IMEI Check</span></button>
         <button class="btn" onclick="openQCQueue()" id="qcQueueBtn"><span class="zh">📋 检测队列</span><span class="en">📋 QC Queue</span><span class="chip-num" style="background:var(--warn);color:white;margin-left:5px;" id="qcQueueCount">0</span></button>
         <button class="btn btn-primary" onclick="openTradeInEval()"><span class="zh">🧮 评估估价</span><span class="en">🧮 Evaluate & Quote</span></button>
@@ -12367,7 +12368,7 @@ function readDeviceFromAgent() {
     if (st) st.innerHTML = '<span style="color:#16a34a;">✓ ' + (d.model || '') + (d.serial ? ' · ' + d.serial : '') + (extra.length ? ' · ' + extra.join(' · ') : '') + '</span>';
     try { recalcTradeIn(); } catch(e){}
   }).catch(function(){
-    if (st) st.innerHTML = '<span style="color:#dc2626;"><span class="zh">本地读机 Agent 未运行，请先启动（见 device-agent 说明）</span><span class="en">Agent not running — start it first</span></span>';
+    if (st) st.innerHTML = '<span style="color:#dc2626;"><span class="zh">未连上读机助手：请先点右上「⬇️ 下载读机助手」解压运行，并用 Chrome 打开本站</span><span class="en">Agent not reachable — download & run it (top-right), and use Chrome</span></span>';
   });
 }
 
