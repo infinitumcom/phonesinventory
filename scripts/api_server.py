@@ -809,6 +809,9 @@ class APIHandler(BaseHTTPRequestHandler):
             with db_lock:
                 conn = get_db()
                 try:
+                    user = self._auth_user(conn)
+                    if not (user and user['role'] == 'admin'):
+                        return json_response(self, {'error': '仅管理员可删除库存 / Admin only'}, 403)
                     row = conn.execute("SELECT id, status FROM inventory WHERE imei = ?", (imei,)).fetchone()
                     if not row:
                         return json_response(self, {'error': 'Record not found'}, 404)
@@ -857,18 +860,32 @@ class APIHandler(BaseHTTPRequestHandler):
                             'existing_id': existing['id']
                         }, 409)
 
-                    # Verify phone exists in inventory
-                    inv = conn.execute("SELECT id, status FROM inventory WHERE imei = ?", (imei,)).fetchone()
+                    # Verify phone exists + is sellable; pull authoritative cost/store from inventory.
+                    inv = conn.execute(
+                        "SELECT id, status, cost, store FROM inventory WHERE imei = ?", (imei,)
+                    ).fetchone()
                     if not inv:
                         return json_response(self, {'error': 'IMEI not found in inventory'}, 404)
-                    # Block selling a phone that is currently being transferred between stores
-                    if inv['status'] == 'transit':
-                        return json_response(self, {
-                            'error': '此手机正在调拨中，无法销售 / Phone is in transit, cannot sell'
-                        }, 409)
+                    if inv['status'] != 'available':
+                        msg = {'sold': '已售出', 'transit': '正在调拨中', 'reserved': '已被预留',
+                               'defect': '问题机(报修中)'}.get(inv['status'], '当前不可销售')
+                        return json_response(self, {'error': msg + ' / Not sellable'}, 409)
+
+                    # Money math is server-authoritative: cost comes from inventory (never the
+                    # client, which sees cost=0 for staff), profit is computed here. Seller is
+                    # the authenticated user, not a client-supplied string.
+                    user = self._auth_user(conn)
+                    seller = (user['name'] if user else '') or data.get('seller', '')
+                    real_cost = inv['cost'] or 0
+                    try: price = float(data.get('price', 0) or 0)
+                    except (TypeError, ValueError): price = 0
+                    try: tax = float(data.get('tax', 0) or 0)
+                    except (TypeError, ValueError): tax = 0
+                    total = round(price + tax, 2)
+                    profit = round(price - real_cost, 2)
 
                     now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
-                    store_name = normalize_store_name(data.get('store', ''))
+                    store_name = normalize_store_name(data.get('store', '')) or (inv['store'] or '')
                     conn.execute("""
                         INSERT INTO sales (id, imei, phone_name, storage, color, color_en, cond, region,
                             cost, msrp, price, tax, total, profit, tax_applied, tax_rate,
@@ -879,16 +896,16 @@ class APIHandler(BaseHTTPRequestHandler):
                         data.get('id', ''), imei, data.get('phoneName', ''),
                         data.get('storage', ''), data.get('color', ''), data.get('colorEn', ''),
                         data.get('cond', ''), data.get('region', ''),
-                        data.get('cost', 0), data.get('msrp', 0), data.get('price', 0),
-                        data.get('tax', 0), data.get('total', 0), data.get('profit', 0),
+                        real_cost, data.get('msrp', 0), price,
+                        tax, total, profit,
                         1 if data.get('taxApplied') else 0, data.get('taxRate', 0),
                         data.get('customer', ''), data.get('customerPhone', ''),
                         data.get('customerEmail', ''), json.dumps(data.get('paymentMethods', [])),
                         store_name, data.get('storeKey', ''),
-                        data.get('seller', ''), 'completed', now
+                        seller, 'completed', now
                     ))
-                    # Mark phone as sold in inventory
-                    conn.execute("UPDATE inventory SET status = 'sold' WHERE imei = ?", (imei,))
+                    # Mark phone as sold (guard: only if still available).
+                    conn.execute("UPDATE inventory SET status = 'sold' WHERE imei = ? AND status = 'available'", (imei,))
                     conn.commit()
                 finally:
                     conn.close()
@@ -902,13 +919,23 @@ class APIHandler(BaseHTTPRequestHandler):
         conn = None
         try:
             conn = get_db()
+            user = self._auth_user(conn)
+            role = user['role'] if user else None
             store = params.get('store', [None])[0]
-            if store and store != 'all':
-                rows = conn.execute(
-                    "SELECT * FROM sales WHERE store_key = ? ORDER BY created_at DESC", (store,)
-                ).fetchall()
-            else:
-                rows = conn.execute("SELECT * FROM sales ORDER BY created_at DESC").fetchall()
+            conds, args = [], []
+            # Staff only ever see their own store's sales; HK sees none (no US sales access).
+            if role == 'staff':
+                conds.append("store = ?"); args.append(user['store'])
+            elif role == 'hk':
+                conds.append("1 = 0")
+            elif store and store != 'all':
+                conds.append("store_key = ?"); args.append(store)
+            q = "SELECT * FROM sales"
+            if conds:
+                q += " WHERE " + " AND ".join(conds)
+            q += " ORDER BY created_at DESC"
+            rows = conn.execute(q, args).fetchall()
+            is_admin = (role == 'admin')
             sales = []
             for r in rows:
                 sale = dict(r)
@@ -923,8 +950,12 @@ class APIHandler(BaseHTTPRequestHandler):
                 pm = sale.pop('payment_methods', '[]')
                 try:
                     sale['paymentMethods'] = json.loads(pm) if pm else []
-                except:
+                except Exception:
                     sale['paymentMethods'] = []
+                # Owner-only: hide cost/profit from non-admins.
+                if not is_admin:
+                    sale['cost'] = 0
+                    sale['profit'] = 0
                 sales.append(sale)
             return json_response(self, {'sales': sales})
         except Exception as e:
@@ -939,16 +970,23 @@ class APIHandler(BaseHTTPRequestHandler):
             with db_lock:
                 conn = get_db()
                 try:
+                    user = self._auth_user(conn)
+                    role = user['role'] if user else None
+                    if role not in ('admin', 'staff'):
+                        return json_response(self, {'error': '无权限 / Not allowed'}, 403)
                     status = data.get('status', '')
-                    if status == 'returned':
-                        # Query IMEI FIRST, before updating status
-                        row = conn.execute("SELECT imei, status FROM sales WHERE id = ?", (sale_id,)).fetchone()
-                        if not row:
-                            return json_response(self, {'error': 'Sale not found'}, 404)
-                        if row['status'] == 'returned':
-                            return json_response(self, {'error': 'Already returned'}, 400)
-                        conn.execute("UPDATE sales SET status = 'returned' WHERE id = ?", (sale_id,))
-                        conn.execute("UPDATE inventory SET status = 'available' WHERE imei = ?", (row['imei'],))
+                    if status != 'returned':
+                        return json_response(self, {'error': '仅支持退货 / Only "returned" supported'}, 400)
+                    # Query state FIRST, before updating.
+                    row = conn.execute("SELECT imei, status, store FROM sales WHERE id = ?", (sale_id,)).fetchone()
+                    if not row:
+                        return json_response(self, {'error': 'Sale not found'}, 404)
+                    if role == 'staff' and normalize_store_name(row['store'] or '') != user['store']:
+                        return json_response(self, {'error': '只能处理本店销售 / Own store only'}, 403)
+                    if row['status'] == 'returned':
+                        return json_response(self, {'error': 'Already returned'}, 400)
+                    conn.execute("UPDATE sales SET status = 'returned' WHERE id = ?", (sale_id,))
+                    conn.execute("UPDATE inventory SET status = 'available' WHERE imei = ? AND status = 'sold'", (row['imei'],))
                     conn.commit()
                 finally:
                     conn.close()
@@ -1792,6 +1830,9 @@ class APIHandler(BaseHTTPRequestHandler):
             with db_lock:
                 conn = get_db()
                 try:
+                    user = self._auth_user(conn)
+                    if not (user and user['role'] == 'admin'):
+                        return json_response(self, {'error': '仅管理员可编辑库存 / Admin only'}, 403)
                     # Check old record exists
                     row = conn.execute("SELECT id FROM inventory WHERE imei = ?", (old_imei,)).fetchone()
                     if not row:
@@ -1829,9 +1870,22 @@ class APIHandler(BaseHTTPRequestHandler):
                     if data.get('storage'):
                         conn.execute("UPDATE inventory SET storage = ? WHERE imei = ?",
                                      (data['storage'], target_imei))
-                    if data.get('status') and data['status'] in ('available', 'reserved', 'sold'):
+                    # 'sold' must go through create_sale (ledger); block it here.
+                    if data.get('status') and data['status'] in ('available', 'reserved'):
                         conn.execute("UPDATE inventory SET status = ? WHERE imei = ?",
                                      (data['status'], target_imei))
+                    if data.get('cost') is not None:
+                        try:
+                            conn.execute("UPDATE inventory SET cost = ? WHERE imei = ?",
+                                         (float(data['cost']), target_imei))
+                        except (TypeError, ValueError):
+                            pass
+                    if data.get('price') is not None:
+                        try:
+                            conn.execute("UPDATE inventory SET price = ? WHERE imei = ?",
+                                         (float(data['price']), target_imei))
+                        except (TypeError, ValueError):
+                            pass
 
                     conn.commit()
                 finally:
@@ -1856,12 +1910,12 @@ class APIHandler(BaseHTTPRequestHandler):
             checks['imei_valid'] = 'ok' if row['c'] == 0 else f'{row["c"]} invalid'
             row = conn.execute("SELECT COUNT(*) as c FROM inventory WHERE store IS NULL OR store = ''").fetchone()
             checks['store_valid'] = 'ok' if row['c'] == 0 else f'{row["c"]} missing'
-            row = conn.execute("SELECT COUNT(*) as c FROM inventory WHERE region NOT IN ('us','hk','cn','jp','kr')").fetchone()
+            row = conn.execute("SELECT COUNT(*) as c FROM inventory WHERE region NOT IN ('us','hk','cn')").fetchone()
             checks['region_valid'] = 'ok' if row['c'] == 0 else f'{row["c"]} invalid'
             # Store name consistency
             row = conn.execute("""SELECT COUNT(*) as c FROM inventory
                 WHERE store NOT IN ('Alhambra','Monterey Park','San Gabriel','Rowland Heights',
-                    'Arcadia 1','Arcadia 2','Irvine','Rancho Cucamonga','Las Vegas','HQ 总仓','')
+                    'Arcadia 1','Arcadia 2','Irvine','Rancho Cucamonga','Las Vegas','HQ 总仓','香港仓','')
                 AND store IS NOT NULL AND store != ''""").fetchone()
             checks['store_names'] = 'ok' if row['c'] == 0 else f'{row["c"]} non-standard'
             conn.close()
