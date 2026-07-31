@@ -92,24 +92,37 @@ async def _read_device_async():
         'activationState': await gv('ActivationState'),
     }
 
+    info['diskTotal'] = None
+    info['diskFree'] = None
     try:
-        info['storage'] = _storage_from_bytes(await gv('TotalDiskCapacity', 'com.apple.disk_usage'))
+        total = await gv('TotalDiskCapacity', 'com.apple.disk_usage')
+        free = await gv('TotalDataAvailable', 'com.apple.disk_usage')
+        info['storage'] = _storage_from_bytes(total)
+        info['diskTotal'] = total
+        info['diskFree'] = free
     except Exception:
         info['storage'] = ''
 
     info['batteryCycle'] = None
     info['batteryHealth'] = None
+    info['batteryRaw'] = None
     try:
         diag = DiagnosticsService(lockdown)
         bat = await diag.get_battery() or {}
         if isinstance(bat, dict):
             cyc = bat.get('CycleCount')
-            raw_max = bat.get('AppleRawMaxCapacity') or bat.get('MaxCapacity') or bat.get('NominalChargeCapacity')
             design = bat.get('DesignCapacity')
+            nominal = bat.get('NominalChargeCapacity')
+            raw_max = bat.get('AppleRawMaxCapacity') or bat.get('MaxCapacity')
             if cyc is not None:
                 info['batteryCycle'] = cyc
-            if raw_max and design:
+            # 与系统"最大容量"更接近: 优先 NominalChargeCapacity/DesignCapacity
+            if nominal and design:
+                info['batteryHealth'] = round(nominal / design * 100)
+            elif raw_max and design:
                 info['batteryHealth'] = round(raw_max / design * 100)
+            info['batteryRaw'] = {'DesignCapacity': design, 'NominalChargeCapacity': nominal,
+                                  'AppleRawMaxCapacity': raw_max}
     except Exception:
         pass
 
@@ -139,6 +152,44 @@ def read_device():
                 'error': 'USB 服务不可用 (Windows 需装 Apple Mobile Device Support): ' + str(e)}
 
 
+async def _screenshot_async():
+    from pymobiledevice3.usbmux import list_devices
+    from pymobiledevice3.lockdown import create_using_usbmux
+    from pymobiledevice3.services.screenshot import ScreenshotService
+    devices = await list_devices()
+    if not devices:
+        return None
+    udid = getattr(devices[0], 'serial', None) or getattr(devices[0], 'udid', None)
+    lockdown = await create_using_usbmux(serial=udid)
+    svc = ScreenshotService(lockdown)
+    try:
+        try:
+            await svc.connect()
+        except Exception:
+            pass
+        return await svc.take_screenshot()
+    finally:
+        for closer in (getattr(svc, 'close', None), getattr(lockdown, 'close', None)):
+            try:
+                r = closer() if closer else None
+                if asyncio.iscoroutine(r):
+                    await r
+            except Exception:
+                pass
+
+
+def screenshot_png():
+    """返回手机当前屏幕 PNG 字节，失败返回 None。"""
+    try:
+        import pymobiledevice3  # noqa: F401
+    except Exception:
+        return None
+    try:
+        return asyncio.run(_screenshot_async())
+    except Exception:
+        return None
+
+
 class Handler(BaseHTTPRequestHandler):
     def _cors(self):
         origin = self.headers.get('Origin', '')
@@ -164,12 +215,24 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split('?')[0]
         if path == '/health':
-            return self._json({'ok': True, 'agent': 'phonesinventory-device-agent', 'version': 1})
+            return self._json({'ok': True, 'agent': 'phonesinventory-device-agent', 'version': 2})
         if path == '/device':
             try:
                 return self._json(read_device())
             except Exception as e:
                 return self._json({'ok': False, 'code': 'error', 'error': str(e)}, 500)
+        if path == '/screenshot':
+            png = screenshot_png()
+            if not png:
+                return self._json({'ok': False, 'code': 'no_screenshot', 'error': '截屏失败(手机需解锁并信任)'}, 200)
+            self.send_response(200)
+            self.send_header('Content-Type', 'image/png')
+            self._cors()
+            self.send_header('Cache-Control', 'no-store')
+            self.send_header('Content-Length', str(len(png)))
+            self.end_headers()
+            self.wfile.write(png)
+            return
         return self._json({'ok': False, 'error': 'not found'}, 404)
 
     def log_message(self, fmt, *args):
