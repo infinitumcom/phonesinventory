@@ -43,6 +43,22 @@ MODEL_NAMES = {
 STORAGE_TIERS = [64, 128, 256, 512, 1024]
 
 
+def _jsonsafe(obj):
+    """把 lockdown 返回值转成可 JSON 序列化(bytes→utf8/hex，其余→str)。"""
+    if isinstance(obj, dict):
+        return {str(k): _jsonsafe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_jsonsafe(v) for v in obj]
+    if isinstance(obj, (bytes, bytearray)):
+        try:
+            return bytes(obj).decode('utf-8')
+        except Exception:
+            return bytes(obj).hex()
+    if isinstance(obj, (str, int, float, bool)) or obj is None:
+        return obj
+    return str(obj)
+
+
 def _storage_from_bytes(total):
     """把磁盘总容量(字节)映射到标称容量档 (128GB/256GB...)。标称容量约为可用的 1.07 倍。"""
     if not total:
@@ -125,6 +141,26 @@ async def _read_device_async():
                                   'AppleRawMaxCapacity': raw_max}
     except Exception:
         pass
+
+    # 设备详情: 全量 lockdown 值 + MobileGestalt 补充(主板序列号/颜色等)
+    details = {}
+    try:
+        root = await lockdown.get_value(None, None)
+        if isinstance(root, dict):
+            details = _jsonsafe(root)
+    except Exception:
+        pass
+    try:
+        mg = await DiagnosticsService(lockdown).mobilegestalt(keys=[
+            'MLBSerialNumber', 'DeviceColor', 'DeviceEnclosureColor', 'RegionInfo',
+            'BasebandSerialNumber', 'WifiVendor', 'ArtworkTraits'])
+        if isinstance(mg, dict):
+            for k, v in _jsonsafe(mg).items():
+                if k not in details:
+                    details[k] = v
+    except Exception:
+        pass
+    info['details'] = details
 
     try:
         res = lockdown.close()
@@ -215,7 +251,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path.split('?')[0]
         if path == '/health':
-            return self._json({'ok': True, 'agent': 'phonesinventory-device-agent', 'version': 2})
+            return self._json({'ok': True, 'agent': 'phonesinventory-device-agent', 'version': 3})
         if path == '/device':
             try:
                 return self._json(read_device())
