@@ -6020,8 +6020,8 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <div class="fin-card revenue">
                 <div class="fin-card-icon">💰</div>
                 <div class="fin-card-label">
-                  <span class="zh">预计销售收入</span>
-                  <span class="en">Projected Revenue</span>
+                  <span class="zh">库存市值</span>
+                  <span class="en">Inventory Value</span>
                 </div>
                 <div class="fin-card-value"><span class="ccy">$</span>0</div>
                 <div class="fin-card-meta">
@@ -9631,8 +9631,9 @@ function renderDashboard() {
     var bs0 = breakStats[0].querySelector('.sub');
     if (bs0) {
       var np = newMSRP - newCost;
-      bs0.innerHTML = '<span class="zh">成本 $' + newCost.toLocaleString() + ' · 收入预期 $' + newMSRP.toLocaleString() + ' · 利润 $' + np.toLocaleString() + '</span>' +
-        '<span class="en">Cost $' + newCost.toLocaleString() + ' · Revenue $' + newMSRP.toLocaleString() + ' · Profit $' + np.toLocaleString() + '</span>';
+      var nm = newMSRP > 0 ? Math.round(np / newMSRP * 100) : 0;
+      bs0.innerHTML = '<span class="zh">成本 $' + newCost.toLocaleString() + ' → 毛利 $' + np.toLocaleString() + ' (' + nm + '%)</span>' +
+        '<span class="en">Cost $' + newCost.toLocaleString() + ' → Profit $' + np.toLocaleString() + ' (' + nm + '%)</span>';
     }
   }
   if (breakStats[1]) {
@@ -9641,8 +9642,9 @@ function renderDashboard() {
     var bs1 = breakStats[1].querySelector('.sub');
     if (bs1) {
       var up = usedMSRP - usedCost;
-      bs1.innerHTML = '<span class="zh">成本 $' + usedCost.toLocaleString() + ' · 收入预期 $' + usedMSRP.toLocaleString() + ' · 利润 $' + up.toLocaleString() + '</span>' +
-        '<span class="en">Cost $' + usedCost.toLocaleString() + ' · Revenue $' + usedMSRP.toLocaleString() + ' · Profit $' + up.toLocaleString() + '</span>';
+      var um = usedMSRP > 0 ? Math.round(up / usedMSRP * 100) : 0;
+      bs1.innerHTML = '<span class="zh">成本 $' + usedCost.toLocaleString() + ' → 毛利 $' + up.toLocaleString() + ' (' + um + '%)</span>' +
+        '<span class="en">Cost $' + usedCost.toLocaleString() + ' → Profit $' + up.toLocaleString() + ' (' + um + '%)</span>';
     }
   }
 
@@ -11375,6 +11377,11 @@ function renderStaffPage() {
     return;
   }
 
+  var STAFF_STORE_COLORS = {
+    'alhambra':'#0d9488','monterey-park':'#3b82f6','san-gabriel':'#6366f1','rowland-heights':'#8b5cf6',
+    'arcadia-1':'#10b981','arcadia-2':'#06b6d4','irvine':'#f43f5e','rancho-cucamonga':'#f59e0b',
+    'las-vegas':'#ea580c','hq-warehouse':'#d97706','hk-warehouse':'#e11d48'
+  };
   var html = '';
   filtered.forEach(function(st, idx) {
     var initials = st.name.split(' ').map(function(w){return w[0]||'';}).join('').substring(0,2).toUpperCase();
@@ -11386,14 +11393,14 @@ function renderStaffPage() {
       rank === 3 && totalUnits > 0 ? '<span class="rank-badge bronze">#3</span>' :
       '<span class="rank-badge normal">#' + rank + '</span>';
     var isTop = rank === 1 && totalUnits > 0;
-    var avatarStyle = isTop ? 'background:linear-gradient(135deg,#b8964a,#8c6e2f);' : '';
+    var sColor = STAFF_STORE_COLORS[normalizeStoreKey(st.store || '')] || '#6b7280';
 
-    html += '<div class="staff-card' + (isTop ? ' top' : '') + '">' +
+    html += '<div class="staff-card' + (isTop ? ' top' : '') + '" style="border-left:4px solid ' + sColor + ';' + (isTop ? '' : 'background:linear-gradient(90deg,' + sColor + '0d 0%,var(--bg-elev) 60%);') + '">' +
       '<div class="staff-head">' +
-        '<div class="avatar" style="' + avatarStyle + '">' + initials + '</div>' +
+        '<div class="avatar" style="background:' + sColor + ';color:#fff;">' + escHtml(initials) + '</div>' +
         '<div class="info">' +
-          '<div class="name">' + st.name + ' ' + rankBadge + '</div>' +
-          '<div class="meta">' + st.store + ' · Staff</div>' +
+          '<div class="name">' + escHtml(st.name) + ' ' + rankBadge + '</div>' +
+          '<div class="meta"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + sColor + ';margin-right:5px;vertical-align:middle;"></span>' + escHtml(st.store) + ' · Staff</div>' +
         '</div>' +
       '</div>' +
       '<div class="staff-stats">' +
