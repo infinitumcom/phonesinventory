@@ -7754,6 +7754,20 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             <span class="zh">暂无发货单</span><span class="en">No shipments yet</span>
           </div>
         </div>
+
+        <!-- Defective units / repair tickets (US reports · HK can see) -->
+        <div style="margin-top:30px;">
+          <h2 style="font-size:15px;font-weight:700;margin-bottom:4px;">🛠 <span class="zh">问题机 · 报修</span><span class="en">Defective Units · Repairs</span></h2>
+          <div class="page-subtitle" style="margin-bottom:12px;">
+            <span class="zh">美国收货发现问题 → 库存里点「报修」→ 香港仓在此看到是哪台</span>
+            <span class="en">US flags a bad unit → it shows here for the HK team to see</span>
+          </div>
+          <div id="defectsList">
+            <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+              <span class="zh">暂无问题机</span><span class="en">No defective units</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -8961,7 +8975,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <span><span class="zh">详细描述 (Memo)</span><span class="en">Detailed Description (Memo)</span> <span class="req">*</span></span>
           <span class="hint"><span class="zh">越详细越好</span><span class="en">Be specific</span></span>
         </div>
-        <textarea class="modal-textarea" placeholder="请详细描述故障情况,例如:
+        <textarea id="rmDescription" class="modal-textarea" placeholder="请详细描述故障情况,例如:
 • 客户反馈:充满电只能用 4 小时
 • 测试结果:电池健康度 78% · 充电时发热严重
 • 已尝试解决:重启过 · 重置过设置 · 问题依旧
@@ -9075,6 +9089,7 @@ const statusMap = {
   available: { zh:'在售', en:'Available', cls:'st-avail' },
   reserved: { zh:'已预留', en:'Reserved', cls:'st-reserved' },
   transit: { zh:'调拨在途', en:'In Transit', cls:'st-transit' },
+  defect: { zh:'问题机', en:'Defective', cls:'st-sold' },
   sold: { zh:'已售', en:'Sold', cls:'st-sold' }
 };
 const condMap = {
@@ -11887,6 +11902,81 @@ function cancelShipment(id) {
   }).catch(function(){ showToast('网络错误 / Network error'); });
 }
 
+// ===== Defects / Repair tickets =====
+window._defects = [];
+function loadServerDefects() {
+  apiCall('GET', '/defects').then(function(res){
+    window._defects = (res && res.defects) ? res.defects : [];
+    renderDefectsList();
+  }).catch(function(e){ console.log('load defects failed', e); });
+}
+var DEFECT_STATUS = {
+  open:     { zh:'待处理', en:'Open', bg:'#fee2e2', c:'#dc2626' },
+  resolved: { zh:'已修复·上架', en:'Resolved', bg:'#dcfce7', c:'#16a34a' },
+  returned: { zh:'待退回香港', en:'To Return', bg:'#fef3c7', c:'#b45309' }
+};
+function renderDefectsList() {
+  var box = document.getElementById('defectsList');
+  if (!box) return;
+  var acct = window._currentAccount || {};
+  var canResolve = acct.role === 'admin' || acct.role === 'staff';
+  if (!window._defects.length) {
+    box.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><span class="zh">暂无问题机</span><span class="en">No defective units</span></div>';
+    return;
+  }
+  var html = '';
+  window._defects.forEach(function(d){
+    var st = DEFECT_STATUS[d.status] || DEFECT_STATUS.open;
+    var badge = '<span style="background:'+st.bg+';color:'+st.c+';padding:3px 9px;border-radius:11px;font-size:11px;font-weight:700;"><span class="zh">'+st.zh+'</span><span class="en">'+st.en+'</span></span>';
+    var sevMap = { minor:'🟢', moderate:'🟡', severe:'🟠', dead:'🔴' };
+    var actions = '';
+    if (canResolve && d.status === 'open') {
+      actions += '<button class="btn btn-sm btn-success" onclick="resolveDefect(\''+d.id+'\')" style="background:var(--success);color:#fff;border:none;"><span class="zh">✓ 已修复上架</span><span class="en">✓ Resolved</span></button>';
+      actions += '<button class="btn btn-sm" onclick="returnDefect(\''+d.id+'\')" style="color:#b45309;border-color:#fbbf24;"><span class="zh">↩ 退回香港</span><span class="en">↩ Return HK</span></button>';
+    } else if (canResolve && d.status !== 'open') {
+      actions += '<button class="btn btn-sm" onclick="reopenDefect(\''+d.id+'\')"><span class="zh">重新打开</span><span class="en">Reopen</span></button>';
+    }
+    html += '<div style="background:var(--bg-elev);border:1px solid var(--border);border-left:3px solid '+st.c+';border-radius:11px;padding:13px 16px;margin-bottom:10px;">'+
+      '<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;">'+
+        '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;">'+
+          (d.severity && sevMap[d.severity] ? '<span style="font-size:15px;">'+sevMap[d.severity]+'</span>' : '')+
+          '<span style="font-weight:700;font-size:13px;">'+(d.phoneName||'')+'</span>'+badge+
+          '<span style="background:var(--bg-tinted);padding:3px 9px;border-radius:5px;font-size:11px;">📍 '+(d.store||'')+'</span>'+
+        '</div>'+
+        (actions ? '<div style="display:flex;gap:6px;flex-wrap:wrap;">'+actions+'</div>' : '')+
+      '</div>'+
+      '<div style="margin-top:7px;font-size:12px;"><span class="mono" style="color:var(--text-muted);">IMEI '+d.imei+'</span></div>'+
+      ((d.issues&&d.issues.length)?'<div style="margin-top:6px;display:flex;gap:5px;flex-wrap:wrap;">'+d.issues.map(function(i){return '<span style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:2px 8px;border-radius:10px;font-size:11px;">'+i+'</span>';}).join('')+'</div>':'')+
+      (d.description?'<div style="margin-top:7px;font-size:12px;color:var(--text-muted);line-height:1.5;">'+d.description.replace(/</g,'&lt;')+'</div>':'')+
+      '<div style="margin-top:7px;font-size:11px;color:var(--text-muted);">'+(d.reportedBy?('<span class="zh">报修 </span><span class="en">by </span>'+d.reportedBy):'')+(d.createdAt?' · '+d.createdAt.slice(0,16):'')+(d.resolvedBy?' · <span class="zh">处理 </span>'+d.resolvedBy:'')+'</div>'+
+    '</div>';
+  });
+  box.innerHTML = html;
+}
+function resolveDefect(id) {
+  apiCall('PUT', '/defects/' + id, { status:'resolved' }).then(function(res){
+    if (res.error) { showToast('操作失败: '+res.error); return; }
+    try { window.loadServerInventory && window.loadServerInventory(); } catch(e){}
+    loadServerDefects();
+    showToast('已修复并重新上架 / Resolved, back on sale');
+  }).catch(function(){ showToast('网络错误 / Network error'); });
+}
+function returnDefect(id) {
+  apiCall('PUT', '/defects/' + id, { status:'returned' }).then(function(res){
+    if (res.error) { showToast('操作失败: '+res.error); return; }
+    loadServerDefects();
+    showToast('已标记待退回香港 / Marked to return to HK');
+  }).catch(function(){ showToast('网络错误 / Network error'); });
+}
+function reopenDefect(id) {
+  apiCall('PUT', '/defects/' + id, { status:'reopen' }).then(function(res){
+    if (res.error) { showToast('操作失败: '+res.error); return; }
+    try { window.loadServerInventory && window.loadServerInventory(); } catch(e){}
+    loadServerDefects();
+    showToast('已重新打开 / Reopened');
+  }).catch(function(){ showToast('网络错误 / Network error'); });
+}
+
 // ===== Drawer Sell/Transfer Buttons =====
 function drawerStartSale() {
   var imeiEl = document.querySelector('#drawerBody .mono');
@@ -11987,6 +12077,10 @@ function openReportModal(btn) {
   document.getElementById('rmPhoneName').innerText = fullName;
   document.getElementById('rmPhoneImei').innerText = 'IMEI ' + imei + (shelfText ? ' · ' + shelfText : '');
   document.getElementById('rmPhoneStore').innerText = '📍 ' + storeName;
+  // Stash raw values for submitDefectiveReport()
+  var rmModal = document.getElementById('reportModal');
+  rmModal.dataset.imei = imei;
+  rmModal.dataset.phoneName = fullName;
 
   const reporterName = (window._currentAccount || {}).name || 'Staff';
   document.getElementById('rmReporter').innerText = reporterName;
@@ -12005,25 +12099,37 @@ function closeReportModal() {
 }
 
 function submitDefectiveReport() {
+  const modal = document.getElementById('reportModal');
   const selectedChips = document.querySelectorAll('#reportModal .issue-chip.selected');
-  const issueCount = selectedChips.length;
-  const phoneName = document.getElementById('rmPhoneName').innerText;
-
-  if (issueCount === 0) {
+  if (selectedChips.length === 0) {
     showToast('请至少选择一个故障类型 / Select at least one issue type');
     return;
   }
+  const imei = (modal.dataset.imei || '').trim();
+  if (!imei) { showToast('缺少 IMEI / Missing IMEI'); return; }
+  const issues = Array.from(selectedChips).map(function(ch){
+    var z = ch.querySelector('.zh'); return z ? z.innerText.trim() : ch.innerText.trim();
+  });
+  const sevEl = document.querySelector('#reportModal .severity-option.selected');
+  const severity = sevEl ? (sevEl.dataset.sev || '') : '';
+  const descEl = document.getElementById('rmDescription');
+  const description = descEl ? descEl.value.trim() : '';
+  const phoneName = (modal.dataset.phoneName || document.getElementById('rmPhoneName').innerText || '').split(' · ')[0];
 
-  closeReportModal();
-
-  const t = document.getElementById('toast');
-  t.classList.add('toast-danger');
-  t.innerText = phoneName.split(' · ')[0] + ' 已报修 / Reported (' + issueCount + ' issues) · 等待处理 / Pending review';
-  t.classList.add('show');
-  setTimeout(() => {
-    t.classList.remove('show');
-    setTimeout(() => t.classList.remove('toast-danger'), 300);
-  }, 3000);
+  apiCall('POST', '/defects', {
+    imei: imei, phoneName: modal.dataset.phoneName || '',
+    issues: issues, severity: severity, description: description
+  }).then(function(res){
+    if (res.error) { showToast('报修失败: ' + res.error); return; }
+    closeReportModal();
+    try { window.loadServerInventory && window.loadServerInventory(); } catch(e){}
+    try { loadServerDefects(); } catch(e){}
+    const t = document.getElementById('toast');
+    t.classList.add('toast-danger');
+    t.innerText = phoneName + ' 已报修下架 / Reported (' + issues.length + ' issues) · 香港仓可见 / Visible to HK';
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.classList.remove('toast-danger'); }, 300); }, 3000);
+  }).catch(function(){ showToast('报修失败，请检查网络 / Report failed, check network'); });
 }
 
 document.addEventListener('click', e => {
@@ -12967,7 +13073,7 @@ function navTo(el, target) {
     if (target === 'reports') renderReportsPage();
     if (target === 'customers') renderCustomersPage();
     if (target === 'staff') renderStaffPage();
-    if (target === 'shipments') { loadServerShipments(); }
+    if (target === 'shipments') { loadServerShipments(); loadServerDefects(); }
   } catch(e){}
 }
 
@@ -13162,6 +13268,7 @@ if (!window.initDynamicUI) {
     try { loadServerSales(); } catch(e){}
     try { loadServerTransfers(); } catch(e){}
     try { loadServerShipments(); } catch(e){}
+    try { loadServerDefects(); } catch(e){}
 
     var h = new Date().getHours();
     var gZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';

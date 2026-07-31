@@ -274,6 +274,25 @@ def init_api_tables():
         CREATE INDEX IF NOT EXISTS idx_shipments_status ON shipments(status);
         CREATE INDEX IF NOT EXISTS idx_shipments_tracking ON shipments(tracking_no);
 
+        CREATE TABLE IF NOT EXISTS defects (
+            id TEXT PRIMARY KEY,
+            imei TEXT NOT NULL,
+            phone_name TEXT,
+            storage TEXT,
+            store TEXT,
+            issues TEXT,
+            severity TEXT,
+            description TEXT,
+            photos TEXT,
+            status TEXT DEFAULT 'open',
+            reported_by TEXT,
+            resolved_by TEXT,
+            created_at TEXT,
+            updated_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_defects_status ON defects(status);
+        CREATE INDEX IF NOT EXISTS idx_defects_imei ON defects(imei);
+
         CREATE TABLE IF NOT EXISTS stock_requests (
             id TEXT PRIMARY KEY,
             requested_by TEXT,
@@ -394,6 +413,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.get_transfers(params)
         elif path == '/api/shipments':
             return self.get_shipments(params)
+        elif path == '/api/defects':
+            return self.get_defects(params)
         elif path == '/api/stock-requests':
             return self.get_stock_requests()
         elif path == '/api/sold-imeis':
@@ -425,6 +446,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.create_inventory_batch()
         elif path == '/api/shipments':
             return self.create_shipment()
+        elif path == '/api/defects':
+            return self.create_defect()
         elif path == '/api/transfer/batch':
             return self.create_transfer_batch()
         elif path == '/api/transfer':
@@ -445,6 +468,9 @@ class APIHandler(BaseHTTPRequestHandler):
         if path.startswith('/api/shipments/'):
             shipment_id = path.split('/')[-1]
             return self.update_shipment(shipment_id)
+        elif path.startswith('/api/defects/'):
+            defect_id = path.split('/')[-1]
+            return self.update_defect(defect_id)
         elif path.startswith('/api/transfer/'):
             transfer_id = path.split('/')[-1]
             return self.update_transfer(transfer_id)
@@ -1163,6 +1189,112 @@ class APIHandler(BaseHTTPRequestHandler):
 
                     conn.commit()
                     return json_response(self, {'ok': True, 'id': sid, 'status': new_status})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    # ─── Defects / repair tickets (US reports, HK can see) ───
+
+    def create_defect(self):
+        """US side (admin/staff) flags a specific phone as defective. Creates a
+        repair ticket and marks the unit 'defect' (not sellable). HK can then
+        see exactly which IMEI has a problem via GET /api/defects."""
+        try:
+            data = self.read_body()
+            imei = str(data.get('imei', '')).strip().replace(' ', '')
+            with db_lock:
+                conn = get_db()
+                try:
+                    user = self._auth_user(conn)
+                    role = user['role'] if user else None
+                    if role not in ('admin', 'staff'):
+                        return json_response(self, {'error': '无权限报修 / Not allowed to report'}, 403)
+                    if not imei:
+                        return json_response(self, {'error': 'IMEI 必填 / IMEI required'}, 400)
+                    inv = conn.execute("SELECT model, storage, store, status FROM inventory WHERE imei=?", (imei,)).fetchone()
+                    if not inv:
+                        return json_response(self, {'error': 'IMEI 不在库存 / Not in inventory'}, 404)
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    did = (data.get('id') or ('DEF-' + imei[-6:] + '-' + now.replace('-', '').replace(':', '').replace(' ', '')[-6:])).strip()
+                    phone_name = data.get('phoneName') or ((inv['model'] or '') + (' ' + inv['storage'] if inv['storage'] else '')).strip()
+                    issues = data.get('issues') or []
+                    photos = data.get('photos') or []
+                    conn.execute("""
+                        INSERT INTO defects
+                        (id,imei,phone_name,storage,store,issues,severity,description,photos,
+                         status,reported_by,created_at,updated_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    """, (did, imei, phone_name, inv['storage'] or '', inv['store'] or '',
+                          json.dumps(issues, ensure_ascii=False), (data.get('severity') or '').strip(),
+                          (data.get('description') or '').strip(), json.dumps(photos, ensure_ascii=False),
+                          'open', (user['name'] if user else ''), now, now))
+                    # Take the unit off the sales floor (skip if already sold).
+                    conn.execute("UPDATE inventory SET status='defect' WHERE imei=? AND status != 'sold'", (imei,))
+                    conn.commit()
+                    return json_response(self, {'ok': True, 'id': did, 'imei': imei})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def get_defects(self, params):
+        conn = None
+        try:
+            conn = get_db()
+            rows = conn.execute("SELECT * FROM defects ORDER BY created_at DESC").fetchall()
+            out = []
+            for r in rows:
+                d = dict(r)
+                try: d['issues'] = json.loads(d.get('issues') or '[]')
+                except Exception: d['issues'] = []
+                try: d['photos'] = json.loads(d.get('photos') or '[]')
+                except Exception: d['photos'] = []
+                d['phoneName'] = d.pop('phone_name', '')
+                d['reportedBy'] = d.pop('reported_by', '')
+                d['resolvedBy'] = d.pop('resolved_by', '')
+                d['createdAt'] = d.pop('created_at', '')
+                d['updatedAt'] = d.pop('updated_at', '')
+                out.append(d)
+            return json_response(self, {'defects': out})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
+
+    def update_defect(self, did):
+        """Resolve or reopen a repair ticket (US side). Resolving puts the unit
+        back on sale; returning leaves it off-sale for return to HK."""
+        try:
+            data = self.read_body()
+            new_status = data.get('status', '')
+            if new_status not in ('resolved', 'returned', 'reopen'):
+                return json_response(self, {'error': 'Invalid status: ' + str(new_status)}, 400)
+            with db_lock:
+                conn = get_db()
+                try:
+                    user = self._auth_user(conn)
+                    role = user['role'] if user else None
+                    if role not in ('admin', 'staff'):
+                        return json_response(self, {'error': '无权限 / Not allowed'}, 403)
+                    row = conn.execute("SELECT imei, status FROM defects WHERE id=?", (did,)).fetchone()
+                    if not row:
+                        return json_response(self, {'error': 'Defect not found'}, 404)
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    if new_status == 'resolved':
+                        conn.execute("UPDATE defects SET status='resolved', resolved_by=?, updated_at=? WHERE id=?",
+                                     ((user['name'] if user else ''), now, did))
+                        conn.execute("UPDATE inventory SET status='available' WHERE imei=? AND status='defect'", (row['imei'],))
+                    elif new_status == 'returned':
+                        conn.execute("UPDATE defects SET status='returned', resolved_by=?, updated_at=? WHERE id=?",
+                                     ((user['name'] if user else ''), now, did))
+                        # stays off-sale (status 'defect') pending physical return to HK
+                    elif new_status == 'reopen':
+                        conn.execute("UPDATE defects SET status='open', updated_at=? WHERE id=?", (now, did))
+                        conn.execute("UPDATE inventory SET status='defect' WHERE imei=? AND status='available'", (row['imei'],))
+                    conn.commit()
+                    return json_response(self, {'ok': True, 'id': did, 'status': new_status})
                 finally:
                     conn.close()
         except Exception as e:
