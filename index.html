@@ -16,46 +16,46 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg: #fafaf7;
+  --bg: #f6f8fb;
   --bg-elev: #ffffff;
-  --bg-soft: #f5f5f0;
-  --bg-tinted: #f8f9f6;
-  --bg-dim: #f0f1ec;
+  --bg-soft: #eef2f7;
+  --bg-tinted: #f4f7fb;
+  --bg-dim: #e8edf3;
 
-  --border: #e8e8e0;
-  --border-strong: #d8d8cc;
-  --border-soft: #efefe7;
+  --border: #e3e8ef;
+  --border-strong: #cbd5e1;
+  --border-soft: #eef2f7;
 
-  --text: #1a1d1a;
-  --text-soft: #4a5048;
-  --text-muted: #7a7e75;
-  --text-faint: #b0b3a8;
+  --text: #0f172a;
+  --text-soft: #334155;
+  --text-muted: #64748b;
+  --text-faint: #94a3b8;
 
-  --brand: #0d4f3c;
-  --brand-hover: #0a3d2e;
-  --brand-soft: #e8f0eb;
-  --brand-tint: #f0f5f2;
-  --brand-deep: #082b20;
+  --brand: #2563eb;
+  --brand-hover: #1d4ed8;
+  --brand-soft: #dbeafe;
+  --brand-tint: #eff5ff;
+  --brand-deep: #1e3a8a;
 
-  --gold: #b8964a;
-  --gold-soft: #f7f1e3;
-  --gold-deep: #8c6e2f;
+  --gold: #d4a017;
+  --gold-soft: #fdf3d7;
+  --gold-deep: #a67c0a;
 
-  --success: #2d7a4f;
-  --success-soft: #e6f0e9;
-  --warn: #c47a1e;
-  --warn-soft: #fbf0e0;
-  --danger: #b54a3e;
-  --danger-soft: #fae8e5;
-  --info: #2c5d8a;
-  --info-soft: #e6eef5;
-  --purple: #6b4a8a;
-  --purple-soft: #efe9f4;
+  --success: #16a34a;
+  --success-soft: #dcfce7;
+  --warn: #d97706;
+  --warn-soft: #fef3c7;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --info: #2563eb;
+  --info-soft: #dbeafe;
+  --purple: #7c3aed;
+  --purple-soft: #ede9fe;
 
-  --shadow-sm: 0 1px 2px rgba(15, 30, 25, 0.04);
-  --shadow: 0 1px 3px rgba(15, 30, 25, 0.06), 0 4px 12px rgba(15, 30, 25, 0.04);
-  --shadow-lg: 0 4px 16px rgba(15, 30, 25, 0.08), 0 12px 32px rgba(15, 30, 25, 0.06);
-  --shadow-brand: 0 4px 14px rgba(13, 79, 60, 0.12);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 4px 16px rgba(15, 23, 42, 0.10), 0 12px 32px rgba(15, 23, 42, 0.08);
+  --shadow-brand: 0 4px 14px rgba(37, 99, 235, 0.20);
 }
 
 html, body { height: 100%; }
@@ -1034,7 +1034,7 @@ main {
   position: absolute;
   top: -30px; right: -30px;
   width: 120px; height: 120px;
-  background: radial-gradient(circle, rgba(13,79,60,0.08), transparent 70%);
+  background: radial-gradient(circle, rgba(37, 99, 235,0.08), transparent 70%);
 }
 .device-name {
   font-family: 'Inter', sans-serif;
@@ -1837,7 +1837,7 @@ body[data-role="hk"] .store-pill:not([data-store="hk-warehouse"]):not([data-stor
   z-index: 1;
 }
 
-.action-card.green-card { border-color: rgba(13,79,60,0.2); }
+.action-card.green-card { border-color: rgba(37, 99, 235,0.2); }
 .action-card.green-card::before { background: var(--brand); }
 .action-card.green-card .ac-icon { background: linear-gradient(135deg, var(--brand), var(--success)); }
 
@@ -2542,7 +2542,7 @@ body[data-role="hk"] .store-pill:not([data-store="hk-warehouse"]):not([data-stor
 .inv-mode-tab.active {
   background: var(--brand);
   color: white;
-  box-shadow: 0 2px 8px rgba(13, 79, 60, 0.2);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
 }
 .inv-mode-tab.active.used-active {
   background: var(--warn);
@@ -2617,7 +2617,7 @@ body[data-inv-mode="new"] .inv-accent-bg { background: var(--brand-soft); border
   padding: 3px 8px;
   border-radius: 5px;
 }
-.store-pill.active .pill-counts .new-c { background: rgba(13,79,60,0.2); color: var(--brand); }
+.store-pill.active .pill-counts .new-c { background: rgba(37, 99, 235,0.2); color: var(--brand); }
 .store-pill.active .pill-counts .used-c { background: rgba(196,122,30,0.18); color: var(--warn); }
 
 /* Mode-aware filter chips */
@@ -3246,14 +3246,14 @@ body[data-inv-mode="used"] .mode-context-bar .mc-icon { background: var(--warn);
 /* COLORED STORE CARDS — pastel/tinted */
 /* Apply via tint-N classes on .store-cell */
 /* ============================ */
-.store-cell.tint-1 { background: linear-gradient(180deg, #f0f7f3 0%, var(--bg-elev) 100%); border-color: rgba(13, 79, 60, 0.18); }
+.store-cell.tint-1 { background: linear-gradient(180deg, #f0f7f3 0%, var(--bg-elev) 100%); border-color: rgba(37, 99, 235, 0.18); }
 .store-cell.tint-2 { background: linear-gradient(180deg, #f0f4f8 0%, var(--bg-elev) 100%); border-color: rgba(44, 93, 138, 0.18); }
 .store-cell.tint-3 { background: linear-gradient(180deg, #f8f4ee 0%, var(--bg-elev) 100%); border-color: rgba(184, 150, 74, 0.22); }
 .store-cell.tint-4 { background: linear-gradient(180deg, #f4f1f7 0%, var(--bg-elev) 100%); border-color: rgba(107, 74, 138, 0.18); }
 .store-cell.tint-5 { background: linear-gradient(180deg, #f9f3f2 0%, var(--bg-elev) 100%); border-color: rgba(181, 74, 62, 0.18); }
 .store-cell.tint-6 { background: linear-gradient(180deg, #f0f6f1 0%, var(--bg-elev) 100%); border-color: rgba(45, 122, 79, 0.22); }
 .store-cell.tint-7 { background: linear-gradient(180deg, #f7f4ee 0%, var(--bg-elev) 100%); border-color: rgba(196, 122, 30, 0.18); }
-.store-cell.tint-8 { background: linear-gradient(180deg, #eff5f3 0%, var(--bg-elev) 100%); border-color: rgba(13, 79, 60, 0.15); }
+.store-cell.tint-8 { background: linear-gradient(180deg, #eff5f3 0%, var(--bg-elev) 100%); border-color: rgba(37, 99, 235, 0.15); }
 .store-cell.tint-9 { background: linear-gradient(180deg, #faf6ec 0%, var(--bg-elev) 100%); border-color: rgba(140, 110, 47, 0.25); }
 
 /* Inventory action buttons — compact pill style */
@@ -3869,8 +3869,8 @@ body[data-inv-mode="used"] .mode-context-bar .mc-icon { background: var(--warn);
 .receipt-totals .receipt-row.total .val { font-size: 18px; }
 
 .receipt-warranty {
-  background: rgba(13, 79, 60, 0.06);
-  border: 1px solid rgba(13, 79, 60, 0.2);
+  background: rgba(37, 99, 235, 0.06);
+  border: 1px solid rgba(37, 99, 235, 0.2);
   border-radius: 6px;
   padding: 10px 12px;
   margin: 10px 0;
@@ -8842,7 +8842,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
 
         <!-- CUSTOMER SERVICE -->
-        <div class="receipt-policy" style="background:rgba(13,79,60,0.05);padding:8px 11px;border-radius:5px;border-left:2px solid var(--brand);">
+        <div class="receipt-policy" style="background:rgba(37, 99, 235,0.05);padding:8px 11px;border-radius:5px;border-left:2px solid var(--brand);">
           <strong style="color:var(--brand);">🎧 <span class="zh">客户服务</span><span class="en">Customer Service</span></strong><br>
           <span class="zh">售后热线</span><span class="en">Service Hotline</span>: <strong style="color:#1f1d12;">626-800-2020</strong> · 
           <span class="zh">邮箱</span><span class="en">Email</span>: support@ifixforu.com<br>
@@ -12439,31 +12439,31 @@ function openTradeInEval() {
   box.innerHTML =
     '<div style="font-weight:700;font-size:16px;margin-bottom:10px;">🧮 <span class="zh">二手回收评估估价</span><span class="en">Trade-In Evaluation</span></div>' +
     '<div class="resp-modal-hdr" style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px;">' +
-      '<button onclick="readDeviceFromAgent()" style="padding:7px 13px;border:none;background:#0d4f3c;color:#fff;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;">📲 <span class="zh">读取设备自动填单</span><span class="en">Read device</span></button>' +
+      '<button onclick="readDeviceFromAgent()" style="padding:7px 13px;border:none;background:#1e40af;color:#fff;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;">📲 <span class="zh">读取设备自动填单</span><span class="en">Read device</span></button>' +
       '<span id="tiDeviceStatus" style="font-size:11.5px;color:#666;"><span class="zh">插上 iPhone 并点“信任”后按此</span><span class="en">Plug in & Trust, then click</span></span>' +
     '</div>' +
     '<div id="tiDevicePanel"></div>' +
     '<div class="resp-2col" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">' +
       // LEFT column: device + grade + deductions
       '<div>' +
-        '<div style="font-size:12px;font-weight:700;color:#0d4f3c;margin-bottom:6px;">① <span class="zh">机器信息</span><span class="en">Device</span></div>' +
+        '<div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:6px;">① <span class="zh">机器信息</span><span class="en">Device</span></div>' +
         '<div style="display:flex;gap:6px;margin-bottom:8px;"><div style="flex:2;"><label style="'+lbl+'"><span class="zh">型号</span><span class="en">Model</span></label><input id="tiModel" list="tiModelList" style="'+inp+'" placeholder="iPhone 14" oninput="recalcTradeIn()"><datalist id="tiModelList"><option value="iPhone 12"><option value="iPhone 13"><option value="iPhone 14"><option value="iPhone 14 Plus"><option value="iPhone 15"><option value="iPhone 15 Pro"><option value="iPhone 15 Pro Max"><option value="iPhone 16"><option value="iPhone 16 Pro Max"></datalist></div><div style="flex:1;"><label style="'+lbl+'"><span class="zh">容量</span><span class="en">Storage</span></label><select id="tiStorage" style="'+sel+'">'+storageOpts+'</select></div></div>' +
         '<div style="display:flex;gap:6px;margin-bottom:8px;"><div style="flex:1;"><label style="'+lbl+'"><span class="zh">颜色</span><span class="en">Color</span></label><input id="tiColor" style="'+inp+'" placeholder="—"></div><div style="flex:1;"><label style="'+lbl+'"><span class="zh">版本</span><span class="en">Region</span></label><select id="tiRegion" style="'+sel+'"><option value="us">美版 US</option><option value="cn">国行 CN</option><option value="hk">港版 HK</option></select></div></div>' +
         '<div style="margin-bottom:10px;"><label style="'+lbl+'">IMEI</label><input id="tiImei" maxlength="15" style="'+inp+'font-family:monospace;" placeholder="15 位" oninput="recalcTradeIn()"></div>' +
-        '<div style="font-size:12px;font-weight:700;color:#0d4f3c;margin:10px 0 6px;">② <span class="zh">参考价 & 成色</span><span class="en">Price & grade</span></div>' +
+        '<div style="font-size:12px;font-weight:700;color:#1e40af;margin:10px 0 6px;">② <span class="zh">参考价 & 成色</span><span class="en">Price & grade</span></div>' +
         '<div style="display:flex;gap:6px;margin-bottom:8px;"><div style="flex:1;"><label style="'+lbl+'"><span class="zh">参考零售价 $</span><span class="en">Ref. resale $</span></label><input id="tiRef" type="number" style="'+inp+'" placeholder="0" oninput="recalcTradeIn()"></div><div style="flex:1;"><label style="'+lbl+'"><span class="zh">电池健康 %</span><span class="en">Battery %</span></label><input id="tiBattery" type="number" style="'+inp+'" placeholder="—" oninput="recalcTradeIn()"></div></div>' +
         '<div style="margin-bottom:8px;"><label style="'+lbl+'"><span class="zh">外观成色</span><span class="en">Appearance grade</span></label><select id="tiGrade" style="'+sel+'" onchange="recalcTradeIn()">'+gradeOpts+'</select></div>' +
-        '<div style="font-size:12px;font-weight:700;color:#0d4f3c;margin:10px 0 4px;">③ <span class="zh">扣项（质检发现）</span><span class="en">Deductions</span></div>' +
+        '<div style="font-size:12px;font-weight:700;color:#1e40af;margin:10px 0 4px;">③ <span class="zh">扣项（质检发现）</span><span class="en">Deductions</span></div>' +
         deductRows +
       '</div>' +
       // RIGHT column: source check + quote + submit
       '<div>' +
-        '<div style="font-size:12px;font-weight:700;color:#0d4f3c;margin-bottom:6px;">④ <span class="zh">来源核验</span><span class="en">Source check</span></div>' +
+        '<div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:6px;">④ <span class="zh">来源核验</span><span class="en">Source check</span></div>' +
         '<label style="display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:#dc2626;background:#fef2f2;padding:8px;border-radius:8px;margin-bottom:8px;cursor:pointer;"><input type="checkbox" id="tiLock" onchange="recalcTradeIn()"> <span class="zh">已确认 iCloud/查找 已登出、无激活锁、非挂失机</span><span class="en">Activation lock removed & not lost/stolen</span></label>' +
         '<div style="display:flex;gap:6px;margin-bottom:8px;"><div style="flex:1;"><label style="'+lbl+'"><span class="zh">卖家姓名</span><span class="en">Seller</span></label><input id="tiSeller" style="'+inp+'"></div><div style="flex:1;"><label style="'+lbl+'"><span class="zh">证件号</span><span class="en">ID #</span></label><input id="tiSellerId" style="'+inp+'"></div></div>' +
         '<div style="margin-bottom:12px;"><label style="'+lbl+'"><span class="zh">来源 / 备注</span><span class="en">Source / note</span></label><input id="tiSource" style="'+inp+'" placeholder="自用机 / 发票…"></div>' +
         '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;">' +
-          '<div style="font-size:12px;font-weight:700;color:#0d4f3c;margin-bottom:8px;">💰 <span class="zh">建议收购价</span><span class="en">Suggested buy price</span></div>' +
+          '<div style="font-size:12px;font-weight:700;color:#1e40af;margin-bottom:8px;">💰 <span class="zh">建议收购价</span><span class="en">Suggested buy price</span></div>' +
           '<div id="tiBreakdown" style="font-size:12px;color:#444;line-height:1.9;"></div>' +
           '<div style="border-top:1px dashed #bbf7d0;margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;align-items:baseline;"><span style="font-size:12px;color:#666;"><span class="zh">建议收购价</span><span class="en">Buy price</span></span><span id="tiFinal" style="font-size:26px;font-weight:800;color:#16a34a;">$0</span></div>' +
         '</div>' +
@@ -12604,7 +12604,7 @@ function renderDeviceCard(d) {
   }
   panel.innerHTML =
     '<div style="border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,0.05);">' +
-      '<div style="background:linear-gradient(135deg,#0d4f3c,#16a34a);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
+      '<div style="background:linear-gradient(135deg,#1e40af,#2563eb);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
         '<div><div style="font-size:17px;font-weight:800;">📱 ' + name + '</div><div style="font-size:11.5px;opacity:.9;margin-top:1px;">' + (d.deviceName || '') + '</div></div>' +
         '<div style="text-align:right;"><div style="font-size:15px;font-weight:800;">' + (d.storage || '') + '</div>' +
         '<span style="background:' + (act ? 'rgba(255,255,255,.22)' : '#fbbf24') + ';color:#fff;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:700;">' + (act ? '已激活' : (d.activationState || '未知')) + '</span></div>' +
@@ -12635,7 +12635,7 @@ function renderDeviceCard(d) {
       '</div>' +
       '<div style="background:#fffbeb;border-top:1px solid #fde68a;padding:8px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;color:#92400e;">' +
         '<span>⚠️ 激活锁/保修/生产日期/五码匹配 设备读不到 → 「🔍 IMEI 查询」(GSX)核对；收机前确认 iCloud「查找」已登出</span>' +
-        '<button onclick="openDeviceDetails()" style="flex:none;padding:5px 12px;border:1px solid #0d4f3c;background:#0d4f3c;color:#fff;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">📋 查看设备详情</button>' +
+        '<button onclick="openDeviceDetails()" style="flex:none;padding:5px 12px;border:1px solid #1e40af;background:#1e40af;color:#fff;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;">📋 查看设备详情</button>' +
       '</div>' +
     '</div>';
 }
@@ -12681,7 +12681,7 @@ function openDeviceDetails() {
       '<button onclick="tiCopyDetails()" style="padding:5px 12px;border:1px solid #ddd;background:#f5f5f5;border-radius:7px;font-size:12px;cursor:pointer;">📄 复制全部</button>' +
     '</div>' +
     '<div style="padding:8px 20px 16px;overflow:auto;">' + rows + '</div>' +
-    '<div style="padding:12px 20px;border-top:1px solid #eee;text-align:right;"><button onclick="document.getElementById(\'deviceDetailsModal\').remove()" style="padding:8px 18px;border:none;background:#0d4f3c;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">关闭</button></div>';
+    '<div style="padding:12px 20px;border-top:1px solid #eee;text-align:right;"><button onclick="document.getElementById(\'deviceDetailsModal\').remove()" style="padding:8px 18px;border:none;background:#1e40af;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">关闭</button></div>';
   overlay.appendChild(box); document.body.appendChild(overlay);
 }
 function tiCopyDetails() {
@@ -12739,7 +12739,7 @@ function openEditModal() {
     '<div style="display:flex;gap:8px;margin-bottom:16px;"><div style="flex:1;"><label style="' + lbl + '">进价 Cost $</label><input id="ieCost" type="number" style="' + inp + '" value="' + (p.cost || 0) + '"></div>' +
     '<div style="flex:1;"><label style="' + lbl + '">建议零售价 $</label><input id="iePrice" type="number" style="' + inp + '" value="' + (p.msrp || p.price || 0) + '"></div></div>' +
     '<div style="display:flex;gap:8px;justify-content:flex-end;"><button onclick="document.getElementById(\'invEditModal\').remove()" style="padding:9px 16px;border:1px solid #ddd;background:#f5f5f5;border-radius:8px;font-size:13px;cursor:pointer;">取消</button>' +
-    '<button id="ieSaveBtn" style="padding:9px 18px;border:none;background:#0d4f3c;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">保存</button></div>';
+    '<button id="ieSaveBtn" style="padding:9px 18px;border:none;background:#1e40af;color:#fff;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">保存</button></div>';
   overlay.appendChild(box); document.body.appendChild(overlay);
   document.getElementById('ieSaveBtn').addEventListener('click', function(){
     var payload = {
