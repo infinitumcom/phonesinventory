@@ -414,6 +414,19 @@ def init_api_tables():
             expires_at INTEGER,
             attempts INTEGER DEFAULT 0
         );
+
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts TEXT,
+            actor TEXT,
+            role TEXT,
+            action TEXT,
+            entity_type TEXT,
+            entity_id TEXT,
+            detail TEXT,
+            ip TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(id DESC);
     """)
     # inventory table is created by inventory_bot.py; ensure its hot-path indexes
     # exist regardless (imei is looked up on nearly every write). Guarded so a
@@ -534,6 +547,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.get_defects(params)
         elif path == '/api/tradeins':
             return self.get_tradeins(params)
+        elif path == '/api/audit-log':
+            return self.get_audit_log(params)
         elif path == '/api/stock-requests':
             return self.get_stock_requests()
         elif path == '/api/sold-imeis':
@@ -802,6 +817,45 @@ class APIHandler(BaseHTTPRequestHandler):
         u = self._auth_user(conn)
         return bool(u and u['role'] == 'admin')
 
+    def _audit(self, conn, action, entity_type, entity_id='', detail=None):
+        """Append-only activity log. Call inside a handler's db_lock, before commit."""
+        try:
+            u = self._auth_user(conn)
+            now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+            actor = (u['name'] if u else '') or (getattr(self, '_auth_email', '') or '')
+            ip = self.client_address[0] if getattr(self, 'client_address', None) else ''
+            conn.execute(
+                "INSERT INTO audit_log (ts,actor,role,action,entity_type,entity_id,detail,ip) VALUES (?,?,?,?,?,?,?,?)",
+                (now, actor, (u['role'] if u else ''), action, entity_type, str(entity_id),
+                 json.dumps(detail, ensure_ascii=False) if detail else '', ip))
+        except Exception:
+            pass
+
+    def get_audit_log(self, params):
+        conn = None
+        try:
+            conn = get_db()
+            user = self._auth_user(conn)
+            if not (user and user['role'] == 'admin'):
+                return json_response(self, {'error': '仅管理员可见 / Admin only'}, 403)
+            try:
+                limit = min(500, max(1, int(params.get('limit', ['200'])[0])))
+            except (TypeError, ValueError):
+                limit = 200
+            rows = conn.execute("SELECT * FROM audit_log ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+            out = []
+            for r in rows:
+                d = dict(r)
+                try: d['detail'] = json.loads(d['detail']) if d.get('detail') else None
+                except Exception: d['detail'] = d.get('detail')
+                out.append(d)
+            return json_response(self, {'log': out})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
+
     def get_phones(self):
         conn = None
         try:
@@ -917,6 +971,7 @@ class APIHandler(BaseHTTPRequestHandler):
                                 'error': f'Cannot delete: phone has active sale ({sale["id"]})'
                             }, 400)
                     conn.execute("DELETE FROM inventory WHERE imei = ?", (imei,))
+                    self._audit(conn, 'inventory.delete', 'inventory', imei, {'status': row['status']})
                     conn.commit()
                 finally:
                     conn.close()
@@ -998,6 +1053,8 @@ class APIHandler(BaseHTTPRequestHandler):
                     ))
                     # Mark phone as sold (guard: only if still available).
                     conn.execute("UPDATE inventory SET status = 'sold' WHERE imei = ? AND status = 'available'", (imei,))
+                    self._audit(conn, 'sale.create', 'sale', data.get('id', ''),
+                                {'imei': imei, 'price': price, 'profit': profit, 'store': store_name})
                     conn.commit()
                 finally:
                     conn.close()
@@ -1079,6 +1136,7 @@ class APIHandler(BaseHTTPRequestHandler):
                         return json_response(self, {'error': 'Already returned'}, 400)
                     conn.execute("UPDATE sales SET status = 'returned' WHERE id = ?", (sale_id,))
                     conn.execute("UPDATE inventory SET status = 'available' WHERE imei = ? AND status = 'sold'", (row['imei'],))
+                    self._audit(conn, 'sale.return', 'sale', sale_id, {'imei': row['imei']})
                     conn.commit()
                 finally:
                     conn.close()
@@ -1601,6 +1659,8 @@ class APIHandler(BaseHTTPRequestHandler):
                     """, (imei, '', '', 'Apple', model, storage, color, '', 'used', battery,
                           region, store, final_price, 0.0, 'available', who, now, '',
                           'trade-in ' + (grade or '')))
+                    self._audit(conn, 'tradein.create', 'tradein', tid,
+                                {'imei': imei, 'model': model, 'grade': grade, 'buyPrice': final_price, 'store': store})
                     conn.commit()
                     return json_response(self, {'ok': True, 'id': tid, 'imei': imei, 'store': store})
                 finally:
@@ -1993,6 +2053,8 @@ class APIHandler(BaseHTTPRequestHandler):
                         except (TypeError, ValueError):
                             pass
 
+                    self._audit(conn, 'inventory.update', 'inventory', target_imei,
+                                {k: data.get(k) for k in ('store', 'model', 'condition', 'region', 'cost', 'price', 'status') if data.get(k) is not None})
                     conn.commit()
                 finally:
                     conn.close()
