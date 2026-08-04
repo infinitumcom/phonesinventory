@@ -6631,11 +6631,11 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
           </div>
           <div class="cash-reserve-actions">
-            <button class="btn btn-sm" onclick="showToast('功能开发中 / Coming soon')">
+            <button class="btn btn-sm" onclick="openDepositModal()">
               <span class="zh">📤 上交存款</span>
               <span class="en">📤 Deposit</span>
             </button>
-            <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')">
+            <button class="btn btn-sm btn-ghost" onclick="openReconcileModal()">
               <span class="zh">🔍 对账明细</span>
               <span class="en">🔍 Reconcile</span>
             </button>
@@ -9535,6 +9535,12 @@ function computeStoreStats() {
     }
   });
 
+  // Cash on hand = cash sales − deposits already handed to HQ/bank
+  getLocalData('pi_deposits').forEach(function(dp) {
+    var sk = dp.storeKey || normalizeStoreKey(dp.store || '');
+    if (STORE_DATA[sk]) STORE_DATA[sk].cash -= (dp.amount || 0);
+  });
+
   // Compute mtdRank
   var ranked = Object.keys(STORE_DATA).filter(function(k){ return k !== 'hq-warehouse'; })
     .sort(function(a,b){ return STORE_DATA[b].mtdSold - STORE_DATA[a].mtdSold; });
@@ -12174,9 +12180,84 @@ function showAgedStockAlert() {
   showToast('⚠️ 滞销提醒 Aged Stock: ' + store + ' — ' + agedPhones.length + ' phones >' + threshold + 'd — ' + names + more, 8000);
 }
 
+// ===== Cash deposit / reconciliation =====
+function _storeCashStats(storeKey) {
+  var cashSales = 0, depTotal = 0;
+  getLocalData('pi_sales').forEach(function(s) {
+    if (s.status === 'returned') return;
+    var sk = s.storeKey || normalizeStoreKey(s.store || '');
+    if (sk !== storeKey) return;
+    if (s.paymentMethods && s.paymentMethods.some(function(m){ return /现金|cash/i.test(String(m)); })) cashSales += (s.total || 0);
+  });
+  var myDeposits = getLocalData('pi_deposits').filter(function(d){ return (d.storeKey || normalizeStoreKey(d.store || '')) === storeKey; });
+  myDeposits.forEach(function(d){ depTotal += (d.amount || 0); });
+  return { cashSales: cashSales, depTotal: depTotal, onHand: cashSales - depTotal, deposits: myDeposits };
+}
+function openDepositModal() {
+  var key = window._sdStoreKey; var data = STORE_DATA[key]; if (!data) return;
+  if (document.getElementById('depositModal')) return;
+  var st = _storeCashStats(key);
+  var overlay = document.createElement('div');
+  overlay.id = 'depositModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML = '<div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:800;font-size:15px;">📤 上交存款 <span style="font-size:12px;color:#94a3b8;font-weight:500;">' + escHtml(data.nameEn) + '</span></div><button onclick="document.getElementById(\'depositModal\').remove()" style="border:1px solid #ddd;background:#f5f5f5;border-radius:7px;padding:5px 13px;cursor:pointer;font-size:13px;">关闭 Close</button></div>' +
+    '<div style="padding:14px 20px;">' +
+      '<div style="background:#f0fdf4;border-radius:8px;padding:10px 12px;font-size:12px;color:#166534;margin-bottom:12px;"><span class="zh">当前现金储备</span><span class="en">Cash on hand</span>: <b>$' + Math.round(st.onHand).toLocaleString() + '</b></div>' +
+      '<label style="font-size:12px;font-weight:600;">上交金额 / Amount</label>' +
+      '<input type="number" min="0" step="0.01" id="depAmount" placeholder="0.00" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;margin:5px 0 12px;">' +
+      '<label style="font-size:12px;font-weight:600;">备注 / Note</label>' +
+      '<input type="text" id="depNote" placeholder="银行 / 交给总部…" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;margin-top:5px;">' +
+    '</div>' +
+    '<div style="padding:8px 20px 16px;display:flex;justify-content:flex-end;gap:8px;"><button class="btn btn-sm btn-ghost" onclick="document.getElementById(\'depositModal\').remove()"><span class="zh">取消</span><span class="en">Cancel</span></button><button class="btn btn-sm btn-primary" onclick="submitDeposit()"><span class="zh">确认上交</span><span class="en">Submit</span></button></div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  setTimeout(function(){ var a = document.getElementById('depAmount'); if (a) a.focus(); }, 50);
+}
+function submitDeposit() {
+  var key = window._sdStoreKey; var data = STORE_DATA[key]; if (!data) return;
+  var amt = parseFloat((document.getElementById('depAmount') || {}).value);
+  if (isNaN(amt) || amt <= 0) { showToast('请输入有效金额 / Enter valid amount'); return; }
+  var note = (document.getElementById('depNote') || {}).value || '';
+  var payload = { id: 'DP-' + Date.now(), storeKey: key, store: data.nameEn, amount: amt, method: 'cash', note: note.trim() };
+  apiCall('POST', '/deposit', payload).then(function(res) {
+    if (res && res.error) { showToast('失败: ' + res.error); return; }
+    var m = document.getElementById('depositModal'); if (m) m.remove();
+    showToast('已上交 $' + amt.toLocaleString() + ' / Deposited');
+    try { loadServerDeposits(); } catch(e){}
+    setTimeout(function(){ try { computeStoreStats(); openStoreDetail(key); } catch(e){} }, 400);
+  }).catch(function(){ showToast('提交失败，请检查网络 / Failed'); });
+}
+function openReconcileModal() {
+  var key = window._sdStoreKey; var data = STORE_DATA[key]; if (!data) return;
+  if (document.getElementById('reconcileModal')) return;
+  var st = _storeCashStats(key);
+  var overlay = document.createElement('div');
+  overlay.id = 'reconcileModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
+  var histHtml = st.deposits.length ? st.deposits.slice().sort(function(a,b){ return new Date(b.createdAt||0) - new Date(a.createdAt||0); }).map(function(d){
+    var when = (d.createdAt || '').slice(0, 16);
+    return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12.5px;"><div><div style="font-weight:600;">−$' + (d.amount||0).toLocaleString() + '</div><div style="font-size:10.5px;color:#94a3b8;">' + escHtml(d.depositedBy || '') + (d.note ? ' · ' + escHtml(d.note) : '') + '</div></div><div style="color:#94a3b8;font-family:\'JetBrains Mono\',monospace;font-size:11px;">' + escHtml(when) + '</div></div>';
+  }).join('') : '<div style="color:#888;padding:20px;text-align:center;font-size:12.5px;">暂无上交记录 / No deposits yet</div>';
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;max-width:460px;width:100%;max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML = '<div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:800;font-size:15px;">🔍 现金对账 <span style="font-size:12px;color:#94a3b8;font-weight:500;">' + escHtml(data.nameEn) + '</span></div><button onclick="document.getElementById(\'reconcileModal\').remove()" style="border:1px solid #ddd;background:#f5f5f5;border-radius:7px;padding:5px 13px;cursor:pointer;font-size:13px;">关闭 Close</button></div>' +
+    '<div style="padding:14px 20px;">' +
+      '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px;"><span><span class="zh">现金销售合计</span><span class="en">Cash sales</span></span><b>$' + Math.round(st.cashSales).toLocaleString() + '</b></div>' +
+      '<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px;color:#b45309;"><span><span class="zh">已上交存款</span><span class="en">Deposited</span></span><b>−$' + Math.round(st.depTotal).toLocaleString() + '</b></div>' +
+      '<div style="display:flex;justify-content:space-between;padding:9px 0;font-size:14px;font-weight:800;border-top:2px solid #e5e7eb;margin-top:4px;color:#166534;"><span><span class="zh">应有现金储备</span><span class="en">Cash on hand</span></span><span>$' + Math.round(st.onHand).toLocaleString() + '</span></div>' +
+    '</div>' +
+    '<div style="padding:0 20px 4px;font-size:12px;font-weight:700;color:#64748b;"><span class="zh">上交记录</span><span class="en">Deposit history</span></div>' +
+    '<div style="padding:4px 20px 16px;overflow:auto;">' + histHtml + '</div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+
 function openStoreDetail(storeKey) {
   const data = STORE_DATA[storeKey];
   if (!data) return;
+  window._sdStoreKey = storeKey;
 
   // Populate hero
   document.getElementById('sdStoreName').innerText = document.body.dataset.lang === 'en' ? data.nameEn : data.nameZh;
@@ -14596,6 +14677,17 @@ if (!window.initDynamicUI) {
     }).catch(function(e) { console.log('Failed to load transfers from server', e); });
   };
 
+  // Load cash deposits from server (drives store cash-on-hand reconciliation)
+  window.loadServerDeposits = function() {
+    apiCall('GET', '/deposits').then(function(res) {
+      if (res && res.deposits) {
+        res.deposits.forEach(function(d) { if (!d.date && d.createdAt) d.date = d.createdAt.replace(' ', 'T'); });
+        setLocalData('pi_deposits', res.deposits);
+        try { renderDashboard(); } catch(e){}
+      }
+    }).catch(function(e) { console.log('Failed to load deposits from server', e); });
+  };
+
   // Full inventory refresh from the token-protected /api/phones endpoint
   // (replaces the public phones.js export). Server returns the exact phones[]
   // structure; only re-render when the payload actually changed.
@@ -14627,6 +14719,7 @@ if (!window.initDynamicUI) {
     try { loadServerShipments(); } catch(e){}
     try { loadServerDefects(); } catch(e){}
     try { loadServerTradeins(); } catch(e){}
+    try { loadServerDeposits(); } catch(e){}
 
     var h = new Date().getHours();
     var gZh = h < 12 ? '上午好' : h < 18 ? '下午好' : '晚上好';

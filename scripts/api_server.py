@@ -315,6 +315,18 @@ def init_api_tables():
         );
         CREATE INDEX IF NOT EXISTS idx_transfers_status ON transfers(status);
 
+        CREATE TABLE IF NOT EXISTS deposits (
+            id TEXT PRIMARY KEY,
+            store TEXT,
+            store_key TEXT,
+            amount REAL DEFAULT 0,
+            method TEXT,
+            note TEXT,
+            deposited_by TEXT,
+            created_at TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_deposits_store ON deposits(store_key);
+
         CREATE TABLE IF NOT EXISTS shipments (
             id TEXT PRIMARY KEY,
             tracking_no TEXT,
@@ -557,6 +569,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.get_transfers(params)
         elif path == '/api/shipments':
             return self.get_shipments(params)
+        elif path == '/api/deposits':
+            return self.get_deposits(params)
         elif path == '/api/defects':
             return self.get_defects(params)
         elif path == '/api/tradeins':
@@ -594,6 +608,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.create_inventory_batch()
         elif path == '/api/shipments':
             return self.create_shipment()
+        elif path == '/api/deposit':
+            return self.create_deposit()
         elif path == '/api/defects':
             return self.create_defect()
         elif path == '/api/tradein':
@@ -1344,6 +1360,79 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'error': str(e)}, 500)
 
     # ─── Cross-border shipments (香港仓 → HQ) ───
+
+    def create_deposit(self):
+        """Record a cash deposit handed to HQ/bank. Cash-on-hand for a store is
+        computed client-side as Σ(cash sales) − Σ(deposits). Staff can only
+        deposit for their own store; admin may specify the store."""
+        try:
+            data = self.read_body()
+            with db_lock:
+                conn = get_db()
+                try:
+                    user = self._auth_user(conn)
+                    role = user['role'] if user else None
+                    if role not in ('staff', 'admin'):
+                        return json_response(self, {'error': '无权限 / Not allowed'}, 403)
+                    try:
+                        amount = round(float(data.get('amount', 0)), 2)
+                    except (TypeError, ValueError):
+                        amount = 0
+                    if amount <= 0:
+                        return json_response(self, {'error': '金额无效 / Invalid amount'}, 400)
+                    if role == 'staff':
+                        store_name = user['store'] or ''
+                    else:
+                        store_name = normalize_store_name(data.get('store', '')) or (data.get('store', '') or '')
+                    store_key = (data.get('storeKey') or '').strip()
+                    did = (data.get('id') or '').strip() or ('DP-' + datetime.now(PST).strftime('%Y%m%d%H%M%S'))
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    conn.execute("""
+                        INSERT INTO deposits (id, store, store_key, amount, method, note, deposited_by, created_at)
+                        VALUES (?,?,?,?,?,?,?,?)
+                    """, (did, store_name, store_key, amount, (data.get('method') or 'cash'),
+                          (data.get('note') or '').strip(), (user['name'] if user else ''), now))
+                    self._audit(conn, 'deposit.create', 'deposit', did, {'store': store_name, 'amount': amount})
+                    conn.commit()
+                    return json_response(self, {'ok': True, 'id': did, 'amount': amount, 'store': store_name, 'createdAt': now})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def get_deposits(self, params):
+        conn = None
+        try:
+            conn = get_db()
+            user = self._auth_user(conn)
+            role = user['role'] if user else None
+            conds, args = [], []
+            if role == 'staff':
+                conds.append("store = ?"); args.append(user['store'])
+            elif role == 'hk':
+                conds.append("1 = 0")
+            else:
+                store = params.get('store', [None])[0]
+                if store and store != 'all':
+                    conds.append("store_key = ?"); args.append(store)
+            q = "SELECT * FROM deposits"
+            if conds:
+                q += " WHERE " + " AND ".join(conds)
+            q += " ORDER BY created_at DESC"
+            rows = conn.execute(q, args).fetchall()
+            out = []
+            for r in rows:
+                d = dict(r)
+                d['storeKey'] = d.pop('store_key', '')
+                d['depositedBy'] = d.pop('deposited_by', '')
+                d['createdAt'] = d.pop('created_at', '')
+                out.append(d)
+            return json_response(self, {'deposits': out})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn:
+                conn.close()
 
     def create_shipment(self):
         """HK (or admin) creates a shipment from 香港仓. IMEIs must be 香港仓
