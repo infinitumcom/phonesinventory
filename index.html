@@ -6730,7 +6730,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="count">· 0 <span class="zh">笔</span><span class="en">sales</span></span>
             </div>
             <div class="section-actions">
-              <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">📥 导出 CSV</span><span class="en">📥 Export</span></button>
+              <button class="btn btn-sm btn-ghost" onclick="exportSalesCSV('today')"><span class="zh">📥 导出 CSV</span><span class="en">📥 Export</span></button>
             </div>
           </div>
 
@@ -7244,9 +7244,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             </div>
             <div style="border-left:1px solid var(--border);height:24px;"></div>
             <div class="filters">
-              <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">仅在售</span><span class="en">Available</span></button>
-              <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">滞销</span><span class="en">Aged</span></button>
-              <button class="chip" onclick="showToast('功能开发中 / Coming soon')">⚙️ <span class="zh">高级</span><span class="en">Advanced</span></button>
+              <button class="chip" id="invStatusAvail" onclick="toggleInvStatus('available')"><span class="zh">仅在售</span><span class="en">Available</span></button>
+              <button class="chip" id="invStatusAged" onclick="toggleInvStatus('aged')"><span class="zh">滞销</span><span class="en">Aged</span></button>
+              <button class="chip" id="invRegionCycle" onclick="cycleInvRegion()">⚙️ <span class="zh">高级</span><span class="en">Advanced</span></button>
             </div>
           </div>
 
@@ -7910,7 +7910,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       </div>
       <div class="page-actions">
         <button class="btn" onclick="exportSalesCSV()"><span class="zh">📥 月度报表</span><span class="en">📥 Monthly Report</span></button>
-        <button class="btn" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">📅 自定义日期</span><span class="en">📅 Date Range</span></button>
+        <button class="btn" onclick="openSalesCustomRange(this)"><span class="zh">📅 自定义日期</span><span class="en">📅 Date Range</span></button>
         <button class="btn btn-primary" onclick="navByName('sale')"><span class="zh">+ 新销售单</span><span class="en">+ New Sale</span></button>
       </div>
     </div>
@@ -7926,10 +7926,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 
     <!-- Tabs for sales/returns -->
     <div class="filters" style="margin-bottom:14px;">
-      <button class="chip active" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">销售单</span><span class="en">Sales</span><span class="chip-num">0</span></button>
-      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">退货</span><span class="en">Returns</span><span class="chip-num">0</span></button>
-      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">保修维护中</span><span class="en">Under Warranty</span><span class="chip-num">0</span></button>
-      <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">需要催收据</span><span class="en">Receipt Pending</span><span class="chip-num">0</span></button>
+      <button class="chip active" onclick="setSalesType(this,'sales')"><span class="zh">销售单</span><span class="en">Sales</span><span class="chip-num">0</span></button>
+      <button class="chip" onclick="setSalesType(this,'returns')"><span class="zh">退货</span><span class="en">Returns</span><span class="chip-num">0</span></button>
+      <button class="chip" onclick="setSalesType(this,'warranty')"><span class="zh">保修维护中</span><span class="en">Under Warranty</span><span class="chip-num">0</span></button>
+      <button class="chip" onclick="setSalesType(this,'receipt')"><span class="zh">需要催收据</span><span class="en">Receipt Pending</span><span class="chip-num">0</span></button>
     </div>
 
     <div class="section">
@@ -7938,19 +7938,19 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <circle cx="7" cy="7" r="5"/><path d="M11 11l3 3"/>
           </svg>
-          <input type="text" class="search-input" placeholder="搜索 Search: 客户 Customer / IMEI / 单号 Order#">
+          <input type="text" class="search-input" placeholder="搜索 Search: 客户 Customer / IMEI / 单号 Order#" oninput="SALES_FILTERS.search=this.value.trim();renderSalesPage();">
         </div>
         <div class="filters">
-          <button class="chip active" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">本月</span><span class="en">This Month</span></button>
-          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">本周</span><span class="en">This Week</span></button>
-          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">今日</span><span class="en">Today</span></button>
-          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">自定义</span><span class="en">Custom</span></button>
+          <button class="chip active" onclick="setSalesPeriod(this,'month')"><span class="zh">本月</span><span class="en">This Month</span></button>
+          <button class="chip" onclick="setSalesPeriod(this,'week')"><span class="zh">本周</span><span class="en">This Week</span></button>
+          <button class="chip" onclick="setSalesPeriod(this,'today')"><span class="zh">今日</span><span class="en">Today</span></button>
+          <button class="chip" onclick="openSalesCustomRange(this)"><span class="zh">自定义</span><span class="en">Custom</span></button>
         </div>
         <div style="border-left:1px solid var(--border);height:24px;"></div>
         <div class="filters">
-          <button class="chip" onclick="showToast('功能开发中 / Coming soon')">📍 <span class="zh">所有店</span><span class="en">All stores</span></button>
-          <button class="chip" onclick="showToast('功能开发中 / Coming soon')">💳 <span class="zh">支付方式</span><span class="en">Payment</span></button>
-          <button class="chip" onclick="showToast('功能开发中 / Coming soon')">⚙️ <span class="zh">高级</span><span class="en">Advanced</span></button>
+          <button class="chip" id="salesStoreChip" onclick="cycleSalesStore(this)">📍 <span class="zh">所有店</span><span class="en">All stores</span></button>
+          <button class="chip" id="salesPayChip" onclick="cycleSalesPayment(this)">💳 <span class="zh">支付方式</span><span class="en">Payment</span></button>
+          <button class="chip" onclick="resetSalesFilters()">⚙️ <span class="zh">重置</span><span class="en">Reset</span></button>
         </div>
       </div>
 
@@ -8300,13 +8300,13 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
           <div class="section-title">
             <span class="zh">营收趋势</span>
             <span class="en">Revenue Trend</span>
-            <span class="count">· <span class="zh">最近 6 个月</span><span class="en">Last 6 months</span></span>
+            <span class="count" id="revChartRangeLabel">· <span class="zh">最近 30 天</span><span class="en">Last 30 days</span></span>
           </div>
           <div class="filters">
-            <button class="chip btn-sm active" onclick="showToast('功能开发中 / Coming soon')">30d</button>
-            <button class="chip btn-sm" onclick="showToast('功能开发中 / Coming soon')">7d</button>
-            <button class="chip btn-sm" onclick="showToast('功能开发中 / Coming soon')">90d</button>
-            <button class="chip btn-sm" onclick="showToast('功能开发中 / Coming soon')">1y</button>
+            <button class="chip btn-sm active" onclick="setRevChartRange(this,'30')">30d</button>
+            <button class="chip btn-sm" onclick="setRevChartRange(this,'7')">7d</button>
+            <button class="chip btn-sm" onclick="setRevChartRange(this,'90')">90d</button>
+            <button class="chip btn-sm" onclick="setRevChartRange(this,'365')">1y</button>
           </div>
         </div>
         <div id="revChartArea" style="padding:18px 22px 22px;">
@@ -10827,6 +10827,115 @@ function renderMyAccount() {
   var ptsNum = document.querySelector('#page-myaccount .ma-points-num');
   if (ptsNum) ptsNum.textContent = totalPts;
 }
+// ===== Sales page filters (type / period / store / payment) =====
+var SALES_FILTERS = { type: 'sales', period: 'month', store: 'all', payment: 'all', search: '', customFrom: null, customTo: null };
+
+function salesTypeMatch(s, type) {
+  if (type === 'returns') return s.status === 'returned';
+  if (type === 'warranty') return s.status !== 'returned' && !!(s.underWarranty || s.warranty);
+  if (type === 'receipt') return s.status !== 'returned' && !!(s.receiptPending || s.receipt_pending);
+  return s.status !== 'returned'; // 'sales'
+}
+function salesPeriodMatch(s, today, weekStart, monthStart) {
+  var d = new Date(s.date);
+  if (isNaN(d)) return false;
+  switch (SALES_FILTERS.period) {
+    case 'today': return d >= today;
+    case 'week':  return d >= weekStart;
+    case 'month': return d >= monthStart;
+    case 'all':   return true;
+    case 'custom':
+      if (SALES_FILTERS.customFrom && d < SALES_FILTERS.customFrom) return false;
+      if (SALES_FILTERS.customTo && d > SALES_FILTERS.customTo) return false;
+      return true;
+    default: return true;
+  }
+}
+function updateSalesTypeCounts(c) {
+  var chips = document.querySelectorAll('#page-sales .filters .chip .chip-num');
+  if (chips[0]) chips[0].textContent = c.sales;
+  if (chips[1]) chips[1].textContent = c.returns;
+  if (chips[2]) chips[2].textContent = c.warranty;
+  if (chips[3]) chips[3].textContent = c.receipt;
+}
+function _salesActivate(btn) {
+  if (!btn) return;
+  var group = btn.parentElement;
+  group.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+}
+function setSalesType(btn, type) { SALES_FILTERS.type = type; _salesActivate(btn); renderSalesPage(); }
+function setSalesPeriod(btn, period) { SALES_FILTERS.period = period; _salesActivate(btn); renderSalesPage(); }
+function cycleSalesStore(btn) {
+  var sales = getLocalData('pi_sales');
+  var seen = {}; var opts = ['all'];
+  sales.forEach(function(s){ var k = normalizeStoreKey(s.store||''); if (k && !seen[k]) { seen[k] = s.store; opts.push(k); } });
+  var i = opts.indexOf(SALES_FILTERS.store);
+  SALES_FILTERS.store = opts[(i + 1) % opts.length];
+  var name = SALES_FILTERS.store === 'all' ? null : seen[SALES_FILTERS.store];
+  btn.innerHTML = '📍 <span class="zh">' + (name || '所有店') + '</span><span class="en">' + (name || 'All stores') + '</span>';
+  btn.classList.toggle('active', SALES_FILTERS.store !== 'all');
+  renderSalesPage();
+}
+function cycleSalesPayment(btn) {
+  var sales = getLocalData('pi_sales');
+  var seen = {}; var opts = ['all'];
+  sales.forEach(function(s){ (s.paymentMethods||[]).forEach(function(p){ var k = String(p).toLowerCase(); if (k && !seen[k]) { seen[k] = p; opts.push(k); } }); });
+  var i = opts.indexOf(SALES_FILTERS.payment);
+  SALES_FILTERS.payment = opts[(i + 1) % opts.length];
+  var label = SALES_FILTERS.payment === 'all' ? null : seen[SALES_FILTERS.payment];
+  btn.innerHTML = '💳 <span class="zh">' + (label || '支付方式') + '</span><span class="en">' + (label || 'Payment') + '</span>';
+  btn.classList.toggle('active', SALES_FILTERS.payment !== 'all');
+  renderSalesPage();
+}
+function resetSalesFilters() {
+  SALES_FILTERS = { type: 'sales', period: 'month', store: 'all', payment: 'all', search: '', customFrom: null, customTo: null };
+  document.querySelectorAll('#page-sales .filters').forEach(function(g){
+    g.querySelectorAll('.chip').forEach(function(c, idx){ c.classList.toggle('active', idx === 0); });
+  });
+  var st = document.getElementById('salesStoreChip'); if (st) st.innerHTML = '📍 <span class="zh">所有店</span><span class="en">All stores</span>';
+  var pm = document.getElementById('salesPayChip'); if (pm) pm.innerHTML = '💳 <span class="zh">支付方式</span><span class="en">Payment</span>';
+  var panel = document.getElementById('salesCustomRange'); if (panel) panel.remove();
+  showToast('筛选已重置 / Filters reset');
+  renderSalesPage();
+}
+function openSalesCustomRange(anchorBtn) {
+  var existing = document.getElementById('salesCustomRange');
+  if (existing) { existing.remove(); return; }
+  var bar = document.querySelector('#page-sales .search-bar');
+  if (!bar) return;
+  var panel = document.createElement('div');
+  panel.id = 'salesCustomRange';
+  panel.style.cssText = 'display:flex;align-items:center;gap:8px;flex-basis:100%;margin-top:10px;padding:10px 12px;background:var(--surface-2,#f1f5f9);border:1px solid var(--border);border-radius:8px;font-size:12px;';
+  panel.innerHTML =
+    '<span class="zh">自定义区间</span><span class="en">Custom range</span>' +
+    '<input type="date" id="salesRangeFrom" class="search-input" style="width:150px;padding:5px 8px;">' +
+    '<span>→</span>' +
+    '<input type="date" id="salesRangeTo" class="search-input" style="width:150px;padding:5px 8px;">' +
+    '<button class="btn btn-sm btn-primary" onclick="applySalesCustomRange()"><span class="zh">应用</span><span class="en">Apply</span></button>' +
+    '<button class="btn btn-sm btn-ghost" onclick="document.getElementById(\'salesCustomRange\').remove()"><span class="zh">取消</span><span class="en">Cancel</span></button>';
+  bar.appendChild(panel);
+}
+function applySalesCustomRange() {
+  var f = document.getElementById('salesRangeFrom');
+  var t = document.getElementById('salesRangeTo');
+  var from = f && f.value ? new Date(f.value + 'T00:00:00') : null;
+  var to = t && t.value ? new Date(t.value + 'T23:59:59') : null;
+  if (!from && !to) { showToast('请选择日期 / Pick a date'); return; }
+  SALES_FILTERS.period = 'custom';
+  SALES_FILTERS.customFrom = from;
+  SALES_FILTERS.customTo = to;
+  document.querySelectorAll('#page-sales .search-bar .filters').forEach(function(g){
+    // deactivate period chips (first filters group), leave store/payment groups untouched
+  });
+  var periodGroup = document.querySelectorAll('#page-sales .search-bar .filters')[0];
+  if (periodGroup) periodGroup.querySelectorAll('.chip').forEach(function(c){
+    var isCustom = /自定义|Custom/.test(c.textContent);
+    c.classList.toggle('active', isCustom);
+  });
+  renderSalesPage();
+}
+
 function renderSalesPage() {
   var sales = getLocalData('pi_sales');
   var today = new Date(); today.setHours(0,0,0,0);
@@ -10859,18 +10968,48 @@ function renderSalesPage() {
   if (salesKpis[2]) { salesKpis[2].textContent = mtdSales; }
   if (salesKpis[3]) { salesKpis[3].innerHTML = '<span class="ccy">$</span>' + aov.toLocaleString(); }
 
+  // Apply active filters to the table list (KPIs above stay period-agnostic)
+  var baseList = sales.filter(function(s) {
+    if (!salesPeriodMatch(s, today, weekStart, monthStart)) return false;
+    if (SALES_FILTERS.store !== 'all' && normalizeStoreKey(s.store || '') !== SALES_FILTERS.store) return false;
+    if (SALES_FILTERS.payment !== 'all') {
+      var pm = (s.paymentMethods || []).map(function(x){ return String(x).toLowerCase(); });
+      if (pm.indexOf(SALES_FILTERS.payment) < 0) return false;
+    }
+    if (SALES_FILTERS.search) {
+      var q = SALES_FILTERS.search.toLowerCase();
+      var hay = [s.customer, s.imei, s.id, s.phoneName, s.customerPhone].map(function(x){ return String(x || '').toLowerCase(); }).join(' ');
+      if (hay.indexOf(q) < 0) return false;
+    }
+    return true;
+  });
+  var typeCounts = { sales: 0, returns: 0, warranty: 0, receipt: 0 };
+  baseList.forEach(function(s) {
+    if (s.status === 'returned') { typeCounts.returns++; }
+    else {
+      typeCounts.sales++;
+      if (s.underWarranty || s.warranty) typeCounts.warranty++;
+      if (s.receiptPending || s.receipt_pending) typeCounts.receipt++;
+    }
+  });
+  updateSalesTypeCounts(typeCounts);
+  var filtered = baseList.filter(function(s) { return salesTypeMatch(s, SALES_FILTERS.type); });
+
   // Table body
   var container = document.getElementById('salesTableBody');
   if (!container) return;
-  if (sales.length === 0) {
-    container.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:28px;margin-bottom:8px;">📋</div><span class="zh">暂无销售记录</span><span class="en">No sales records yet</span></div>';
+  if (filtered.length === 0) {
+    var emptyMsg = sales.length === 0
+      ? '<span class="zh">暂无销售记录</span><span class="en">No sales records yet</span>'
+      : '<span class="zh">无匹配的记录 · 试试调整筛选</span><span class="en">No matching records · adjust filters</span>';
+    container.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:28px;margin-bottom:8px;">📋</div>' + emptyMsg + '</div>';
     // Update pagination
     var pag = document.getElementById('salesPagination');
     if (pag) pag.innerHTML = '<div style="font-size:12px;color:var(--text-muted);"><span class="zh">共 0 单</span><span class="en">0 sales</span></div>';
     return;
   }
   var html = '';
-  sales.forEach(function(s) {
+  filtered.forEach(function(s) {
     var d = new Date(s.date);
     var dateStr = (d.getMonth()+1).toString().padStart(2,'0') + '-' + d.getDate().toString().padStart(2,'0') + ' ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
     var profitPct = s.price > 0 ? Math.round(s.profit / s.price * 100) : 0;
@@ -10913,7 +11052,7 @@ function renderSalesPage() {
   });
   container.innerHTML = html;
   var pag = document.getElementById('salesPagination');
-  if (pag) pag.innerHTML = '<div style="font-size:12px;color:var(--text-muted);"><span class="zh">共 ' + sales.length + ' 单</span><span class="en">' + sales.length + ' sales</span></div>';
+  if (pag) pag.innerHTML = '<div style="font-size:12px;color:var(--text-muted);"><span class="zh">共 ' + filtered.length + ' 单</span><span class="en">' + filtered.length + ' sales</span></div>';
 }
 
 // ===== Reports Page — Revenue Chart from real sales data =====
@@ -11030,30 +11169,56 @@ function rptRenderCondSplit(sales) {
   }
   box.innerHTML = card('新机 New', '🆕', agg('new'), '#2563eb') + card('二手 Used', '♻️', agg('used'), '#16a34a');
 }
+var _revChartRange = '30'; // '7' | '30' | '90' | '365'
+function setRevChartRange(btn, range) {
+  _revChartRange = range;
+  var grp = btn.parentElement;
+  grp.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+  rptRenderChart(getLocalData('pi_sales'));
+}
 function rptRenderChart(allSales) {
   var barsEl = document.getElementById('revChartBars');
   var datesEl = document.getElementById('revChartDates');
   var emptyEl = document.getElementById('revChartEmpty');
   if (!barsEl) return;
-  var now = new Date(); var months = [];
-  for (var i = 5; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); months.push({ y:d.getFullYear(), m:d.getMonth(), rev:0 }); }
+  var now = new Date();
+  var range = _revChartRange || '30';
+  var mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var buckets = [];
+  if (range === '365') {
+    for (var i = 11; i >= 0; i--) { var d = new Date(now.getFullYear(), now.getMonth() - i, 1); buckets.push({ label: mn[d.getMonth()], y:d.getFullYear(), m:d.getMonth(), rev:0, type:'month' }); }
+  } else if (range === '90') {
+    for (var i = 12; i >= 0; i--) { var s0 = new Date(now); s0.setHours(0,0,0,0); s0.setDate(s0.getDate() - i*7); buckets.push({ label: (s0.getMonth()+1)+'/'+s0.getDate(), start:s0.getTime(), end:s0.getTime()+7*86400000, rev:0, type:'week' }); }
+  } else {
+    var days = range === '7' ? 7 : 30;
+    for (var i = days - 1; i >= 0; i--) { var dd = new Date(now); dd.setHours(0,0,0,0); dd.setDate(dd.getDate() - i); buckets.push({ label: (dd.getMonth()+1)+'/'+dd.getDate(), y:dd.getFullYear(), m:dd.getMonth(), day:dd.getDate(), rev:0, type:'day' }); }
+  }
   allSales.forEach(function(s){
     if (s.status === 'returned') return;
-    var d = rptSaleDate(s);
-    for (var i = 0; i < months.length; i++) { if (months[i].y === d.getFullYear() && months[i].m === d.getMonth()) { months[i].rev += (s.total||0); break; } }
+    var d = rptSaleDate(s); if (isNaN(d)) return;
+    for (var i = 0; i < buckets.length; i++) {
+      var b = buckets[i];
+      if (b.type === 'month') { if (b.y === d.getFullYear() && b.m === d.getMonth()) { b.rev += (s.total||0); break; } }
+      else if (b.type === 'week') { var t = d.getTime(); if (t >= b.start && t < b.end) { b.rev += (s.total||0); break; } }
+      else { if (b.y === d.getFullYear() && b.m === d.getMonth() && b.day === d.getDate()) { b.rev += (s.total||0); break; } }
+    }
   });
-  var mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var max = Math.max.apply(null, months.map(function(m){ return m.rev; }));
-  var total = months.reduce(function(a,m){ return a + m.rev; }, 0);
+  var lblMap = { '7':{zh:'最近 7 天',en:'Last 7 days'}, '30':{zh:'最近 30 天',en:'Last 30 days'}, '90':{zh:'最近 90 天',en:'Last 90 days'}, '365':{zh:'最近 12 个月',en:'Last 12 months'} };
+  var hdrEl = document.getElementById('revChartRangeLabel');
+  if (hdrEl && lblMap[range]) hdrEl.innerHTML = '<span class="zh">' + lblMap[range].zh + '</span><span class="en">' + lblMap[range].en + '</span>';
+  var max = Math.max.apply(null, buckets.map(function(b){ return b.rev; }));
+  var total = buckets.reduce(function(a,b){ return a + b.rev; }, 0);
   if (total === 0) { barsEl.innerHTML = ''; datesEl.innerHTML = ''; if (emptyEl) { emptyEl.style.display = 'block'; barsEl.parentElement.style.position = 'relative'; } return; }
   if (emptyEl) emptyEl.style.display = 'none';
-  var peak = months.reduce(function(b,m,i){ return m.rev > months[b].rev ? i : b; }, 0);
-  barsEl.innerHTML = months.map(function(m,i){
-    var pct = max > 0 ? Math.max(2, Math.round(m.rev / max * 100)) : 2;
+  var peak = buckets.reduce(function(bi,b,i){ return b.rev > buckets[bi].rev ? i : bi; }, 0);
+  barsEl.innerHTML = buckets.map(function(b,i){
+    var pct = max > 0 ? Math.max(2, Math.round(b.rev / max * 100)) : 2;
     var grad = i === peak ? 'linear-gradient(180deg,var(--gold),var(--gold-soft))' : 'linear-gradient(180deg,var(--brand),var(--brand-soft))';
-    return '<div style="flex:1;background:' + grad + ';height:' + pct + '%;border-radius:3px 3px 0 0;" title="' + mn[m.m] + ' $' + Math.round(m.rev).toLocaleString() + '"></div>';
+    return '<div style="flex:1;background:' + grad + ';height:' + pct + '%;border-radius:3px 3px 0 0;" title="' + b.label + ' $' + Math.round(b.rev).toLocaleString() + '"></div>';
   }).join('');
-  datesEl.innerHTML = months.map(function(m){ return '<span>' + mn[m.m] + '</span>'; }).join('');
+  var step = buckets.length > 10 ? Math.ceil(buckets.length / 6) : 1;
+  datesEl.innerHTML = buckets.map(function(b,i){ return '<span>' + ((i % step === 0 || i === buckets.length - 1) ? b.label : '') + '</span>'; }).join('');
 }
 function rptRenderStores(sales) {
   var el = document.getElementById('rptStoreRanking'); if (!el) return;
@@ -11169,8 +11334,14 @@ function openAuditLog() {
 }
 
 // ===== Export CSV =====
-function exportSalesCSV() {
+function exportSalesCSV(period) {
   var sales = getLocalData('pi_sales');
+  if (period === 'today') {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    sales = sales.filter(function(s) {
+      var d = new Date(s.date); return !isNaN(d) && d >= today;
+    });
+  }
   if (sales.length === 0) { showToast('暂无数据可导出 / No data to export'); return; }
   var csv = 'Order ID,Date,Phone,IMEI,Customer,Price,Tax,Total,Profit,Payment,Store,Seller\n';
   sales.forEach(function(s) {
@@ -11179,7 +11350,7 @@ function exportSalesCSV() {
   var blob = new Blob([csv], {type:'text/csv'});
   var a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'sales_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.download = 'sales_' + (period === 'today' ? new Date().toISOString().slice(0,10) + '_today' : new Date().toISOString().slice(0,10)) + '.csv';
   a.click();
   showToast('CSV 已下载 / CSV downloaded');
 }
@@ -13566,26 +13737,35 @@ function setBrandFilter(brand) {
   });
 })();
 
-// Status filter chips (仅在售 / 滞销)
-(function() {
-  var statusFilters = document.querySelectorAll('#page-inventory .search-bar .filters:last-child .chip');
-  if (statusFilters.length >= 2) {
-    statusFilters[0].addEventListener('click', function() {
-      INV_PAGE = 1;
-      INV_FILTERS.status = INV_FILTERS.status === 'available' ? 'all' : 'available';
-      statusFilters.forEach(function(c) { c.classList.remove('active'); });
-      if (INV_FILTERS.status === 'available') statusFilters[0].classList.add('active');
-      renderInventory();
-    });
-    statusFilters[1].addEventListener('click', function() {
-      INV_PAGE = 1;
-      INV_FILTERS.status = INV_FILTERS.status === 'aged' ? 'all' : 'aged';
-      statusFilters.forEach(function(c) { c.classList.remove('active'); });
-      if (INV_FILTERS.status === 'aged') statusFilters[1].classList.add('active');
-      renderInventory();
-    });
+// Status filter chips (仅在售 / 滞销) + advanced region cycle (高级)
+function toggleInvStatus(which) {
+  INV_PAGE = 1;
+  INV_FILTERS.status = (INV_FILTERS.status === which) ? 'all' : which;
+  var a = document.getElementById('invStatusAvail');
+  var g = document.getElementById('invStatusAged');
+  if (a) a.classList.toggle('active', INV_FILTERS.status === 'available');
+  if (g) g.classList.toggle('active', INV_FILTERS.status === 'aged');
+  renderInventory();
+}
+var INV_REGION_CYCLE = ['all', 'us', 'hk', 'cn'];
+var INV_REGION_LABEL = {
+  all: { zh: '⚙️ 高级', en: '⚙️ Advanced' },
+  us:  { zh: '🇺🇸 美版', en: '🇺🇸 US' },
+  hk:  { zh: '🇭🇰 港版', en: '🇭🇰 HK' },
+  cn:  { zh: '🇨🇳 国行', en: '🇨🇳 CN' }
+};
+function cycleInvRegion() {
+  var i = INV_REGION_CYCLE.indexOf(INV_FILTERS.region);
+  INV_FILTERS.region = INV_REGION_CYCLE[(i + 1) % INV_REGION_CYCLE.length];
+  INV_PAGE = 1;
+  var btn = document.getElementById('invRegionCycle');
+  if (btn) {
+    var lbl = INV_REGION_LABEL[INV_FILTERS.region];
+    btn.innerHTML = '<span class="zh">' + lbl.zh + '</span><span class="en">' + lbl.en + '</span>';
+    btn.classList.toggle('active', INV_FILTERS.region !== 'all');
   }
-})();
+  renderInventory();
+}
 
 // ===== IMEI Check System =====
 // IMEI lookup goes through our backend proxy (/api/imei-check) so the paid
