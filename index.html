@@ -8429,9 +8429,9 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         <div class="section-title">
           <span class="zh">滞销库存分析</span>
           <span class="en">Aged Stock Analysis</span>
-          <span class="count">· <span style="color:var(--danger);">0 <span class="zh">部需关注</span><span class="en">need review</span></span></span>
+          <span class="count">· <span style="color:var(--danger);"><span id="rptAgingNeedReview">0</span> <span class="zh">部需关注</span><span class="en">need review</span></span></span>
         </div>
-        <button class="btn btn-sm" onclick="showToast('功能开发中 / Coming soon')">⚙️ <span class="zh">配置预警</span><span class="en">Configure alerts</span></button>
+        <button class="btn btn-sm" onclick="openAgingConfig()">⚙️ <span class="zh">配置预警</span><span class="en">Configure alerts</span></button>
       </div>
 
       <div id="rptAgingBuckets" style="padding:18px 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
@@ -11142,9 +11142,9 @@ function renderReportsPage() {
 
   var avail = phones.filter(function(p){ return p && (p.status === 'available' || !p.status); });
   var agedUnits = 0, agedCost = 0;
-  avail.forEach(function(p){ if (rptAge(p) >= 60) { agedUnits++; agedCost += (p.cost||0); } });
+  avail.forEach(function(p){ if (rptAge(p) >= AGING_CONFIG.aged) { agedUnits++; agedCost += (p.cost||0); } });
   rptSet('rptKpiAgedCost', '<span class="ccy">$</span>' + Math.round(agedCost).toLocaleString(), true);
-  rptSet('rptKpiAgedMeta', agedUnits + ' <span class="zh">部 ≥60天</span><span class="en">phones ≥60d</span>', true);
+  rptSet('rptKpiAgedMeta', agedUnits + ' <span class="zh">部 ≥' + AGING_CONFIG.aged + '天</span><span class="en">phones ≥' + AGING_CONFIG.aged + 'd</span>', true);
 
   var soldUnits = sales.length;
   var sellThrough = (soldUnits + avail.length) > 0 ? Math.round(soldUnits / (soldUnits + avail.length) * 100) : 0;
@@ -11157,6 +11157,49 @@ function renderReportsPage() {
   rptRenderPayments(sales);
   rptRenderCondSplit(sales);
   rptRenderAlerts();
+}
+// ===== Aging / stock alert thresholds (configurable) =====
+var AGING_CONFIG = (function(){
+  var d = { watch: 30, aged: 60, clear: 90, lowStock: 2 };
+  try { var s = JSON.parse(localStorage.getItem('pi_aging_config') || '{}'); Object.keys(d).forEach(function(k){ if (typeof s[k] === 'number' && s[k] >= 0) d[k] = s[k]; }); } catch(e){}
+  return d;
+})();
+function openAgingConfig() {
+  if (document.getElementById('agingCfgModal')) return;
+  var c = AGING_CONFIG;
+  var overlay = document.createElement('div');
+  overlay.id = 'agingCfgModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
+  var row = function(id, labelZh, labelEn, val, hintZh, hintEn){
+    return '<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f1f5f9;">' +
+      '<div style="flex:1;"><div style="font-weight:600;font-size:13px;"><span class="zh">' + labelZh + '</span><span class="en">' + labelEn + '</span></div>' +
+      '<div style="font-size:11px;color:#94a3b8;"><span class="zh">' + hintZh + '</span><span class="en">' + hintEn + '</span></div></div>' +
+      '<input type="number" min="0" id="' + id + '" value="' + val + '" style="width:80px;padding:6px 9px;border:1px solid #ddd;border-radius:7px;font-size:13px;text-align:right;"><span style="font-size:12px;color:#64748b;width:24px;"><span class="zh">天</span><span class="en">d</span></span></div>';
+  };
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;max-width:460px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML = '<div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:800;font-size:15px;">⚙️ 配置滞销预警 <span style="font-size:12px;color:#94a3b8;font-weight:500;">Alert thresholds</span></div><button onclick="document.getElementById(\'agingCfgModal\').remove()" style="border:1px solid #ddd;background:#f5f5f5;border-radius:7px;padding:5px 13px;cursor:pointer;font-size:13px;">关闭 Close</button></div>' +
+    '<div style="padding:8px 20px;">' +
+      row('agingCfgWatch', '关注阈值', 'Watch', c.watch, '超过即进入"需关注"', 'flag for watch') +
+      row('agingCfgAged', '滞销阈值', 'Aged', c.aged, '超过计入"需关注/滞销"统计', 'counts as aged') +
+      row('agingCfgClear', '清仓阈值', 'Clearance', c.clear, '超过进入"建议清仓"', 'flag to clear') +
+      row('agingCfgLow', '低库存补货线', 'Low stock', c.lowStock, '在售≤此数触发补货预警', 'stock ≤ triggers reorder') +
+    '</div>' +
+    '<div style="padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px;"><button class="btn btn-sm btn-ghost" onclick="document.getElementById(\'agingCfgModal\').remove()"><span class="zh">取消</span><span class="en">Cancel</span></button><button class="btn btn-sm btn-primary" onclick="saveAgingConfig()"><span class="zh">保存</span><span class="en">Save</span></button></div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+function saveAgingConfig() {
+  var get = function(id, def){ var el = document.getElementById(id); var v = el ? parseInt(el.value, 10) : def; return (isNaN(v) || v < 0) ? def : v; };
+  AGING_CONFIG.watch = get('agingCfgWatch', 30);
+  AGING_CONFIG.aged = get('agingCfgAged', 60);
+  AGING_CONFIG.clear = get('agingCfgClear', 90);
+  AGING_CONFIG.lowStock = get('agingCfgLow', 2);
+  try { localStorage.setItem('pi_aging_config', JSON.stringify(AGING_CONFIG)); } catch(e){}
+  var m = document.getElementById('agingCfgModal'); if (m) m.remove();
+  showToast('预警阈值已保存 / Thresholds saved');
+  try { renderReportsPage(); } catch(e){}
+  try { renderInventory(); } catch(e){}
 }
 function rptRenderAlerts() {
   var reorderEl = document.getElementById('rptReorderList');
@@ -11172,12 +11215,12 @@ function rptRenderAlerts() {
     var k = (s.phoneName || '') + '|' + (s.storage || ''); sold30[k] = (sold30[k] || 0) + 1;
   });
   var reorder = Object.keys(sold30).map(function(k){ return { k:k, sold:sold30[k], stock:stock[k] || 0 }; })
-    .filter(function(r){ return r.stock <= 2; }).sort(function(a,b){ return b.sold - a.sold; }).slice(0, 10);
+    .filter(function(r){ return r.stock <= AGING_CONFIG.lowStock; }).sort(function(a,b){ return b.sold - a.sold; }).slice(0, 10);
   reorderEl.innerHTML = reorder.length ? reorder.map(function(r){
     var p = r.k.split('|');
     return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;"><span style="font-weight:600;">' + escHtml(p[0]) + (p[1] ? ' ' + escHtml(p[1]) : '') + '</span><span style="color:var(--text-muted);"><span class="zh">在售</span><span class="en">stock</span> <b style="color:' + (r.stock === 0 ? '#dc2626' : '#b45309') + ';">' + r.stock + '</b> · <span class="zh">30天卖</span><span class="en">sold</span> ' + r.sold + '</span></div>';
   }).join('') : '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;"><span class="zh">暂无补货预警</span><span class="en">None</span></div>';
-  var aged = avail.filter(function(p){ return rptAge(p) >= 90; }).sort(function(a,b){ return rptAge(b) - rptAge(a); }).slice(0, 10);
+  var aged = avail.filter(function(p){ return rptAge(p) >= AGING_CONFIG.clear; }).sort(function(a,b){ return rptAge(b) - rptAge(a); }).slice(0, 10);
   clearEl.innerHTML = aged.length ? aged.map(function(p){
     var a = rptAge(p);
     return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border-soft);font-size:12.5px;"><span style="font-weight:600;">' + escHtml((p.name || p.model || '') + ' ' + (p.storage || '')) + '</span><span style="color:var(--text-muted);">' + escHtml(p.storeName || p.store || '') + ' · <b style="color:#dc2626;">' + a + 'd</b></span></div>';
@@ -11272,26 +11315,29 @@ function rptRenderStores(sales) {
   }).join('');
 }
 function rptRenderAging(avail) {
+  var w = AGING_CONFIG.watch, a2 = AGING_CONFIG.aged, cl = AGING_CONFIG.clear;
   var buckets = [
-    { lbl:'0-30', min:0, max:30, color:'var(--success)', bg:'var(--success-soft)', zh:'健康库存', en:'Healthy' },
-    { lbl:'31-60', min:31, max:60, color:'var(--info)', bg:'var(--info-soft)', zh:'需关注', en:'Watch' },
-    { lbl:'61-90', min:61, max:90, color:'var(--warn)', bg:'var(--warn-soft)', zh:'建议降价', en:'Discount' },
-    { lbl:'90+', min:91, max:1e9, color:'var(--danger)', bg:'var(--danger-soft)', zh:'必须处理', en:'Must clear' }
+    { lbl:'0-' + w, min:0, max:w, color:'var(--success)', bg:'var(--success-soft)', zh:'健康库存', en:'Healthy' },
+    { lbl:(w+1) + '-' + a2, min:w+1, max:a2, color:'var(--info)', bg:'var(--info-soft)', zh:'需关注', en:'Watch' },
+    { lbl:(a2+1) + '-' + cl, min:a2+1, max:cl, color:'var(--warn)', bg:'var(--warn-soft)', zh:'建议降价', en:'Discount' },
+    { lbl:cl + '+', min:cl+1, max:1e9, color:'var(--danger)', bg:'var(--danger-soft)', zh:'必须处理', en:'Must clear' }
   ];
   buckets.forEach(function(b){ b.count = 0; b.cost = 0; });
   avail.forEach(function(p){ var a = rptAge(p); for (var i = 0; i < buckets.length; i++) { if (a >= buckets[i].min && a <= buckets[i].max) { buckets[i].count++; buckets[i].cost += (p.cost||0); break; } } });
+  var needReview = avail.filter(function(p){ return rptAge(p) >= AGING_CONFIG.aged; }).length;
+  var nrEl = document.getElementById('rptAgingNeedReview'); if (nrEl) nrEl.textContent = needReview;
   var maxCount = Math.max(1, Math.max.apply(null, buckets.map(function(b){ return b.count; })));
   var el = document.getElementById('rptAgingBuckets');
   if (el) el.innerHTML = buckets.map(function(b){
     return '<div style="background:' + b.bg + ';border-radius:9px;padding:14px 16px;"><div style="font-size:10.5px;color:' + b.color + ';text-transform:uppercase;letter-spacing:0.07em;font-weight:700;">' + b.lbl + ' <span class="zh">天</span><span class="en">days</span></div><div style="font-size:28px;font-weight:800;line-height:1;margin-top:6px;color:' + b.color + ';">' + b.count + '</div><div style="font-size:11px;color:var(--text-muted);margin-top:4px;"><span class="zh">' + b.zh + '</span><span class="en">' + b.en + '</span> · $' + Math.round(b.cost).toLocaleString() + '</div><div style="height:5px;background:rgba(0,0,0,0.05);border-radius:3px;margin-top:8px;overflow:hidden;"><div style="width:' + Math.round(b.count/maxCount*100) + '%;height:100%;background:' + b.color + ';"></div></div></div>';
   }).join('');
-  var aged = avail.filter(function(p){ return rptAge(p) >= 60; }).sort(function(a,b){ return rptAge(b) - rptAge(a); }).slice(0, 15);
+  var aged = avail.filter(function(p){ return rptAge(p) >= AGING_CONFIG.aged; }).sort(function(a,b){ return rptAge(b) - rptAge(a); }).slice(0, 15);
   var t = document.getElementById('rptAgingTable'); if (!t) return;
-  if (!aged.length) { t.style.padding = '30px 22px'; t.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;"><span class="zh">暂无滞销库存（≥60天）</span><span class="en">No aged stock ≥60d</span></div>'; return; }
+  if (!aged.length) { t.style.padding = '30px 22px'; t.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:13px;"><span class="zh">暂无滞销库存（≥' + AGING_CONFIG.aged + '天）</span><span class="en">No aged stock ≥' + AGING_CONFIG.aged + 'd</span></div>'; return; }
   t.style.padding = '0';
   t.innerHTML = aged.map(function(p){
     var a = rptAge(p);
-    return '<div style="padding:11px 22px;display:grid;grid-template-columns:1.5fr 1fr 100px 100px 100px 90px;gap:10px;align-items:center;border-bottom:1px solid var(--border-soft);font-size:12px;"><div style="font-weight:600;">' + (p.name||p.model||'') + ' ' + (p.storage||'') + '</div><div style="color:var(--text-muted);">' + (p.storeName||p.store||'') + '</div><div class="mono">$' + (p.cost||0) + '</div><div class="mono">$' + (p.msrp||p.price||0) + '</div><div style="color:' + (a>=90?'var(--danger)':'var(--warn)') + ';font-weight:700;">' + a + 'd</div><div></div></div>';
+    return '<div style="padding:11px 22px;display:grid;grid-template-columns:1.5fr 1fr 100px 100px 100px 90px;gap:10px;align-items:center;border-bottom:1px solid var(--border-soft);font-size:12px;"><div style="font-weight:600;">' + (p.name||p.model||'') + ' ' + (p.storage||'') + '</div><div style="color:var(--text-muted);">' + (p.storeName||p.store||'') + '</div><div class="mono">$' + (p.cost||0) + '</div><div class="mono">$' + (p.msrp||p.price||0) + '</div><div style="color:' + (a>=AGING_CONFIG.clear?'var(--danger)':'var(--warn)') + ';font-weight:700;">' + a + 'd</div><div></div></div>';
   }).join('');
 }
 function rptRenderCategory(sales) {
@@ -13437,7 +13483,7 @@ function getFilteredPhones() {
     if (INV_FILTERS.store !== 'all' && normalizeStoreKey(p.store || p.storeName || '') !== INV_FILTERS.store) return false;
     if (INV_FILTERS.region !== 'all' && p.region !== INV_FILTERS.region) return false;
     if (INV_FILTERS.status === 'available' && p.status !== 'available') return false;
-    if (INV_FILTERS.status === 'aged' && rptAge(p) < 60) return false;
+    if (INV_FILTERS.status === 'aged' && rptAge(p) < AGING_CONFIG.aged) return false;
     if (INV_FILTERS.search) {
       const q = INV_FILTERS.search.toLowerCase();
       const searchable = [p.name, p.storage, p.color, p.colorEn, p.imei, p.storeName, p.shelf].map(function(x){ return x || ''; }).join(' ').toLowerCase();
