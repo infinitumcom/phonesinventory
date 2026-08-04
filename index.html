@@ -11371,13 +11371,29 @@ function openAuditLog() {
 
 // ===== Find existing customer (derived from sales history) =====
 var _WALKIN_NAMES = { '散客': 1, 'walk-in': 1, 'walkin': 1, 'customer': 1, '1': 1 };
+// Store phone numbers (from STORE_DATA) are frequently typed in as a placeholder
+// for walk-ins — they are NOT a customer's personal contact, so they must not be
+// used as a merge key (else many distinct walk-ins collapse into one fake customer).
+function _storePhoneSet() {
+  var set = {};
+  try {
+    Object.keys(STORE_DATA).forEach(function(k) {
+      var p = (STORE_DATA[k].phone || '').replace(/\D/g, '');
+      if (p.length >= 10) set[p.slice(-10)] = 1;
+    });
+  } catch (e) {}
+  return set;
+}
 function _deriveCustomers() {
   var sales = getLocalData('pi_sales');
+  var storePhones = _storePhoneSet();
   var byKey = {};
   sales.forEach(function(s) {
     var name = (s.customer || '').trim();
     var phone = (s.customerPhone || '').trim();
     var phoneDigits = phone.replace(/\D/g, '');
+    // A store's own number is not a personal contact — treat as no phone.
+    if (phoneDigits.length >= 10 && storePhones[phoneDigits.slice(-10)]) { phone = ''; phoneDigits = ''; }
     // Anonymous walk-ins (no reachable phone + a generic/blank name) are not
     // identifiable customers — keep them out of the directory.
     if (phoneDigits.length < 7 && (!name || _WALKIN_NAMES[name.toLowerCase()])) return;
