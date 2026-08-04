@@ -7431,14 +7431,14 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                   <span class="zh">客户信息</span>
                   <span class="en">Customer Info</span>
                 </div>
-                <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')">
+                <button class="btn btn-sm btn-ghost" onclick="openCustomerLookup()">
                   <span class="zh">🔍 查找老客户</span>
                   <span class="en">🔍 Find existing</span>
                 </button>
               </div>
               <div style="padding:18px 22px;">
 
-                <div class="vip-banner" style="display:none;">
+                <div class="vip-banner" id="saleVipBanner" style="display:none;">
                   <div class="vip-banner-icon">⭐</div>
                   <div class="vip-banner-text">
                     <strong><span class="zh">VIP 老客户</span><span class="en">VIP customer</span></strong>
@@ -7449,11 +7449,11 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div class="form-row split">
                   <div>
                     <label class="form-label"><span class="zh">客户姓名</span><span class="en">Customer Name</span> <span class="req">*</span></label>
-                    <input type="text" class="form-input" value="" placeholder="客户姓名 / Customer name">
+                    <input type="text" class="form-input" id="saleCustName" value="" placeholder="客户姓名 / Customer name">
                   </div>
                   <div>
                     <label class="form-label"><span class="zh">手机号</span><span class="en">Phone</span> <span class="req">*</span></label>
-                    <input type="text" class="form-input" value="" placeholder="+1 xxx xxx xxxx">
+                    <input type="text" class="form-input" id="saleCustPhone" value="" placeholder="+1 xxx xxx xxxx">
                   </div>
                 </div>
 
@@ -11362,6 +11362,87 @@ function openAuditLog() {
         '<div style="color:#475569;white-space:nowrap;font-weight:600;">' + escHtml(e.actor || '') + '</div></div>';
     }).join('');
   }).catch(function(){ var b = document.getElementById('auditBody'); if (b) b.innerHTML = '<div style="color:#dc2626;padding:20px;">加载失败 / Failed to load</div>'; });
+}
+
+// ===== Find existing customer (derived from sales history) =====
+function _deriveCustomers() {
+  var sales = getLocalData('pi_sales');
+  var byKey = {};
+  sales.forEach(function(s) {
+    var name = (s.customer || '').trim();
+    var phone = (s.customerPhone || '').trim();
+    if (!name && !phone) return;
+    var key = (phone || name).toLowerCase();
+    if (!byKey[key]) byKey[key] = { name: name, phone: phone, orders: 0, spent: 0, last: 0 };
+    var c = byKey[key];
+    if (!c.name && name) c.name = name;
+    if (!c.phone && phone) c.phone = phone;
+    c.orders++;
+    if (s.status !== 'returned') c.spent += (s.total || 0);
+    var t = new Date(s.date).getTime();
+    if (!isNaN(t) && t > c.last) c.last = t;
+  });
+  return Object.keys(byKey).map(function(k){ return byKey[k]; }).sort(function(a,b){ return b.last - a.last; });
+}
+var _custLookupList = [];
+function _renderCustomerLookupList(q) {
+  var body = document.getElementById('custLookupBody');
+  if (!body) return;
+  var list = _deriveCustomers();
+  if (q) {
+    var ql = q.toLowerCase();
+    list = list.filter(function(c){ return (c.name + ' ' + c.phone).toLowerCase().indexOf(ql) >= 0; });
+  }
+  _custLookupList = list.slice(0, 100);
+  if (!_custLookupList.length) {
+    body.innerHTML = '<div style="color:#888;padding:24px;text-align:center;font-size:13px;">' +
+      (getLocalData('pi_sales').length === 0 ? '暂无历史客户 / No past customers' : '无匹配客户 / No match') + '</div>';
+    return;
+  }
+  body.innerHTML = _custLookupList.map(function(c, i){
+    var vip = c.orders >= 2;
+    return '<div onclick="pickCustomerAt(' + i + ')" style="display:flex;gap:12px;align-items:center;padding:10px 6px;border-bottom:1px solid #f1f5f9;cursor:pointer;" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'\'">' +
+      '<div style="flex:1;min-width:0;"><div style="font-weight:700;font-size:13px;">' + escHtml(c.name || '—') + (vip ? ' <span style="color:#d97706;">⭐</span>' : '') + '</div>' +
+      '<div style="color:#94a3b8;font-size:11.5px;font-family:\'JetBrains Mono\',monospace;">' + escHtml(c.phone || '—') + '</div></div>' +
+      '<div style="text-align:right;white-space:nowrap;"><div style="font-size:12px;font-weight:700;color:var(--brand);">' + c.orders + ' <span style="font-weight:400;color:#94a3b8;">单</span></div>' +
+      '<div style="font-size:11px;color:#64748b;">$' + Math.round(c.spent).toLocaleString() + '</div></div></div>';
+  }).join('');
+}
+function openCustomerLookup() {
+  if (document.getElementById('custLookupModal')) return;
+  var overlay = document.createElement('div');
+  overlay.id = 'custLookupModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;max-width:520px;width:100%;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML = '<div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:800;font-size:15px;">🔍 查找老客户 <span style="font-size:12px;color:#94a3b8;font-weight:500;">Find customer</span></div><button onclick="document.getElementById(\'custLookupModal\').remove()" style="border:1px solid #ddd;background:#f5f5f5;border-radius:7px;padding:5px 13px;cursor:pointer;font-size:13px;">关闭 Close</button></div>' +
+    '<div style="padding:12px 20px 4px;"><input type="text" id="custLookupSearch" placeholder="搜索姓名 / 手机号 · Search name / phone" oninput="_renderCustomerLookupList(this.value.trim())" style="width:100%;padding:9px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>' +
+    '<div id="custLookupBody" style="padding:4px 20px 16px;overflow:auto;"></div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  _renderCustomerLookupList('');
+  setTimeout(function(){ var s = document.getElementById('custLookupSearch'); if (s) s.focus(); }, 50);
+}
+function pickCustomerAt(i) {
+  var c = _custLookupList[i];
+  if (!c) return;
+  var nameEl = document.getElementById('saleCustName');
+  var phoneEl = document.getElementById('saleCustPhone');
+  if (nameEl) nameEl.value = c.name || '';
+  if (phoneEl) phoneEl.value = c.phone || '';
+  var banner = document.getElementById('saleVipBanner');
+  if (banner) {
+    if (c.orders >= 2) {
+      banner.style.display = '';
+      var sub = banner.querySelector('.sub');
+      if (sub) sub.innerHTML = '<span class="zh">历史 ' + c.orders + ' 单 · 累计消费 $' + Math.round(c.spent).toLocaleString() + '</span><span class="en">' + c.orders + ' orders · $' + Math.round(c.spent).toLocaleString() + ' lifetime</span>';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+  var modal = document.getElementById('custLookupModal');
+  if (modal) modal.remove();
+  showToast('已填入客户 / Customer filled');
 }
 
 // ===== Export CSV =====
