@@ -11370,12 +11370,17 @@ function openAuditLog() {
 }
 
 // ===== Find existing customer (derived from sales history) =====
+var _WALKIN_NAMES = { '散客': 1, 'walk-in': 1, 'walkin': 1, 'customer': 1, '1': 1 };
 function _deriveCustomers() {
   var sales = getLocalData('pi_sales');
   var byKey = {};
   sales.forEach(function(s) {
     var name = (s.customer || '').trim();
     var phone = (s.customerPhone || '').trim();
+    var phoneDigits = phone.replace(/\D/g, '');
+    // Anonymous walk-ins (no reachable phone + a generic/blank name) are not
+    // identifiable customers — keep them out of the directory.
+    if (phoneDigits.length < 7 && (!name || _WALKIN_NAMES[name.toLowerCase()])) return;
     if (!name && !phone) return;
     var key = (phone || name).toLowerCase();
     if (!byKey[key]) byKey[key] = { name: name, phone: phone, orders: 0, spent: 0, last: 0 };
