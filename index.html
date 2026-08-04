@@ -7460,7 +7460,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div class="form-row split">
                   <div>
                     <label class="form-label"><span class="zh">邮箱</span><span class="en">Email</span> <span class="hint"><span class="zh">选填</span><span class="en">Optional</span></span></label>
-                    <input type="email" class="form-input" placeholder="lin.wei@example.com">
+                    <input type="email" class="form-input" id="saleCustEmail" placeholder="lin.wei@example.com">
                   </div>
                   <div>
                     <label class="form-label"><span class="zh">客户来源</span><span class="en">Source</span></label>
@@ -10033,10 +10033,15 @@ function completeSale() {
   var sales = getLocalData('pi_sales');
   var dup = sales.find(function(s) { return s.imei === saleState.phone.imei && s.status === 'completed'; });
   if (dup) { showToast('此手机已售出 (订单: ' + dup.id + ') / Already sold'); return; }
-  // Get customer info from form
-  var custInputs = document.querySelectorAll('#page-sale .form-input');
-  var custName = custInputs[0] ? custInputs[0].value.trim() : '';
-  var custPhone = custInputs[1] ? custInputs[1].value.trim() : '';
+  // Get customer info from form — read by ID (positional lookup was fragile:
+  // the IMEI scan input is also a .form-input and shifted every field by one,
+  // which historically stored IMEI→customer, name→phone, phone→email).
+  var _cn = document.getElementById('saleCustName');
+  var _cp = document.getElementById('saleCustPhone');
+  var _ce = document.getElementById('saleCustEmail');
+  var custName = _cn ? _cn.value.trim() : '';
+  var custPhone = _cp ? _cp.value.trim() : '';
+  var custEmail = _ce ? _ce.value.trim() : '';
   if (!custName) { showToast('请输入客户姓名 / Enter customer name'); return; }
 
   // Get actual price from input
@@ -10079,7 +10084,7 @@ function completeSale() {
     taxRate: saleState.taxRate,
     customer: custName,
     customerPhone: custPhone,
-    customerEmail: custInputs[2] ? custInputs[2].value.trim() : '',
+    customerEmail: custEmail,
     paymentMethods: methods,
     store: saleState.storeName,
     storeKey: saleState.storeKey,
