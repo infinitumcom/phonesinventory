@@ -6484,7 +6484,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="en">Points History</span>
               <span class="count">· <span class="zh">本月</span><span class="en">This Month</span></span>
             </div>
-            <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">查看全部</span><span class="en">View all</span></button>
+            <button class="btn btn-sm btn-ghost" onclick="toggleMyPointsAll(this)"><span class="zh">查看全部</span><span class="en">View all</span></button>
           </div>
 
           <div>
@@ -6496,10 +6496,12 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <div style="text-align:right;">◆ <span class="zh">积分</span><span class="en">Points</span></div>
             </div>
 
-            <div style="padding:32px 18px;text-align:center;color:var(--text-muted);font-size:13px;grid-column:1/-1;">
+            <div id="myPointsHistoryBody">
+              <div style="padding:32px 18px;text-align:center;color:var(--text-muted);font-size:13px;grid-column:1/-1;">
                 <span class="zh">暂无积分记录</span>
                 <span class="en">No points history yet</span>
               </div>
+            </div>
           </div>
         </div>
 
@@ -7710,20 +7712,20 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <span class="zh">积分规则</span>
               <span class="en">Points Rules</span>
             </div>
-            <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">编辑规则</span><span class="en">Edit</span></button>
+            <button class="btn btn-sm btn-ghost" onclick="openPointsRules()"><span class="zh">编辑规则</span><span class="en">Edit</span></button>
           </div>
           <div style="padding:14px 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--bg-tinted);border-radius:7px;">
               <div>
                 <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;"><span class="zh">新机</span><span class="en">New</span></div>
-                <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.2;color:var(--purple);">15 <span style="font-size:14px;opacity:0.7;">P</span><span style="font-size:12px;color:var(--text-muted);font-weight:500;margin-left:4px;">/<span class="zh">台</span><span class="en">unit</span></span></div>
+                <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.2;color:var(--purple);"><span id="pointsRuleNew">15</span> <span style="font-size:14px;opacity:0.7;">P</span><span style="font-size:12px;color:var(--text-muted);font-weight:500;margin-left:4px;">/<span class="zh">台</span><span class="en">unit</span></span></div>
               </div>
               <span class="cond-tag cond-new">NEW</span>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:var(--bg-tinted);border-radius:7px;">
               <div>
                 <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;"><span class="zh">二手机</span><span class="en">Used</span></div>
-                <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.2;color:var(--purple);">10 <span style="font-size:14px;opacity:0.7;">P</span><span style="font-size:12px;color:var(--text-muted);font-weight:500;margin-left:4px;">/<span class="zh">台</span><span class="en">unit</span></span></div>
+                <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.02em;line-height:1.2;color:var(--purple);"><span id="pointsRuleUsed">10</span> <span style="font-size:14px;opacity:0.7;">P</span><span style="font-size:12px;color:var(--text-muted);font-weight:500;margin-left:4px;">/<span class="zh">台</span><span class="en">unit</span></span></div>
               </div>
               <span class="cond-tag cond-used">USED</span>
             </div>
@@ -10884,8 +10886,8 @@ function renderMyAccount() {
   var newN = mineMTD.filter(function(s){ return s.cond === 'new'; }).length;
   var usedN = mineMTD.filter(function(s){ return s.cond === 'used'; }).length;
   var unitsMTD = mineMTD.length;
-  var ptsMTD = newN * 15 + usedN * 10;
-  var totalPts = mine.reduce(function(a,s){ return a + (s.cond === 'new' ? 15 : 10); }, 0);
+  var ptsMTD = newN * POINTS_RULES.new + usedN * POINTS_RULES.used;
+  var totalPts = mine.reduce(function(a,s){ return a + (s.cond === 'new' ? POINTS_RULES.new : POINTS_RULES.used); }, 0);
   var goal = 20, goalPct = Math.min(100, Math.round(unitsMTD / goal * 100));
   var bySeller = {};
   sales.filter(function(s){ return inMonth(s.date || s.createdAt) && (!store || s.store === store); })
@@ -10906,6 +10908,42 @@ function renderMyAccount() {
   if (metas[3]) metas[3].innerHTML = ranking.length ? ('<span class="zh">本店 ' + ranking.length + ' 人</span><span class="en">of ' + ranking.length + '</span>') : '<span class="zh">暂无数据</span><span class="en">No data</span>';
   var ptsNum = document.querySelector('#page-myaccount .ma-points-num');
   if (ptsNum) ptsNum.textContent = totalPts;
+  // Points history rows (this month by default; toggled to all via 查看全部)
+  _renderMyPointsHistory(mine, mineMTD);
+}
+var _myPointsShowAll = false;
+function toggleMyPointsAll(btn) {
+  _myPointsShowAll = !_myPointsShowAll;
+  if (btn) btn.innerHTML = _myPointsShowAll
+    ? '<span class="zh">仅本月</span><span class="en">This month</span>'
+    : '<span class="zh">查看全部</span><span class="en">View all</span>';
+  try { renderMyAccount(); } catch(e){}
+}
+function _renderMyPointsHistory(mineAll, mineMTD) {
+  var body = document.getElementById('myPointsHistoryBody');
+  if (!body) return;
+  var list = (_myPointsShowAll ? mineAll : mineMTD).slice().sort(function(a, b){
+    return new Date(b.date || b.createdAt || 0) - new Date(a.date || a.createdAt || 0);
+  });
+  if (!list.length) {
+    body.innerHTML = '<div style="padding:32px 18px;text-align:center;color:var(--text-muted);font-size:13px;grid-column:1/-1;"><span class="zh">暂无积分记录</span><span class="en">No points history yet</span></div>';
+    return;
+  }
+  body.innerHTML = list.slice(0, _myPointsShowAll ? 500 : 100).map(function(s){
+    var d = new Date(s.date || s.createdAt || 0);
+    var dateStr = isNaN(d) ? '' : ((d.getMonth()+1) + '/' + d.getDate());
+    var pts = s.cond === 'new' ? POINTS_RULES.new : POINTS_RULES.used;
+    var condTag = s.cond === 'new'
+      ? '<span class="cond-tag cond-new" style="height:14px;font-size:8px;display:inline-flex;margin-left:4px;">NEW</span>'
+      : '<span class="cond-tag cond-used" style="height:14px;font-size:8px;display:inline-flex;margin-left:4px;">USED</span>';
+    return '<div class="points-history-row">' +
+      '<div style="color:var(--text-muted);font-family:\'JetBrains Mono\',monospace;font-size:11px;">' + dateStr + '</div>' +
+      '<div style="font-weight:600;">' + escHtml(s.phoneName || '') + (s.storage ? ' · ' + escHtml(s.storage) : '') + condTag + '</div>' +
+      '<div style="text-align:right;color:var(--text-muted);">' + escHtml(s.customer || '—') + '</div>' +
+      '<div style="text-align:right;font-family:\'JetBrains Mono\',monospace;">$' + (s.total || 0).toLocaleString() + '</div>' +
+      '<div style="text-align:right;font-weight:700;color:var(--purple);">+' + pts + ' P</div>' +
+    '</div>';
+  }).join('');
 }
 // ===== Sales page filters (type / period / store / payment) =====
 var SALES_FILTERS = { type: 'sales', period: 'month', store: 'all', payment: 'all', search: '', customFrom: null, customTo: null };
@@ -11763,6 +11801,44 @@ function openAddCustomerModal() {
   showToast('客户会在销售时自动创建 / Customers auto-created from sales');
 }
 
+// ===== Staff Page — points rules (configurable) =====
+var POINTS_RULES = (function(){
+  var d = { new: 15, used: 10 };
+  try { var s = JSON.parse(localStorage.getItem('pi_points_rules') || '{}'); if (typeof s.new === 'number' && s.new >= 0) d.new = s.new; if (typeof s.used === 'number' && s.used >= 0) d.used = s.used; } catch(e){}
+  return d;
+})();
+function openPointsRules() {
+  if (document.getElementById('pointsRulesModal')) return;
+  var overlay = document.createElement('div');
+  overlay.id = 'pointsRulesModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;max-width:400px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML = '<div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:800;font-size:15px;">🏆 编辑积分规则 <span style="font-size:12px;color:#94a3b8;font-weight:500;">Points rules</span></div><button onclick="document.getElementById(\'pointsRulesModal\').remove()" style="border:1px solid #ddd;background:#f5f5f5;border-radius:7px;padding:5px 13px;cursor:pointer;font-size:13px;">关闭 Close</button></div>' +
+    '<div style="padding:14px 20px;">' +
+      '<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #f1f5f9;"><div style="flex:1;font-weight:600;font-size:13px;"><span class="zh">新机</span><span class="en">New phone</span></div><input type="number" min="0" id="prNew" value="' + POINTS_RULES.new + '" style="width:80px;padding:6px 9px;border:1px solid #ddd;border-radius:7px;font-size:13px;text-align:right;"><span style="font-size:12px;color:#64748b;width:36px;">P/<span class="zh">台</span><span class="en">u</span></span></div>' +
+      '<div style="display:flex;align-items:center;gap:12px;padding:9px 0;"><div style="flex:1;font-weight:600;font-size:13px;"><span class="zh">二手机</span><span class="en">Used phone</span></div><input type="number" min="0" id="prUsed" value="' + POINTS_RULES.used + '" style="width:80px;padding:6px 9px;border:1px solid #ddd;border-radius:7px;font-size:13px;text-align:right;"><span style="font-size:12px;color:#64748b;width:36px;">P/<span class="zh">台</span><span class="en">u</span></span></div>' +
+      '<div style="font-size:11px;color:#94a3b8;margin-top:8px;"><span class="zh">修改后按本月销售重新计分</span><span class="en">Recomputes this month\'s points from sales</span></div>' +
+    '</div>' +
+    '<div style="padding:12px 20px 16px;display:flex;justify-content:flex-end;gap:8px;"><button class="btn btn-sm btn-ghost" onclick="document.getElementById(\'pointsRulesModal\').remove()"><span class="zh">取消</span><span class="en">Cancel</span></button><button class="btn btn-sm btn-primary" onclick="savePointsRules()"><span class="zh">保存</span><span class="en">Save</span></button></div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+}
+function savePointsRules() {
+  var gn = parseInt((document.getElementById('prNew')||{}).value, 10);
+  var gu = parseInt((document.getElementById('prUsed')||{}).value, 10);
+  if (!isNaN(gn) && gn >= 0) POINTS_RULES.new = gn;
+  if (!isNaN(gu) && gu >= 0) POINTS_RULES.used = gu;
+  try { localStorage.setItem('pi_points_rules', JSON.stringify(POINTS_RULES)); } catch(e){}
+  var m = document.getElementById('pointsRulesModal'); if (m) m.remove();
+  showToast('积分规则已保存 / Points rules saved');
+  try { renderStaffPage(); } catch(e){}
+}
+function _syncPointsRuleCards() {
+  var n = document.getElementById('pointsRuleNew'); if (n) n.textContent = POINTS_RULES.new;
+  var u = document.getElementById('pointsRuleUsed'); if (u) u.textContent = POINTS_RULES.used;
+}
+
 // ===== Staff Page =====
 var _staffFilter = 'all';
 function setStaffFilter(btn, filter) {
@@ -11773,6 +11849,7 @@ function setStaffFilter(btn, filter) {
 }
 
 function renderStaffPage() {
+  _syncPointsRuleCards();
   var sales = getLocalData('pi_sales');
   var returns = getLocalData('pi_returns');
   var accounts = window.LOGIN_ACCOUNTS || {};
@@ -11793,8 +11870,8 @@ function renderStaffPage() {
     if (d < monthStart) return;
     var staff = staffList.find(function(st){ return st.name === s.seller; });
     if (!staff) return;
-    if (s.cond === 'new') { staff.newSold++; staff.points += 15; }
-    else { staff.usedSold++; staff.points += 10; }
+    if (s.cond === 'new') { staff.newSold++; staff.points += POINTS_RULES.new; }
+    else { staff.usedSold++; staff.points += POINTS_RULES.used; }
     staff.revenue += (s.total || 0);
   });
 
