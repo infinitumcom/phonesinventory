@@ -6874,7 +6874,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                       <span class="en">Phone Region</span>
                       <span class="req">*</span>
                     </label>
-                    <select class="form-select">
+                    <select class="form-select" id="stockinRegion">
                       <option value="us">🇺🇸 <span>美版 (US Version)</span></option>
                       <option value="hk">🇭🇰 港版 · 双卡 (HK · Dual SIM)</option>
                       <option value="cn">🇨🇳 国行 · 双卡 (CN · Dual SIM)</option>
@@ -6909,16 +6909,16 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                       <span class="en">Target Store</span>
                       <span class="req">*</span>
                     </label>
-                    <select class="form-select">
-                      <option>Alhambra · 326 W Valley Blvd</option>
-                      <option>Monterey Park · 188 E Garvey Ave</option>
-                      <option>San Gabriel · 311 E Valley Blvd</option>
-                      <option>Rowland Heights · 1330 S Fullerton Rd</option>
-                      <option>Arcadia 1 · 101 E Huntington Dr</option>
-                      <option>Arcadia 2 · 918 S Baldwin Ave</option>
-                      <option>Irvine · 15333 Culver Dr</option>
-                      <option>Rancho Cucamonga · 9775 Baseline Rd</option>
-                      <option>Las Vegas · 4598 Spring Mountain Rd</option>
+                    <select class="form-select" id="stockinStore">
+                      <option value="Alhambra">Alhambra · 326 W Valley Blvd</option>
+                      <option value="Monterey Park">Monterey Park · 188 E Garvey Ave</option>
+                      <option value="San Gabriel">San Gabriel · 311 E Valley Blvd</option>
+                      <option value="Rowland Heights">Rowland Heights · 1330 S Fullerton Rd</option>
+                      <option value="Arcadia 1">Arcadia 1 · 101 E Huntington Dr</option>
+                      <option value="Arcadia 2">Arcadia 2 · 918 S Baldwin Ave</option>
+                      <option value="Irvine">Irvine · 15333 Culver Dr</option>
+                      <option value="Rancho Cucamonga">Rancho Cucamonga · 9775 Baseline Rd</option>
+                      <option value="Las Vegas">Las Vegas · 4598 Spring Mountain Rd</option>
                     </select>
                   </div>
                   <div>
@@ -6956,12 +6956,12 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <div class="section-title">
                   <span class="zh">第二步 · 扫描每部手机</span>
                   <span class="en">Step 2 · Scan each phone</span>
-                  <span class="count">· <span style="color:var(--success);"><span class="zh">已扫入 0 部</span><span class="en">0 scanned</span></span></span>
+                  <span class="count">· <span style="color:var(--success);"><span id="stockinCount">0</span> <span class="zh">已扫入</span><span class="en">scanned</span></span></span>
                 </div>
                 <div class="section-actions">
-                  <button class="btn btn-sm" onclick="showToast('功能开发中 / Coming soon')">
-                    <span class="zh">🔍 手动选择型号</span>
-                    <span class="en">🔍 Manual select</span>
+                  <button class="btn btn-sm" onclick="openStockinModel()">
+                    <span class="zh">🔍 设置型号规格</span>
+                    <span class="en">🔍 Set model/spec</span>
                   </button>
                 </div>
               </div>
@@ -6986,7 +6986,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                     </div>
                   </div>
                   <div>
-                    <input type="text" class="stockin-manual-input" id="stockinImeiInput" placeholder="或手动输入 IMEI / Enter IMEI manually" onkeydown="if(event.key==='Enter')showToast('主入库通道为 Telegram Bot / Stock-in via Telegram Bot')">
+                    <input type="text" class="stockin-manual-input" id="stockinImeiInput" placeholder="扫描或手动输入 IMEI / Scan or enter IMEI" onkeydown="if(event.key==='Enter'){event.preventDefault();addStockinScan();}">
                   </div>
                 </div>
 
@@ -7002,10 +7002,12 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                     <div></div>
                   </div>
 
-                  <!-- Empty state -->
-                  <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
-                    <span class="zh">扫描或输入 IMEI 添加商品到入库清单</span>
-                    <span class="en">Scan or enter IMEI to add items to stock-in queue</span>
+                  <!-- Queue body (dynamic) -->
+                  <div id="stockinQueueBody">
+                    <div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;">
+                      <span class="zh">扫描或输入 IMEI 添加商品到入库清单</span>
+                      <span class="en">Scan or enter IMEI to add items to stock-in queue</span>
+                    </div>
                   </div>
 
                 </div>
@@ -7015,7 +7017,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                     <span class="zh">扫描方式:扫码枪 · 手动输入 · 也可选择"批量同型号"</span>
                     <span class="en">Methods: barcode scanner · manual entry · or "bulk same-model"</span>
                   </div>
-                  <button class="btn btn-sm btn-ghost" onclick="showToast('功能开发中 / Coming soon')">
+                  <button class="btn btn-sm btn-ghost" onclick="clearStockin()">
                     <span class="zh">🗑 清空清单</span>
                     <span class="en">🗑 Clear all</span>
                   </button>
@@ -7076,13 +7078,13 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
                 <span class="val">$0</span>
               </div>
 
-              <button class="btn btn-primary batch-action-btn" onclick="showToast('主入库通道为 Telegram Bot 拍照入库 · Primary stock-in via Telegram Bot')">
+              <button class="btn btn-primary batch-action-btn" onclick="confirmStockin()">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l3 3 7-7"/></svg>
                 <span class="zh">确认入库</span>
                 <span class="en">Confirm Stock-In</span>
               </button>
 
-              <button class="btn btn-ghost" onclick="showToast('功能开发中 / Coming soon')" style="width:100%;margin-top:6px;justify-content:center;font-size:12px;color:var(--text-muted);">
+              <button class="btn btn-ghost" onclick="saveStockinDraft()" style="width:100%;margin-top:6px;justify-content:center;font-size:12px;color:var(--text-muted);">
                 <span class="zh">💾 保存草稿</span>
                 <span class="en">💾 Save draft</span>
               </button>
@@ -9495,6 +9497,160 @@ function generateId(prefix) {
 }
 
 // 1.3 Compute store stats dynamically from phones[] + localStorage
+// ===== Web stock-in (scan → queue → batch submit via /api/inventory/batch) =====
+var stockinState = { model: '', storage: '', color: '', condition: 'used', brand: 'Apple', cost: 0, price: 0, items: [], _pendingImei: null };
+function _stockinPoints(cond) { return cond === 'new' ? POINTS_RULES.new : POINTS_RULES.used; }
+function addStockinScan() {
+  var inp = document.getElementById('stockinImeiInput');
+  if (!inp) return;
+  var imei = (inp.value || '').trim().replace(/\s/g, '');
+  inp.value = '';
+  if (!imei) return;
+  if (!/^\d{15}$/.test(imei)) { showToast('IMEI 需为 15 位数字 / IMEI must be 15 digits'); return; }
+  if (stockinState.items.some(function(it){ return it.imei === imei; })) { showToast('清单中已存在 / Already in queue'); return; }
+  if (!stockinState.model || !stockinState.storage) {
+    stockinState._pendingImei = imei;
+    showToast('请先设置型号规格 / Set model & spec first');
+    openStockinModel();
+    return;
+  }
+  stockinState.items.push({
+    imei: imei, model: stockinState.model, storage: stockinState.storage, color: stockinState.color,
+    condition: stockinState.condition, brand: stockinState.brand, cost: stockinState.cost, price: stockinState.price
+  });
+  renderStockinQueue();
+  inp.focus();
+}
+function removeStockinItem(imei) {
+  stockinState.items = stockinState.items.filter(function(it){ return it.imei !== imei; });
+  renderStockinQueue();
+}
+function clearStockin() {
+  if (!stockinState.items.length) { showToast('清单为空 / Queue empty'); return; }
+  stockinState.items = [];
+  renderStockinQueue();
+  showToast('已清空 / Cleared');
+}
+function renderStockinQueue() {
+  var body = document.getElementById('stockinQueueBody');
+  var countEl = document.getElementById('stockinCount');
+  if (countEl) countEl.textContent = stockinState.items.length;
+  if (body) {
+    if (!stockinState.items.length) {
+      body.innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><span class="zh">扫描或输入 IMEI 添加商品到入库清单</span><span class="en">Scan or enter IMEI to add items</span></div>';
+    } else {
+      body.innerHTML = stockinState.items.map(function(it, i){
+        var pts = _stockinPoints(it.condition);
+        var imeiShort = it.imei.slice(0,6) + '····' + it.imei.slice(-4);
+        return '<div class="stockin-queue-row">' +
+          '<div class="row-num">' + (i+1) + '</div>' +
+          '<div><div class="product-name">' + escHtml(it.model) + '</div><div class="product-meta"><span class="spec-mini">' + escHtml(it.storage) + '</span>' + (it.color ? ' · ' + escHtml(it.color) : '') + ' · ' + (it.condition === 'new' ? 'NEW' : 'USED') + '</div></div>' +
+          '<div class="stockin-imei-mini">' + imeiShort + '</div>' +
+          '<div style="text-align:right;">$' + (it.cost||0) + '</div>' +
+          '<div style="text-align:right;">$' + (it.price||0) + '</div>' +
+          '<div style="text-align:center;color:var(--purple);font-weight:700;">' + pts + ' P</div>' +
+          '<div style="text-align:right;"><button class="stockin-remove-btn" onclick="removeStockinItem(\'' + it.imei + '\')" title="移除 / Remove">✕</button></div>' +
+        '</div>';
+      }).join('');
+    }
+  }
+  _updateStockinSummary();
+}
+function _updateStockinSummary() {
+  var summary = document.querySelector('.batch-summary');
+  if (!summary) return;
+  var n = stockinState.items.length;
+  var totalCost = stockinState.items.reduce(function(a,it){ return a + (it.cost||0); }, 0);
+  var totalValue = stockinState.items.reduce(function(a,it){ return a + (it.price||0); }, 0);
+  var totalPts = stockinState.items.reduce(function(a,it){ return a + _stockinPoints(it.condition); }, 0);
+  var rows = summary.querySelectorAll('.batch-row .val');
+  var region = (document.getElementById('stockinRegion')||{}).value || '';
+  var store = (document.getElementById('stockinStore')||{}).value || '';
+  if (rows[0]) rows[0].textContent = ({ us:'🇺🇸 美版', hk:'🇭🇰 港版', cn:'🇨🇳 国行' }[region] || '--');
+  if (rows[1]) rows[1].textContent = store || '--';
+  if (rows[4]) rows[4].innerHTML = n + ' <span style="font-size:11px;color:var(--text-muted);font-weight:500;"><span class="zh">部</span><span class="en">phones</span></span>';
+  if (rows[5]) rows[5].textContent = '$' + Math.round(totalCost).toLocaleString();
+  if (rows[6]) rows[6].textContent = '$' + Math.round(totalValue).toLocaleString();
+  if (rows[7]) rows[7].textContent = '$' + Math.round(totalValue - totalCost).toLocaleString();
+  if (rows[8]) rows[8].textContent = totalPts + ' P';
+  var totalRow = summary.querySelector('.batch-row.total .val');
+  if (totalRow) totalRow.textContent = '$' + Math.round(totalCost).toLocaleString();
+}
+function openStockinModel() {
+  if (document.getElementById('stockinModelModal')) return;
+  var s = stockinState;
+  var overlay = document.createElement('div');
+  overlay.id = 'stockinModelModal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px;';
+  overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
+  var fld = function(id, label, val, ph){ return '<div style="margin-bottom:10px;"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">' + label + '</label><input id="' + id + '" value="' + (val || '') + '" placeholder="' + (ph || '') + '" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;"></div>'; };
+  var box = document.createElement('div');
+  box.style.cssText = 'background:#fff;color:#222;border-radius:14px;max-width:430px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);';
+  box.innerHTML = '<div style="padding:16px 20px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center;"><div style="font-weight:800;font-size:15px;">🔍 本批次型号规格 <span style="font-size:12px;color:#94a3b8;font-weight:500;">Batch spec</span></div><button onclick="document.getElementById(\'stockinModelModal\').remove()" style="border:1px solid #ddd;background:#f5f5f5;border-radius:7px;padding:5px 13px;cursor:pointer;font-size:13px;">关闭 Close</button></div>' +
+    '<div style="padding:14px 20px;">' +
+      fld('smModel', '型号 Model *', s.model, 'iPhone 15 Pro') +
+      fld('smStorage', '容量 Storage *', s.storage, '256GB') +
+      fld('smColor', '颜色 Color', s.color, '原色钛金属 / Natural') +
+      '<div style="display:flex;gap:10px;"><div style="flex:1;"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">成色 Condition</label><select id="smCond" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;"><option value="used"' + (s.condition !== 'new' ? ' selected' : '') + '>二手 Used</option><option value="new"' + (s.condition === 'new' ? ' selected' : '') + '>全新 New</option></select></div>' +
+      '<div style="flex:1;"><label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">品牌 Brand</label><input id="smBrand" value="' + (s.brand || 'Apple') + '" style="width:100%;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;box-sizing:border-box;"></div></div>' +
+      '<div style="display:flex;gap:10px;margin-top:10px;"><div style="flex:1;">' + fld('smCost', '进价 Cost', s.cost || '', '0') + '</div><div style="flex:1;">' + fld('smPrice', 'MSRP', s.price || '', '0') + '</div></div>' +
+    '</div>' +
+    '<div style="padding:6px 20px 16px;display:flex;justify-content:flex-end;gap:8px;"><button class="btn btn-sm btn-ghost" onclick="document.getElementById(\'stockinModelModal\').remove()"><span class="zh">取消</span><span class="en">Cancel</span></button><button class="btn btn-sm btn-primary" onclick="saveStockinModel()"><span class="zh">应用</span><span class="en">Apply</span></button></div>';
+  overlay.appendChild(box); document.body.appendChild(overlay);
+  setTimeout(function(){ var e = document.getElementById('smModel'); if (e) e.focus(); }, 50);
+}
+function saveStockinModel() {
+  var g = function(id){ var e = document.getElementById(id); return e ? e.value.trim() : ''; };
+  var model = g('smModel'), storage = g('smStorage');
+  if (!model || !storage) { showToast('型号和容量必填 / Model & storage required'); return; }
+  stockinState.model = model; stockinState.storage = storage;
+  stockinState.color = g('smColor');
+  stockinState.condition = (document.getElementById('smCond')||{}).value || 'used';
+  stockinState.brand = g('smBrand') || 'Apple';
+  stockinState.cost = parseFloat(g('smCost')) || 0;
+  stockinState.price = parseFloat(g('smPrice')) || 0;
+  stockinState.items.forEach(function(it){ it.model = model; it.storage = storage; it.color = stockinState.color; it.condition = stockinState.condition; it.brand = stockinState.brand; it.cost = stockinState.cost; it.price = stockinState.price; });
+  var m = document.getElementById('stockinModelModal'); if (m) m.remove();
+  showToast('型号规格已设置 / Spec set');
+  if (stockinState._pendingImei) {
+    var pi = stockinState._pendingImei; stockinState._pendingImei = null;
+    if (!stockinState.items.some(function(it){ return it.imei === pi; })) {
+      stockinState.items.push({ imei: pi, model: model, storage: storage, color: stockinState.color, condition: stockinState.condition, brand: stockinState.brand, cost: stockinState.cost, price: stockinState.price });
+    }
+  }
+  renderStockinQueue();
+  var inp = document.getElementById('stockinImeiInput'); if (inp) inp.focus();
+}
+function saveStockinDraft() {
+  try { localStorage.setItem('pi_stockin_draft', JSON.stringify(stockinState)); } catch(e){}
+  showToast('草稿已保存 (' + stockinState.items.length + ' 台) / Draft saved');
+}
+function loadStockinDraft() {
+  try {
+    var d = JSON.parse(localStorage.getItem('pi_stockin_draft') || 'null');
+    if (d && d.items) { stockinState = d; if (!stockinState.items) stockinState.items = []; renderStockinQueue(); }
+  } catch(e){}
+}
+function confirmStockin() {
+  if (!stockinState.items.length) { showToast('清单为空 / Queue is empty'); return; }
+  if (stockinState.items.some(function(it){ return !it.model || !it.storage; })) { showToast('请先设置型号规格 / Set model & spec first'); openStockinModel(); return; }
+  var region = (document.getElementById('stockinRegion')||{}).value || 'us';
+  var store = (document.getElementById('stockinStore')||{}).value || '';
+  if (!store) { showToast('请选择入库门店 / Select target store'); return; }
+  var rows = stockinState.items.map(function(it){
+    return { imei: it.imei, brand: it.brand || 'Apple', model: it.model, storage: it.storage, color: it.color || '', condition: it.condition || 'used', region: region, cost: it.cost || 0, price: it.price || 0, store: store };
+  });
+  apiCall('POST', '/inventory/batch', { rows: rows, store: store }).then(function(res){
+    if (res && res.error) { showToast('入库失败: ' + res.error); return; }
+    var created = (res && res.createdCount) || 0;
+    var skipped = (res && res.skippedCount) || 0;
+    showToast('入库完成: ' + created + ' 台' + (skipped ? ' · 跳过 ' + skipped : '') + ' / Stocked in');
+    stockinState.items = []; renderStockinQueue();
+    try { localStorage.removeItem('pi_stockin_draft'); } catch(e){}
+    try { loadServerInventory(); } catch(e){}
+  }).catch(function(){ showToast('入库提交失败，请检查网络 / Failed'); });
+}
+
 function computeStoreStats() {
   var sales = getLocalData('pi_sales');
   var today = new Date(); today.setHours(0,0,0,0);
