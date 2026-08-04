@@ -7849,10 +7849,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
 
         <div class="filters" style="margin-bottom:14px;">
-          <button class="chip active" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">待我审批</span><span class="en">Awaiting Me</span><span class="chip-num">0</span></button>
-          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">我发起的</span><span class="en">My Requests</span><span class="chip-num">0</span></button>
-          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">在途中</span><span class="en">In Transit</span><span class="chip-num">0</span></button>
-          <button class="chip" onclick="showToast('功能开发中 / Coming soon')"><span class="zh">已完成</span><span class="en">Completed</span><span class="chip-num">0</span></button>
+          <button class="chip active" onclick="setTransferFilter(this,'awaiting')"><span class="zh">待我审批</span><span class="en">Awaiting Me</span><span class="chip-num">0</span></button>
+          <button class="chip" onclick="setTransferFilter(this,'mine')"><span class="zh">我发起的</span><span class="en">My Requests</span><span class="chip-num">0</span></button>
+          <button class="chip" onclick="setTransferFilter(this,'transit')"><span class="zh">在途中</span><span class="en">In Transit</span><span class="chip-num">0</span></button>
+          <button class="chip" onclick="setTransferFilter(this,'completed')"><span class="zh">已完成</span><span class="en">Completed</span><span class="chip-num">0</span></button>
         </div>
 
         <!-- Transfer list (dynamic) -->
@@ -10406,6 +10406,14 @@ function completeTransfer(transferId) {
 }
 
 // ===== Render Transfer Page =====
+var TRANSFER_FILTER = 'awaiting'; // 'awaiting' | 'mine' | 'transit' | 'completed'
+function setTransferFilter(btn, f) {
+  TRANSFER_FILTER = f;
+  var grp = btn.parentElement;
+  grp.querySelectorAll('.chip').forEach(function(c){ c.classList.remove('active'); });
+  btn.classList.add('active');
+  renderTransferPage();
+}
 function renderTransferPage() {
   loadStockRequests(); // fetch latest from server
   var transfers = getLocalData('pi_transfers');
@@ -10419,22 +10427,45 @@ function renderTransferPage() {
   if (trKpis[1]) trKpis[1].textContent = transit.length;
   if (trKpis[2]) trKpis[2].textContent = completed.length;
 
-  // Update filter chips
+  // Filter buckets for the tab chips
+  var _tacct = (window._currentAccount || {}).name || '';
+  var _tadmin = (window._currentAccount || {}).role === 'admin';
+  var _tstore = normalizeStoreKey((window._currentAccount || {}).store || '');
+  function _isAwaitingMe(t) {
+    if (t.status !== 'pending') return false;
+    var recv = _tstore && (_tstore === t.toStore || _tstore === normalizeStoreKey(t.toStoreName || ''));
+    return recv || _tadmin;
+  }
+  var awaiting = transfers.filter(_isAwaitingMe);
+  var mine = transfers.filter(function(t){ return t.requestedBy === _tacct; });
+
+  // Update filter chip counts
   var trChips = document.querySelectorAll('#page-transfer .filters .chip-num');
-  if (trChips[0]) trChips[0].textContent = pending.length;
-  if (trChips[1]) trChips[1].textContent = transfers.filter(function(t){ return t.requestedBy === ((window._currentAccount||{}).name||''); }).length;
+  if (trChips[0]) trChips[0].textContent = awaiting.length;
+  if (trChips[1]) trChips[1].textContent = mine.length;
   if (trChips[2]) trChips[2].textContent = transit.length;
   if (trChips[3]) trChips[3].textContent = completed.length;
+
+  // Pick the list to show based on the active tab
+  var viewList = TRANSFER_FILTER === 'awaiting' ? awaiting
+    : TRANSFER_FILTER === 'mine' ? mine
+    : TRANSFER_FILTER === 'transit' ? transit
+    : TRANSFER_FILTER === 'completed' ? completed
+    : transfers;
 
   // Render transfer list
   var container = document.getElementById('transferList');
   if (!container) return;
-  if (transfers.length === 0) {
-    container.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:28px;margin-bottom:8px;">📦</div><span class="zh">暂无调拨记录</span><span class="en">No transfer records</span></div>';
+  if (viewList.length === 0) {
+    var trEmpty = transfers.length === 0
+      ? '<span class="zh">暂无调拨记录</span><span class="en">No transfer records</span>'
+      : '<span class="zh">该分类下暂无记录</span><span class="en">Nothing in this tab</span>';
+    container.innerHTML = '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);font-size:13px;"><div style="font-size:28px;margin-bottom:8px;">📦</div>' + trEmpty + '</div>';
+    renderStockRequests();
     return;
   }
   var html = '';
-  transfers.forEach(function(t) {
+  viewList.forEach(function(t) {
     var statusBadges = {
       'pending': '<span style="background:var(--warn-soft);color:var(--warn);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">⏱ <span class="zh">待审批</span><span class="en">Pending</span></span>',
       'transit': '<span style="background:var(--info-soft);color:var(--info);padding:3px 9px;border-radius:11px;font-size:11px;font-weight:600;">🚚 <span class="zh">在途</span><span class="en">In Transit</span></span>',
