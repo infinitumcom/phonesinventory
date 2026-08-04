@@ -292,6 +292,7 @@ def init_api_tables():
             store TEXT,
             store_key TEXT,
             seller TEXT,
+            assistants TEXT,
             status TEXT DEFAULT 'completed',
             created_at TEXT
         );
@@ -449,8 +450,21 @@ def init_api_tables():
         if not str(r['pin']).startswith('sha256$'):
             conn.execute("UPDATE user_pins SET pin = ? WHERE email = ?",
                          (hash_pin(str(r['pin'])), r['email']))
+    # Additive column migrations for existing DBs (idempotent)
+    _ensure_columns(conn, "sales", {"assistants": "TEXT"})
     conn.commit()
     conn.close()
+
+
+def _ensure_columns(conn, table, cols):
+    """Add missing columns to an existing table. cols = {name: sqltype}."""
+    existing = {r["name"] for r in conn.execute("PRAGMA table_info(%s)" % table).fetchall()}
+    for name, sqltype in cols.items():
+        if name not in existing:
+            try:
+                conn.execute("ALTER TABLE %s ADD COLUMN %s %s" % (table, name, sqltype))
+            except Exception:
+                pass
 
 
 _CORS_ALLOWED = {
@@ -1037,8 +1051,8 @@ class APIHandler(BaseHTTPRequestHandler):
                         INSERT INTO sales (id, imei, phone_name, storage, color, color_en, cond, region,
                             cost, msrp, price, tax, total, profit, tax_applied, tax_rate,
                             customer, customer_phone, customer_email, payment_methods,
-                            store, store_key, seller, status, created_at)
-                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                            store, store_key, seller, assistants, status, created_at)
+                        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                     """, (
                         data.get('id', ''), imei, data.get('phoneName', ''),
                         data.get('storage', ''), data.get('color', ''), data.get('colorEn', ''),
@@ -1049,7 +1063,7 @@ class APIHandler(BaseHTTPRequestHandler):
                         data.get('customer', ''), data.get('customerPhone', ''),
                         data.get('customerEmail', ''), json.dumps(data.get('paymentMethods', [])),
                         store_name, data.get('storeKey', ''),
-                        seller, 'completed', now
+                        seller, json.dumps(data.get('assistants', []) or []), 'completed', now
                     ))
                     # Mark phone as sold (guard: only if still available).
                     conn.execute("UPDATE inventory SET status = 'sold' WHERE imei = ? AND status = 'available'", (imei,))
@@ -1101,6 +1115,11 @@ class APIHandler(BaseHTTPRequestHandler):
                     sale['paymentMethods'] = json.loads(pm) if pm else []
                 except Exception:
                     sale['paymentMethods'] = []
+                asst = sale.pop('assistants', None)
+                try:
+                    sale['assistants'] = json.loads(asst) if asst else []
+                except Exception:
+                    sale['assistants'] = []
                 # Owner-only: hide cost/profit from non-admins.
                 if not is_admin:
                     sale['cost'] = 0
