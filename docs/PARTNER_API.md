@@ -83,6 +83,7 @@ Returns individual available units. 返回逐台在售库存。
 | `region` | string | `us` / `cn` (国行) / `hk`（不区分大小写） |
 | `condition` | string | `new` / `used`（不区分大小写） |
 | `model` | string | Fuzzy match / 模糊匹配，如 `iPhone 15` |
+| `store` | string | Filter by store — **only if your key has store access**. 按门店筛选，**仅当你的密钥开通门店可见时生效**。 |
 | `page` | int | Default `1` / 默认 1 |
 | `limit` | int | Default `100`, max `500` / 默认 100，最大 500 |
 
@@ -109,7 +110,8 @@ curl -H "X-Api-Key: pi_live_xxx" \
       "region": "us",
       "category": "phone",
       "price": 985,
-      "imei": "356789****1234"
+      "imei": "356789****1234",
+      "store": "Las Vegas"
     }
   ]
 }
@@ -118,6 +120,7 @@ curl -H "X-Api-Key: pi_live_xxx" \
 **Field notes / 字段说明:**
 - `price` — dealer/wholesale price in USD. 同行价（美元）。
 - `imei` — masked (`prefix****last4`) unless your key has full-IMEI access. 掩码显示，除非你的密钥已开通完整 IMEI。
+- `store` — **only present if your key has store access.** Tells you which store holds the unit. 仅当你的密钥开通门店可见时返回，标明这台机器在哪个门店。
 - `total` — total matching units (for pagination). 匹配总数，用于翻页。
 
 ---
@@ -145,11 +148,14 @@ curl -H "X-Api-Key: pi_live_xxx" \
       "condition": "new",
       "region": "us",
       "qty": 12,
-      "min_price": 985
+      "min_price": 985,
+      "store": "Las Vegas"
     }
   ]
 }
 ```
+
+> If your key has **store access**, `summary` is broken down **per store** (each group also carries a `store` field), so you can see exactly what each store is holding. 若你的密钥开通**门店可见**，`summary` 会**按门店拆分**（每组附带 `store` 字段），可直接看到每个门店各有什么库存。
 
 ---
 

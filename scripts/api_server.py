@@ -568,6 +568,7 @@ def init_api_tables():
             daily_quota INTEGER DEFAULT 5000,
             allowed_ips TEXT DEFAULT '',    -- comma list; empty = any IP
             expose_imei INTEGER DEFAULT 0,  -- 0 = mask IMEI, 1 = full IMEI
+            expose_store INTEGER DEFAULT 0, -- 0 = hide store, 1 = reveal per-store location
             active INTEGER DEFAULT 1,
             created_at TEXT, created_by TEXT,
             last_used_at TEXT, last_used_ip TEXT
@@ -579,6 +580,8 @@ def init_api_tables():
             PRIMARY KEY (key_id, day)
         )
     """)
+    # Additive: reveal per-store location on a per-key basis (existing DBs).
+    _ensure_columns(conn, "partner_keys", {"expose_store": "INTEGER DEFAULT 0"})
 
     conn.commit()
     conn.close()
@@ -2182,6 +2185,11 @@ class APIHandler(BaseHTTPRequestHandler):
                 v = params.get(k, [None])[0]
                 if v:
                     conds.append("LOWER(%s)=?" % col); args.append(v.lower())
+            # store filter only honored when the key is allowed to see store locations
+            if key['expose_store']:
+                sv = params.get('store', [None])[0]
+                if sv:
+                    conds.append("LOWER(store)=?"); args.append(sv.lower())
             m = params.get('model', [None])[0]
             if m:
                 conds.append("model LIKE ?"); args.append('%' + m + '%')
@@ -2197,14 +2205,17 @@ class APIHandler(BaseHTTPRequestHandler):
             for r in rows:
                 imei = r['imei'] or ''
                 masked = (imei[:6] + '****' + imei[-4:]) if len(imei) >= 10 else '****'
-                items.append({
+                item = {
                     'id': r['id'], 'brand': r['brand'], 'model': r['model'], 'storage': r['storage'],
                     'color': (r['color_en'] or r['color'] or ''), 'condition': r['condition'],
                     'batteryHealth': r['battery_health'] or '', 'region': r['region'],
                     'category': (r['category'] or 'phone'),
                     'price': self._partner_price(r),
                     'imei': (imei if key['expose_imei'] else masked),
-                })
+                }
+                if key['expose_store']:
+                    item['store'] = r['store'] or ''
+                items.append(item)
             return json_response(self, {'total': total, 'page': page, 'limit': limit, 'items': items})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
@@ -2219,14 +2230,18 @@ class APIHandler(BaseHTTPRequestHandler):
         conn = None
         try:
             conn = get_db()
+            # When the key may see store locations, break the summary down per store
+            # so partners can tell what each store is holding.
+            store_col = "store," if key['expose_store'] else ""
+            store_grp = "store," if key['expose_store'] else ""
             rows = conn.execute("""
-                SELECT category, brand, model, storage, condition, region, COUNT(*) AS qty,
+                SELECT %s category, brand, model, storage, condition, region, COUNT(*) AS qty,
                        MIN(CASE WHEN wholesale_price>0 THEN wholesale_price ELSE price END) AS min_price
                 FROM inventory
                 WHERE COALESCE(org_id,1)=1 AND status='available'
-                GROUP BY category, model, storage, condition, region
-                ORDER BY category, model, storage
-            """).fetchall()
+                GROUP BY %s category, model, storage, condition, region
+                ORDER BY %s category, model, storage
+            """ % (store_col, store_grp, store_grp)).fetchall()
             groups = [dict(r) for r in rows]
             return json_response(self, {'totalAvailable': sum(g['qty'] for g in groups), 'groups': groups})
         except Exception as e:
@@ -2253,10 +2268,11 @@ class APIHandler(BaseHTTPRequestHandler):
                     except (TypeError, ValueError): quota = 5000
                     now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
                     conn.execute(
-                        "INSERT INTO partner_keys (name,key_prefix,key_hash,scopes,daily_quota,allowed_ips,expose_imei,active,created_at,created_by) "
-                        "VALUES (?,?,?,?,?,?,?,1,?,?)",
+                        "INSERT INTO partner_keys (name,key_prefix,key_hash,scopes,daily_quota,allowed_ips,expose_imei,expose_store,active,created_at,created_by) "
+                        "VALUES (?,?,?,?,?,?,?,?,1,?,?)",
                         (name, raw[:16], hash_api_key(raw), 'inventory:read', quota,
                          (data.get('allowedIps') or '').strip(), (1 if data.get('exposeImei') else 0),
+                         (1 if data.get('exposeStore') else 0),
                          now, (self._auth_ctx(conn) or {}).get('email', '')))
                     conn.commit()
                     return json_response(self, {'ok': True, 'key': raw, 'prefix': raw[:16], 'name': name,
@@ -2309,6 +2325,8 @@ class APIHandler(BaseHTTPRequestHandler):
                         conn.execute("UPDATE partner_keys SET allowed_ips=? WHERE id=?", ((data.get('allowedIps') or '').strip(), kid))
                     elif action == 'set-imei':
                         conn.execute("UPDATE partner_keys SET expose_imei=? WHERE id=?", (1 if data.get('exposeImei') else 0, kid))
+                    elif action == 'set-store':
+                        conn.execute("UPDATE partner_keys SET expose_store=? WHERE id=?", (1 if data.get('exposeStore') else 0, kid))
                     else:
                         return json_response(self, {'error': 'unknown action'}, 400)
                     conn.commit()
