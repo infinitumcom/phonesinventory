@@ -2143,7 +2143,10 @@ class APIHandler(BaseHTTPRequestHandler):
 
     def partner_docs(self):
         # Public machine-readable docs (no key needed) so partners can self-onboard.
-        base = ('http://localhost:8580' if API_HOST in ('127.0.0.1', 'localhost') else 'https://phonesinventory.com')
+        # Derive the public base URL from the request Host so partners get the real
+        # address (the API binds 127.0.0.1 behind nginx, so API_HOST is unreliable here).
+        host = (self.headers.get('Host') or 'phonesinventory.com').split(':')[0]
+        base = ('http://localhost:8580' if host in ('localhost', '127.0.0.1') else 'https://' + host)
         return json_response(self, {
             'service': 'PhonesInventory Partner Inventory API',
             'version': 'v1',
