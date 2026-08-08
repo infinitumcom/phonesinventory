@@ -232,6 +232,39 @@ STORE_KEY_TO_NAME = {
     'hk-warehouse': '香港仓',
 }
 
+# Display-name / variant (lowercased) -> canonical slug. Mirrors the frontend
+# normalizeStoreKey() so store matching (e.g. "is this transfer for my store?")
+# works no matter whether the DB stored a slug or a display name.
+_STORE_NAME_TO_SLUG = {
+    'alhambra': 'alhambra',
+    'monterey park': 'monterey-park',
+    'san gabriel': 'san-gabriel',
+    'rowland heights': 'rowland-heights',
+    'arcadia 1': 'arcadia-1', 'arcadia 1 (huntington)': 'arcadia-1',
+    'arcadia 2': 'arcadia-2', 'arcadia 2 (baldwin)': 'arcadia-2',
+    'irvine': 'irvine', 'irvine (99 ranch)': 'irvine',
+    'rancho cucamonga': 'rancho-cucamonga', 'rancho cucamonga (99 ranch)': 'rancho-cucamonga',
+    'las vegas': 'las-vegas',
+    'hq': 'hq-warehouse', 'hq 总仓': 'hq-warehouse', 'hq warehouse': 'hq-warehouse',
+    'hk': 'hk-warehouse', '香港仓': 'hk-warehouse', 'hk warehouse': 'hk-warehouse', 'hk 仓': 'hk-warehouse',
+}
+
+
+def store_slug(raw):
+    """Canonical store slug (mirrors the frontend normalizeStoreKey). Accepts a slug,
+    a display name, or a known variant and always returns the slug."""
+    if not raw:
+        return ''
+    key = str(raw).lower().strip()
+    if key in STORE_KEY_TO_NAME:          # already a slug
+        return key
+    if key in _STORE_NAME_TO_SLUG:        # known display name / variant
+        return _STORE_NAME_TO_SLUG[key]
+    # fallback: slugify like the frontend (collapse whitespace, keep [a-z0-9-])
+    slug = '-'.join(key.split())
+    return ''.join(c for c in slug if c.isascii() and (c.isalnum() or c == '-'))
+
+
 def normalize_store_name(raw):
     """Convert slug key or any variant to canonical display name."""
     if not raw:
@@ -2881,8 +2914,15 @@ class APIHandler(BaseHTTPRequestHandler):
             transfers = []
             for r in rows:
                 t = dict(r)
-                t['fromStore'] = t.pop('from_store', '')
-                t['toStore'] = t.pop('to_store', '')
+                _from = t.pop('from_store', '')
+                _to = t.pop('to_store', '')
+                # Emit a canonical slug (for reliable store matching in the UI) AND a
+                # display name (for rendering) — the DB has historically stored a mix
+                # of slugs and display names, which broke the receiving-store check.
+                t['fromStore'] = store_slug(_from)
+                t['toStore'] = store_slug(_to)
+                t['fromStoreName'] = normalize_store_name(_from)
+                t['toStoreName'] = normalize_store_name(_to)
                 t['requestedBy'] = t.pop('requested_by', '')
                 t['approvedBy'] = t.pop('approved_by', '')
                 t['rejectedBy'] = t.pop('rejected_by', '')
