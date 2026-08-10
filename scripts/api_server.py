@@ -329,7 +329,8 @@ def get_db():
 def get_user(conn, email):
     return conn.execute(
         "SELECT email, name, role, store, "
-        "COALESCE(org_id,1) AS org_id, COALESCE(is_platform_admin,0) AS is_platform_admin "
+        "COALESCE(org_id,1) AS org_id, COALESCE(is_platform_admin,0) AS is_platform_admin, "
+        "COALESCE(is_manager,0) AS is_manager "
         "FROM users WHERE email = ?", (email,)
     ).fetchone()
 
@@ -580,7 +581,8 @@ def init_api_tables():
             conn.execute("UPDATE %s SET org_id=1 WHERE org_id IS NULL" % t)
         except Exception:
             pass
-    _ensure_columns(conn, "users", {"org_id": "INTEGER", "is_platform_admin": "INTEGER DEFAULT 0"})
+    _ensure_columns(conn, "users", {"org_id": "INTEGER", "is_platform_admin": "INTEGER DEFAULT 0",
+                                    "is_manager": "INTEGER DEFAULT 0"})
     conn.execute("UPDATE users SET org_id=1 WHERE org_id IS NULL")
     conn.execute("UPDATE users SET is_platform_admin=1 WHERE email='anderson@ifixforu.com'")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_transfers_org ON transfers(org_id)")
@@ -1053,6 +1055,11 @@ class APIHandler(BaseHTTPRequestHandler):
             ctx = self._auth_ctx(conn)
             if not ctx:
                 return json_response(self, {'error': 'unauthorized'}, 401)
+            # Cost is exposed here, so only store managers (and admins) see the alert.
+            # Regular clerks get an empty list -> no modal, no cost.
+            if ctx['role'] != 'admin' and not ctx['is_manager']:
+                return json_response(self, {'cycleDays': AGING_CYCLE_DAYS, 'store': ctx['store'],
+                                            'count': 0, 'items': []})
             org_id = ctx['org_id']
             store = ctx['store']
             cols = ("id,imei,brand,model,storage,color,color_en,condition,region,store,"
@@ -1138,6 +1145,7 @@ class APIHandler(BaseHTTPRequestHandler):
             'email': u['email'], 'name': u['name'], 'role': u['role'],
             'store': u['store'], 'org_id': (u['org_id'] or 1),
             'is_platform_admin': bool(u['is_platform_admin']),
+            'is_manager': bool(u['is_manager']),
         }
 
     def _is_platform_admin(self, conn):
