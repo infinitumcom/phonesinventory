@@ -125,7 +125,10 @@ SEED_USERS = [
     ('chester@ifixforu.com', 'Chester', 'staff', 'Alhambra'),
     ('grace@ifixforu.com', 'Grace', 'staff', 'Las Vegas'),
     ('bobby@ifixforu.com', 'Bobby', 'staff', 'Monterey Park'),
+    ('mark@ifixforu.com', 'Mark Weng', 'staff', 'Alhambra'),
+    ('johnlin@ifixforu.com', 'John Lin', 'staff', 'Alhambra'),
     ('hk@ifixforu.com', 'HK Team', 'hk', '香港仓'),
+    ('sophia@cellparz.com', 'Sophia', 'hk', '香港仓'),
 ]
 
 db_lock = threading.Lock()
