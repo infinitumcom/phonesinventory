@@ -34,6 +34,9 @@ PST = timezone(timedelta(hours=-7))
 AUTH_SECRET = env_loader.require_env("AUTH_SECRET").encode()
 TOKEN_TTL = 30 * 86400          # login token lifetime: 30 days
 DEFAULT_PIN = "888888"
+# Aging-stock alert: available units older than this many days are flagged on login
+# so the store is pushed to prioritize selling them. Tunable via env.
+AGING_CYCLE_DAYS = int(os.environ.get("AGING_CYCLE_DAYS", "45"))
 # Free launch period: while True, every active org is treated as certified (can
 # transact) and no cert fee applies. Flip to False once ~20-50 dealers onboard,
 # then certification is gated by orgs.certified_until (set by the platform admin).
@@ -293,6 +296,25 @@ def slugify_org(name):
     base = ''.join(c if (c.isascii() and c.isalnum()) else '-' for c in (name or '').lower())
     base = '-'.join(p for p in base.split('-') if p) or 'org'
     return base[:40] + '-' + secrets.token_hex(2)
+
+
+def age_days(scanned_at, now=None):
+    """Whole days between an inventory row's scanned_at and now. Handles the mixed
+    timestamp formats in the DB ('2026-05-08T19:26:58', '... 19:26:58', date-only).
+    Returns None if unparseable."""
+    if not scanned_at:
+        return None
+    s = str(scanned_at).strip()
+    dt = None
+    for cand, fmt in ((s[:19], "%Y-%m-%dT%H:%M:%S"), (s[:19], "%Y-%m-%d %H:%M:%S"), (s[:10], "%Y-%m-%d")):
+        try:
+            dt = datetime.strptime(cand, fmt); break
+        except ValueError:
+            continue
+    if dt is None:
+        return None
+    now = now or datetime.now(PST)
+    return max(0, (now.replace(tzinfo=None) - dt).days)
 
 
 def get_db():
@@ -761,6 +783,8 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.get_commissions(params)
         elif path == '/api/sold-imeis':
             return self.get_sold_imeis()
+        elif path == '/api/aging-alert':
+            return self.aging_alert()
         elif path == '/api/imei-check':
             return self.imei_check(params)
         elif path == '/api/user-pins':
@@ -1018,6 +1042,51 @@ class APIHandler(BaseHTTPRequestHandler):
             return json_response(self, {'error': str(e)}, 500)
 
     # ─── IMEI lookup proxy (keeps the third-party API key server-side) ───
+
+    def aging_alert(self):
+        """Available units in the caller's store older than AGING_CYCLE_DAYS, sorted
+        oldest first. Staff see their own store; admin (store='all') sees the whole org.
+        Includes cost so the store can price above it and push a sale. Shown on login."""
+        conn = None
+        try:
+            conn = get_db()
+            ctx = self._auth_ctx(conn)
+            if not ctx:
+                return json_response(self, {'error': 'unauthorized'}, 401)
+            org_id = ctx['org_id']
+            store = ctx['store']
+            cols = ("id,imei,brand,model,storage,color,color_en,condition,region,store,"
+                    "cost,price,scanned_at")
+            if store and store != 'all':
+                rows = conn.execute(
+                    "SELECT %s FROM inventory WHERE COALESCE(org_id,1)=? AND status='available' AND store=?" % cols,
+                    (org_id, store)).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT %s FROM inventory WHERE COALESCE(org_id,1)=? AND status='available'" % cols,
+                    (org_id,)).fetchall()
+            now = datetime.now(PST)
+            items = []
+            for r in rows:
+                age = age_days(r['scanned_at'], now)
+                if age is None or age <= AGING_CYCLE_DAYS:
+                    continue
+                items.append({
+                    'id': r['id'], 'imei': r['imei'] or '',
+                    'brand': r['brand'], 'model': r['model'], 'storage': r['storage'],
+                    'color': (r['color'] or r['color_en'] or ''),
+                    'condition': r['condition'], 'region': r['region'], 'store': r['store'],
+                    'cost': r['cost'] or 0, 'price': r['price'] or 0,
+                    'ageDays': age, 'daysOver': age - AGING_CYCLE_DAYS,
+                })
+            items.sort(key=lambda x: x['ageDays'], reverse=True)
+            return json_response(self, {'cycleDays': AGING_CYCLE_DAYS, 'store': store,
+                                        'count': len(items), 'items': items})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
 
     def imei_check(self, params):
         try:
