@@ -7261,6 +7261,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
               <button class="chip" id="invStatusAvail" onclick="toggleInvStatus('available')"><span class="zh">仅在售</span><span class="en">Available</span></button>
               <button class="chip" id="invStatusAged" onclick="toggleInvStatus('aged')"><span class="zh">滞销</span><span class="en">Aged</span></button>
               <button class="chip" id="invRegionCycle" onclick="cycleInvRegion()">⚙️ <span class="zh">高级</span><span class="en">Advanced</span></button>
+              <button class="chip" id="invSortTime" onclick="toggleInvSort()">🕐 <span class="zh">时间 新→旧</span><span class="en">Time New→Old</span></button>
             </div>
           </div>
 
@@ -13836,13 +13837,14 @@ const INV_FILTERS = {
   store: 'all',      // 'all' or store key like 'alhambra'
   region: 'all',     // 'all', 'us', 'hk', 'cn'
   status: 'all',     // 'all', 'available', 'aged'
-  search: ''
+  search: '',
+  sort: 'newest'     // 'newest' | 'oldest' — by intake date (purchaseDate, then id)
 };
 var INV_PAGE = 1;
 var INV_PER_PAGE = 20;
 
 function getFilteredPhones() {
-  return phones.filter(p => {
+  var out = phones.filter(p => {
     if (!p) return false;
     // Always hide sold phones from inventory (view in sales history instead)
     if (p.status === 'sold') return false;
@@ -13859,6 +13861,15 @@ function getFilteredPhones() {
     }
     return true;
   });
+  // Sort by intake time (purchaseDate, then id as a stable, finer-grained tiebreaker).
+  var dir = (INV_FILTERS.sort === 'oldest') ? 1 : -1;
+  out.sort(function(a, b){
+    var ta = a.purchaseDate ? Date.parse(a.purchaseDate) : 0; if (isNaN(ta)) ta = 0;
+    var tb = b.purchaseDate ? Date.parse(b.purchaseDate) : 0; if (isNaN(tb)) tb = 0;
+    if (ta !== tb) return dir * (ta - tb);
+    return dir * ((a.id || 0) - (b.id || 0));
+  });
+  return out;
 }
 
 function renderInvPagination(total, current, totalPages) {
@@ -14297,6 +14308,20 @@ function toggleInvStatus(which) {
   var g = document.getElementById('invStatusAged');
   if (a) a.classList.toggle('active', INV_FILTERS.status === 'available');
   if (g) g.classList.toggle('active', INV_FILTERS.status === 'aged');
+  renderInventory();
+}
+
+// Time sort toggle: newest-first (default) <-> oldest-first, by intake date.
+function toggleInvSort() {
+  INV_FILTERS.sort = (INV_FILTERS.sort === 'oldest') ? 'newest' : 'oldest';
+  var btn = document.getElementById('invSortTime');
+  if (btn) {
+    btn.classList.toggle('active', INV_FILTERS.sort === 'oldest');
+    btn.innerHTML = (INV_FILTERS.sort === 'oldest')
+      ? '🕐 <span class="zh">时间 旧→新</span><span class="en">Time Old→New</span>'
+      : '🕐 <span class="zh">时间 新→旧</span><span class="en">Time New→Old</span>';
+  }
+  INV_PAGE = 1;
   renderInventory();
 }
 var INV_REGION_CYCLE = ['all', 'us', 'hk', 'cn'];
