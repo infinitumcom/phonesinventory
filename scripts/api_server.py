@@ -17,7 +17,7 @@ import time
 import urllib.request
 from datetime import datetime, timezone, timedelta
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
-from urllib.parse import urlparse, parse_qs, quote
+from urllib.parse import urlparse, parse_qs, quote, unquote
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import env_loader
@@ -123,7 +123,7 @@ SEED_USERS = [
     ('will@ifixforu.com', 'Will Jiang', 'staff', 'Arcadia 1'),
     ('kelvin@ifixforu.com', 'Kelvin Liu', 'staff', 'Arcadia 2'),
     ('cici@ifixforu.com', 'Cici', 'staff', 'Irvine'),
-    ('feiyang@ifixforu.com', 'Feiyang Zhao', 'staff', 'Rancho Cucamonga'),
+    ('feiyang@ifixforu.com', 'Feiyang Zhao', 'staff', 'Irvine'),
     ('jason@ifixforu.com', 'Jason Zeng', 'staff', 'Las Vegas'),
     ('chester@ifixforu.com', 'Chester', 'staff', 'Alhambra'),
     ('grace@ifixforu.com', 'Grace', 'staff', 'Las Vegas'),
@@ -238,6 +238,33 @@ STORE_KEY_TO_NAME = {
     'hk-warehouse': '香港仓',
 }
 
+
+def _seed_org_stores(conn):
+    """Populate org_stores idempotently: org #1 gets its canonical store list; every
+    org additionally gets a row for each distinct store name found in its inventory."""
+    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+
+    def _add(org_id, name):
+        if not name:
+            return
+        exists = conn.execute(
+            "SELECT 1 FROM org_stores WHERE org_id=? AND name=?", (org_id, name)).fetchone()
+        if not exists:
+            conn.execute(
+                "INSERT INTO org_stores (org_id, name, active, created_at) VALUES (?,?,1,?)",
+                (org_id, name, now))
+
+    for nm in STORE_KEY_TO_NAME.values():
+        _add(1, nm)
+    try:
+        rows = conn.execute(
+            "SELECT DISTINCT COALESCE(org_id,1) AS oid, store FROM inventory "
+            "WHERE store IS NOT NULL AND store!=''").fetchall()
+        for r in rows:
+            _add(r['oid'], r['store'])
+    except Exception:
+        pass
+
 # Display-name / variant (lowercased) -> canonical slug. Mirrors the frontend
 # normalizeStoreKey() so store matching (e.g. "is this transfer for my store?")
 # works no matter whether the DB stored a slug or a display name.
@@ -330,7 +357,9 @@ def get_user(conn, email):
     return conn.execute(
         "SELECT email, name, role, store, "
         "COALESCE(org_id,1) AS org_id, COALESCE(is_platform_admin,0) AS is_platform_admin, "
-        "COALESCE(is_manager,0) AS is_manager "
+        "COALESCE(is_manager,0) AS is_manager, COALESCE(can_see_cost,0) AS can_see_cost, "
+        "COALESCE(can_add_stock,0) AS can_add_stock, COALESCE(can_transfer,0) AS can_transfer, "
+        "COALESCE(active,1) AS active "
         "FROM users WHERE email = ?", (email,)
     ).fetchone()
 
@@ -582,9 +611,22 @@ def init_api_tables():
         except Exception:
             pass
     _ensure_columns(conn, "users", {"org_id": "INTEGER", "is_platform_admin": "INTEGER DEFAULT 0",
-                                    "is_manager": "INTEGER DEFAULT 0"})
+                                    "is_manager": "INTEGER DEFAULT 0",
+                                    # Self-service dealer permissions (owner-configurable per member)
+                                    "can_see_cost": "INTEGER DEFAULT 0",   # see cost prices
+                                    "can_add_stock": "INTEGER DEFAULT 0",  # add/import inventory
+                                    "can_transfer": "INTEGER DEFAULT 0",   # initiate 调货 transfers
+                                    "active": "INTEGER DEFAULT 1"})        # 0 = deactivated (blocked login)
     conn.execute("UPDATE users SET org_id=1 WHERE org_id IS NULL")
     conn.execute("UPDATE users SET is_platform_admin=1 WHERE email='anderson@ifixforu.com'")
+    # Backfill sensible defaults: org owners (admin) + managers see cost & add stock.
+    try:
+        conn.execute("UPDATE users SET can_see_cost=1 WHERE (role='admin' OR is_manager=1) AND can_see_cost IS NULL")
+        conn.execute("UPDATE users SET can_add_stock=1 WHERE (role='admin' OR role='hk') AND can_add_stock IS NULL")
+        conn.execute("UPDATE users SET can_transfer=1 WHERE (role='admin' OR is_manager=1 OR role='hk') AND can_transfer IS NULL")
+        conn.execute("UPDATE users SET active=1 WHERE active IS NULL")
+    except Exception:
+        pass
     conn.execute("CREATE INDEX IF NOT EXISTS idx_transfers_org ON transfers(org_id)")
     # inventory is created/owned by inventory_bot.py on a shared production DB —
     # guard so a not-yet-created inventory table can't break API startup.
@@ -615,6 +657,25 @@ def init_api_tables():
             created_at TEXT, settled_at TEXT
         )
     """)
+
+    # Per-org store registry — dealers self-manage their own stores/branches.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS org_stores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            org_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            address TEXT DEFAULT '',
+            active INTEGER DEFAULT 1,
+            created_at TEXT
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_org_stores_org ON org_stores(org_id)")
+    # Seed org #1 (iFixForU) canonical stores + backfill each org's stores from the
+    # distinct store names already present in its inventory (idempotent).
+    try:
+        _seed_org_stores(conn)
+    except Exception:
+        pass
 
     # Partner API keys — external friendly dealers (友商) pull our inventory over a
     # read-only API. Only the key HASH is stored; the raw key is shown once on issue.
@@ -779,6 +840,16 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.get_orgs(params)
         elif path == '/api/marketplace':
             return self.get_marketplace(params)
+        elif path == '/api/catalog':
+            return self.get_catalog(params)
+        elif path == '/api/catalog/detail':
+            return self.get_catalog_detail(params)
+        elif path == '/api/my-stores':
+            return self.get_my_stores(params)
+        elif path == '/api/org/stores':
+            return self.get_org_stores_admin(params)
+        elif path == '/api/org/members':
+            return self.get_org_members(params)
         elif path == '/api/orders':
             return self.get_orders(params)
         elif path == '/api/commissions':
@@ -828,16 +899,22 @@ class APIHandler(BaseHTTPRequestHandler):
             return self.handle_stock_request()
         elif path == '/api/change-pin':
             return self.change_pin()
+        elif path == '/api/account/profile':
+            return self.update_account_profile()
         elif path == '/api/org/signup-request':
             return self.org_signup_request()
         elif path == '/api/org/members':
             return self.create_org_member()
+        elif path == '/api/org/stores':
+            return self.create_org_store()
         elif path == '/api/partner-keys':
             return self.create_partner_key()
         elif path == '/api/inventory/wholesale':
             return self.set_wholesale_prices()
         elif path == '/api/orders':
             return self.create_order()
+        elif path == '/api/catalog/transfer':
+            return self.catalog_transfer()
         else:
             json_response(self, {'error': 'Not found'}, 404)
 
@@ -849,6 +926,10 @@ class APIHandler(BaseHTTPRequestHandler):
 
         if path.startswith('/api/partner-keys/'):
             return self.update_partner_key(path.split('/')[-1])
+        elif path.startswith('/api/org/stores/'):
+            return self.update_org_store(path.split('/')[-1])
+        elif path.startswith('/api/org/members/'):
+            return self.update_org_member(unquote(path.split('/')[-1]))
         elif path.startswith('/api/orgs/'):
             org_id = path.split('/')[-1]
             return self.update_org(org_id)
@@ -880,7 +961,11 @@ class APIHandler(BaseHTTPRequestHandler):
         if self.check_auth('DELETE', path) is None:
             return
 
-        if path.startswith('/api/inventory/'):
+        if path.startswith('/api/org/stores/'):
+            return self.delete_org_store(path.split('/')[-1])
+        elif path.startswith('/api/org/members/'):
+            return self.delete_org_member(unquote(path.split('/')[-1]))
+        elif path.startswith('/api/inventory/'):
             imei = path.split('/')[-1]
             return self.delete_inventory(imei)
         else:
@@ -1141,11 +1226,16 @@ class APIHandler(BaseHTTPRequestHandler):
         u = self._auth_user(conn)
         if not u:
             return None
+        # Owners (admin) & HK always see cost for their scope; others per the flag.
+        can_cost = (u['role'] == 'admin') or bool(u['can_see_cost']) or (u['role'] == 'hk')
         return {
             'email': u['email'], 'name': u['name'], 'role': u['role'],
             'store': u['store'], 'org_id': (u['org_id'] or 1),
             'is_platform_admin': bool(u['is_platform_admin']),
             'is_manager': bool(u['is_manager']),
+            'can_see_cost': can_cost,
+            'can_add_stock': (u['role'] in ('admin', 'hk')) or bool(u['can_add_stock']),
+            'can_transfer': (u['role'] in ('admin', 'hk')) or bool(u['is_manager']) or bool(u['can_transfer']),
         }
 
     def _is_platform_admin(self, conn):
@@ -1179,6 +1269,18 @@ class APIHandler(BaseHTTPRequestHandler):
             "SELECT COALESCE(org_id,1) AS oid FROM %s WHERE %s=?" % (table, id_col),
             (id_val,)).fetchone()
         return (row is None) or (row['oid'] == ctx['org_id'])
+
+    def _staff_store_lock(self, ctx):
+        """A plain store clerk (not owner/manager/HK) is confined to their assigned
+        store — returns that store name, or None if the user sees the whole org."""
+        if not ctx:
+            return None
+        if ctx['role'] in ('admin', 'hk') or ctx['is_manager']:
+            return None
+        st = (ctx.get('store') or '').strip()
+        if not st or st.lower() == 'all':
+            return None
+        return st
 
     def _is_certified(self, conn, org_id):
         """Can this org transact on the marketplace? True during the free launch
@@ -1245,21 +1347,27 @@ class APIHandler(BaseHTTPRequestHandler):
             user = self._auth_user(conn)
             role = user['role'] if user else None
             oc, oa = self._org_filter(conn)  # scope to caller's org (internal view)
+            _lock = self._staff_store_lock(self._auth_ctx(conn))
             # HK warehouse role sees only HK warehouse + HQ warehouse stock.
             if role == 'hk':
                 rows = conn.execute(
                     "SELECT * FROM inventory WHERE %s AND store IN ('香港仓','HQ 总仓') ORDER BY id DESC" % oc, oa
                 ).fetchall()
+            elif _lock:
+                rows = conn.execute("SELECT * FROM inventory WHERE %s AND store=? ORDER BY id DESC" % oc,
+                                    oa + [_lock]).fetchall()
             else:
                 rows = conn.execute("SELECT * FROM inventory WHERE %s ORDER BY id DESC" % oc, oa).fetchall()
             phones = export_inventory.build_phones(rows)
-            # cost is owner-only. admin: all. HK: only its own 香港仓 cost (HQ masked).
-            # staff: never.
+            # Cost visibility: admin always; HK only its own 香港仓; everyone else per the
+            # per-user can_see_cost permission (owner-configurable in the dealer console).
+            ctx = self._auth_ctx(conn)
+            can_cost = bool(ctx and ctx.get('can_see_cost'))
             if role == 'hk':
                 for p in phones:
                     if p.get('store') != '香港仓':
                         p['cost'] = 0
-            elif role != 'admin':
+            elif not can_cost:
                 for p in phones:
                     p['cost'] = 0
             return json_response(self, {'phones': phones})
@@ -1285,8 +1393,11 @@ class APIHandler(BaseHTTPRequestHandler):
 
             user = self._auth_user(conn)
             role = user['role'] if user else None
+            _ictx = self._auth_ctx(conn)
+            _inv_can_cost = bool(_ictx and _ictx.get('can_see_cost'))
             oc, oa = self._org_filter(conn, params)  # tenant scope (internal view)
             conditions.append(oc); args.extend(oa)
+            _lock = self._staff_store_lock(_ictx)
             if role == 'hk':
                 # HK warehouse role is limited to HK + HQ warehouses.
                 norm = normalize_store_name(store) if (store and store != 'all') else None
@@ -1295,6 +1406,10 @@ class APIHandler(BaseHTTPRequestHandler):
                     args.append(norm)
                 else:
                     conditions.append("store IN ('香港仓','HQ 总仓')")
+            elif _lock:
+                # Plain clerk: hard-locked to their own store regardless of requested filter.
+                conditions.append("store = ?")
+                args.append(_lock)
             elif store and store != 'all':
                 conditions.append("store = ?")
                 args.append(normalize_store_name(store))
@@ -1317,13 +1432,12 @@ class APIHandler(BaseHTTPRequestHandler):
                 item['scannedAt'] = item.pop('scanned_at', '')
                 item['createdAt'] = item.pop('created_at', '')
                 item.pop('raw_ocr', None)  # Don't send raw OCR data
-                # cost is owner-only: admin all; HK only own 香港仓; staff none.
-                if role == 'admin':
-                    pass
-                elif role == 'hk':
+                # Cost visibility: HK sees only its own 香港仓; otherwise per can_see_cost
+                # (admin/manager true by default, staff configurable in the dealer console).
+                if role == 'hk':
                     if item.get('store') != '香港仓':
                         item['cost'] = 0
-                else:
+                elif not _inv_can_cost:
                     item['cost'] = 0
                 items.append(item)
 
@@ -1562,6 +1676,9 @@ class APIHandler(BaseHTTPRequestHandler):
             with db_lock:
                 conn = get_db()
                 try:
+                    _tctx = self._auth_ctx(conn)
+                    if _tctx and not _tctx.get('can_transfer'):
+                        return json_response(self, {'error': '无调货权限 / No transfer permission'}, 403)
                     now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
                     # Validate the phone is actually transferable before creating a request.
                     inv = conn.execute("SELECT status FROM inventory WHERE imei=?", (imei,)).fetchone()
@@ -1610,7 +1727,8 @@ class APIHandler(BaseHTTPRequestHandler):
                 try:
                     user = self._auth_user(conn)
                     role = user['role'] if user else None
-                    if role not in ('hk', 'admin'):
+                    _ctx = self._auth_ctx(conn)
+                    if role not in ('hk', 'admin') and not (_ctx and _ctx.get('can_add_stock')):
                         return json_response(self, {'error': '无权限入库 / Not allowed to add stock'}, 403)
 
                     store = '香港仓' if role == 'hk' else normalize_store_name(data.get('store') or '香港仓')
@@ -1863,9 +1981,24 @@ class APIHandler(BaseHTTPRequestHandler):
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
 
+    # ── tier <-> (role, is_manager) mapping used by the dealer team console ──
+    @staticmethod
+    def _tier_to_role(tier):
+        tier = (tier or 'staff').strip()
+        if tier == 'admin':   return ('admin', 0)   # co-owner: full control
+        if tier == 'manager': return ('staff', 1)   # 店长: elevated staff
+        return ('staff', 0)                          # 店员: regular staff
+
+    @staticmethod
+    def _role_to_tier(role, is_manager):
+        if role == 'admin':
+            return 'admin'
+        return 'manager' if is_manager else 'staff'
+
     def create_org_member(self):
         """Org-admin creates a sub-user WITHIN their own org. New members log in with
-        the default PIN (forced change on first login), same as internal staff."""
+        the default PIN (forced change on first login). Body: {email,name,tier,store,
+        canSeeCost,canAddStock}. tier = staff | manager | admin."""
         try:
             data = self.read_body()
             with db_lock:
@@ -1876,21 +2009,267 @@ class APIHandler(BaseHTTPRequestHandler):
                         return json_response(self, {'error': '仅组织管理员 / Org admin only'}, 403)
                     email = (data.get('email') or '').strip().lower()
                     name = (data.get('name') or '').strip()
-                    role = (data.get('role') or 'staff').strip()
                     store = (data.get('store') or '').strip()
-                    if role not in ('staff', 'admin'):
-                        role = 'staff'
+                    role, is_mgr = self._tier_to_role(data.get('tier') or data.get('role'))
+                    # permission defaults follow the tier unless explicitly overridden
+                    csc = data.get('canSeeCost')
+                    csc = (1 if (role == 'admin' or is_mgr) else 0) if csc is None else (1 if csc else 0)
+                    cas = data.get('canAddStock')
+                    cas = (1 if role == 'admin' else 0) if cas is None else (1 if cas else 0)
+                    ctr = data.get('canTransfer')
+                    ctr = (1 if (role == 'admin' or is_mgr) else 0) if ctr is None else (1 if ctr else 0)
                     if not email or '@' not in email or not name:
                         return json_response(self, {'error': '邮箱和姓名必填 / Email and name required'}, 400)
                     if conn.execute("SELECT 1 FROM users WHERE email=?", (email,)).fetchone():
                         return json_response(self, {'error': '该邮箱已存在 / Email already exists'}, 409)
                     conn.execute(
-                        "INSERT INTO users (email,name,role,store,org_id,is_platform_admin) VALUES (?,?,?,?,?,0)",
-                        (email, name, role, store, ctx['org_id']))
+                        "INSERT INTO users (email,name,role,store,org_id,is_platform_admin,is_manager,"
+                        "can_see_cost,can_add_stock,can_transfer,active) VALUES (?,?,?,?,?,0,?,?,?,?,1)",
+                        (email, name, role, store, ctx['org_id'], is_mgr, csc, cas, ctr))
                     self._audit(conn, 'org.member.create', 'user', email, {'role': role, 'org': ctx['org_id']})
                     conn.commit()
                     return json_response(self, {'ok': True, 'email': email, 'defaultPin': DEFAULT_PIN,
                                                 'message': '子账号已创建，默认密码 ' + DEFAULT_PIN + '（首登需改）'})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def get_org_members(self, params):
+        """List members of the caller's org (owner/manager view) with role + permissions."""
+        conn = None
+        try:
+            conn = get_db()
+            ctx = self._auth_ctx(conn)
+            if not ctx:
+                return json_response(self, {'error': 'unauthorized'}, 401)
+            if ctx['role'] != 'admin' and not ctx['is_manager']:
+                return json_response(self, {'error': '无权限 / Not allowed'}, 403)
+            rows = conn.execute(
+                "SELECT email, name, role, store, COALESCE(is_manager,0) AS is_manager, "
+                "COALESCE(can_see_cost,0) AS can_see_cost, COALESCE(can_add_stock,0) AS can_add_stock, "
+                "COALESCE(can_transfer,0) AS can_transfer, "
+                "COALESCE(active,1) AS active FROM users WHERE COALESCE(org_id,1)=? ORDER BY "
+                "CASE role WHEN 'admin' THEN 0 ELSE 1 END, is_manager DESC, name", (ctx['org_id'],)).fetchall()
+            out = []
+            for r in rows:
+                is_admin = (r['role'] == 'admin')  # owner: permissions are always-on/locked
+                out.append({
+                    'email': r['email'], 'name': r['name'],
+                    'tier': self._role_to_tier(r['role'], r['is_manager']),
+                    'role': r['role'], 'store': r['store'] or '',
+                    'canSeeCost': bool(r['can_see_cost']) or is_admin,
+                    'canAddStock': bool(r['can_add_stock']) or is_admin,
+                    'canTransfer': bool(r['can_transfer']) or is_admin or bool(r['is_manager']),
+                    'active': bool(r['active']), 'isSelf': (r['email'] == ctx['email']),
+                })
+            return json_response(self, {'members': out})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
+
+    def update_org_member(self, email):
+        """Owner updates a member's tier/store/permissions/active state (own org only).
+        Body may include: tier, store, canSeeCost, canAddStock, active."""
+        try:
+            data = self.read_body()
+            email = (email or '').strip().lower()
+            with db_lock:
+                conn = get_db()
+                try:
+                    ctx = self._auth_ctx(conn)
+                    if not ctx or ctx['role'] != 'admin':
+                        return json_response(self, {'error': '仅组织管理员 / Org admin only'}, 403)
+                    row = conn.execute("SELECT email, role, COALESCE(org_id,1) AS org_id FROM users WHERE email=?",
+                                       (email,)).fetchone()
+                    if not row or row['org_id'] != ctx['org_id']:
+                        return json_response(self, {'error': '成员不存在 / Member not found'}, 404)
+                    if email == ctx['email']:
+                        return json_response(self, {'error': '不能修改自己的权限 / Cannot edit yourself'}, 400)
+                    sets, vals = [], []
+                    if 'tier' in data:
+                        role, is_mgr = self._tier_to_role(data.get('tier'))
+                        sets += ['role=?', 'is_manager=?']; vals += [role, is_mgr]
+                    if 'store' in data:
+                        sets.append('store=?'); vals.append((data.get('store') or '').strip())
+                    if 'canSeeCost' in data:
+                        sets.append('can_see_cost=?'); vals.append(1 if data.get('canSeeCost') else 0)
+                    if 'canAddStock' in data:
+                        sets.append('can_add_stock=?'); vals.append(1 if data.get('canAddStock') else 0)
+                    if 'canTransfer' in data:
+                        sets.append('can_transfer=?'); vals.append(1 if data.get('canTransfer') else 0)
+                    if 'active' in data:
+                        sets.append('active=?'); vals.append(1 if data.get('active') else 0)
+                    if not sets:
+                        return json_response(self, {'error': '无改动 / Nothing to update'}, 400)
+                    conn.execute("UPDATE users SET " + ", ".join(sets) + " WHERE email=?", vals + [email])
+                    self._audit(conn, 'org.member.update', 'user', email, {k: data.get(k) for k in data})
+                    conn.commit()
+                    return json_response(self, {'ok': True})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def delete_org_member(self, email):
+        """Owner removes a member from their org (cannot remove self or another admin)."""
+        try:
+            email = (email or '').strip().lower()
+            with db_lock:
+                conn = get_db()
+                try:
+                    ctx = self._auth_ctx(conn)
+                    if not ctx or ctx['role'] != 'admin':
+                        return json_response(self, {'error': '仅组织管理员 / Org admin only'}, 403)
+                    row = conn.execute("SELECT role, COALESCE(org_id,1) AS org_id FROM users WHERE email=?",
+                                       (email,)).fetchone()
+                    if not row or row['org_id'] != ctx['org_id']:
+                        return json_response(self, {'error': '成员不存在 / Member not found'}, 404)
+                    if email == ctx['email']:
+                        return json_response(self, {'error': '不能删除自己 / Cannot remove yourself'}, 400)
+                    if row['role'] == 'admin':
+                        return json_response(self, {'error': '不能删除管理员 / Cannot remove an admin'}, 400)
+                    conn.execute("DELETE FROM users WHERE email=?", (email,))
+                    try:
+                        conn.execute("DELETE FROM user_pins WHERE email=?", (email,))
+                    except Exception:
+                        pass
+                    self._audit(conn, 'org.member.delete', 'user', email, {'org': ctx['org_id']})
+                    conn.commit()
+                    return json_response(self, {'ok': True})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    # ─── Dealer self-service: store registry ───
+
+    def get_org_stores_admin(self, params):
+        """List the caller org's stores (management view — includes inactive + unit counts)."""
+        conn = None
+        try:
+            conn = get_db()
+            ctx = self._auth_ctx(conn)
+            if not ctx:
+                return json_response(self, {'error': 'unauthorized'}, 401)
+            if ctx['role'] != 'admin' and not ctx['is_manager']:
+                return json_response(self, {'error': '无权限 / Not allowed'}, 403)
+            rows = conn.execute(
+                "SELECT id, name, address, COALESCE(active,1) AS active FROM org_stores "
+                "WHERE org_id=? ORDER BY active DESC, name", (ctx['org_id'],)).fetchall()
+            out = []
+            for r in rows:
+                try:
+                    cnt = conn.execute(
+                        "SELECT COUNT(*) AS n FROM inventory WHERE COALESCE(org_id,1)=? AND store=? "
+                        "AND status='available'", (ctx['org_id'], r['name'])).fetchone()['n']
+                except Exception:
+                    cnt = 0
+                out.append({'id': r['id'], 'name': r['name'], 'address': r['address'] or '',
+                            'active': bool(r['active']), 'stock': cnt})
+            return json_response(self, {'stores': out})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
+
+    def create_org_store(self):
+        """Owner adds a store/branch to their org."""
+        try:
+            data = self.read_body()
+            name = (data.get('name') or '').strip()
+            address = (data.get('address') or '').strip()
+            if not name:
+                return json_response(self, {'error': '门店名称必填 / Store name required'}, 400)
+            with db_lock:
+                conn = get_db()
+                try:
+                    ctx = self._auth_ctx(conn)
+                    if not ctx or ctx['role'] != 'admin':
+                        return json_response(self, {'error': '仅组织管理员 / Org admin only'}, 403)
+                    dup = conn.execute("SELECT 1 FROM org_stores WHERE org_id=? AND name=?",
+                                       (ctx['org_id'], name)).fetchone()
+                    if dup:
+                        return json_response(self, {'error': '门店已存在 / Store already exists'}, 409)
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    cur = conn.execute("INSERT INTO org_stores (org_id,name,address,active,created_at) "
+                                       "VALUES (?,?,?,1,?)", (ctx['org_id'], name, address, now))
+                    self._audit(conn, 'org.store.create', 'store', name, {'org': ctx['org_id']})
+                    conn.commit()
+                    return json_response(self, {'ok': True, 'id': cur.lastrowid})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def update_org_store(self, sid):
+        """Owner renames / re-addresses / (de)activates a store. Renaming also migrates
+        that store's inventory rows so stock stays attached."""
+        try:
+            data = self.read_body()
+            with db_lock:
+                conn = get_db()
+                try:
+                    ctx = self._auth_ctx(conn)
+                    if not ctx or ctx['role'] != 'admin':
+                        return json_response(self, {'error': '仅组织管理员 / Org admin only'}, 403)
+                    row = conn.execute("SELECT id, name, org_id FROM org_stores WHERE id=?", (sid,)).fetchone()
+                    if not row or row['org_id'] != ctx['org_id']:
+                        return json_response(self, {'error': '门店不存在 / Store not found'}, 404)
+                    sets, vals = [], []
+                    if 'name' in data:
+                        newname = (data.get('name') or '').strip()
+                        if not newname:
+                            return json_response(self, {'error': '门店名称必填 / Name required'}, 400)
+                        if newname != row['name']:
+                            dup = conn.execute("SELECT 1 FROM org_stores WHERE org_id=? AND name=? AND id!=?",
+                                               (ctx['org_id'], newname, sid)).fetchone()
+                            if dup:
+                                return json_response(self, {'error': '门店名已存在 / Name in use'}, 409)
+                            conn.execute("UPDATE inventory SET store=? WHERE COALESCE(org_id,1)=? AND store=?",
+                                         (newname, ctx['org_id'], row['name']))
+                        sets.append('name=?'); vals.append(newname)
+                    if 'address' in data:
+                        sets.append('address=?'); vals.append((data.get('address') or '').strip())
+                    if 'active' in data:
+                        sets.append('active=?'); vals.append(1 if data.get('active') else 0)
+                    if not sets:
+                        return json_response(self, {'error': '无改动 / Nothing to update'}, 400)
+                    conn.execute("UPDATE org_stores SET " + ", ".join(sets) + " WHERE id=?", vals + [sid])
+                    self._audit(conn, 'org.store.update', 'store', row['name'], {k: data.get(k) for k in data})
+                    conn.commit()
+                    return json_response(self, {'ok': True})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+
+    def delete_org_store(self, sid):
+        """Owner removes a store — refused while it still holds available stock."""
+        try:
+            with db_lock:
+                conn = get_db()
+                try:
+                    ctx = self._auth_ctx(conn)
+                    if not ctx or ctx['role'] != 'admin':
+                        return json_response(self, {'error': '仅组织管理员 / Org admin only'}, 403)
+                    row = conn.execute("SELECT id, name, org_id FROM org_stores WHERE id=?", (sid,)).fetchone()
+                    if not row or row['org_id'] != ctx['org_id']:
+                        return json_response(self, {'error': '门店不存在 / Store not found'}, 404)
+                    try:
+                        cnt = conn.execute("SELECT COUNT(*) AS n FROM inventory WHERE COALESCE(org_id,1)=? "
+                                           "AND store=? AND status!='sold'", (ctx['org_id'], row['name'])).fetchone()['n']
+                    except Exception:
+                        cnt = 0
+                    if cnt:
+                        return json_response(self, {'error': '该门店仍有 %d 台库存，请先清空或调走 / Store still holds %d units' % (cnt, cnt)}, 409)
+                    conn.execute("DELETE FROM org_stores WHERE id=?", (sid,))
+                    self._audit(conn, 'org.store.delete', 'store', row['name'], {'org': ctx['org_id']})
+                    conn.commit()
+                    return json_response(self, {'ok': True})
                 finally:
                     conn.close()
         except Exception as e:
@@ -1981,6 +2360,230 @@ class APIHandler(BaseHTTPRequestHandler):
         finally:
             if conn is not None:
                 conn.close()
+
+    def get_catalog(self, params):
+        """Model-aggregated catalog (homepage). Aggregates ALL available inventory
+        across the caller's OWN org (all its stores) AND every other active org's
+        marketplace-listed stock, grouped by model spec. Returns per-model qty,
+        cheapest price, and how many distinct sources have it.
+
+        Inclusion: own-org items = any status='available' (visible for internal 调货);
+        other orgs = status='available' AND wholesale_price>0 (only their listed stock,
+        never their unlisted inventory). Price basis = 同行价 if set else retail (retail
+        only ever surfaces for the caller's own org — other orgs require wholesale>0)."""
+        conn = None
+        try:
+            conn = get_db()
+            ctx = self._auth_ctx(conn)
+            if not ctx:
+                return json_response(self, {'error': 'unauthorized'}, 401)
+            own = ctx['org_id']
+            conds = ["i.status='available'", "o.status='active'",
+                     "(COALESCE(i.org_id,1)=? OR i.wholesale_price>0)"]
+            # First ? is the own-org flag inside the SUM(CASE ...); second is the inclusion clause.
+            args = [own, own]
+            for key, col, like in (('brand', 'i.brand', False), ('region', 'i.region', False),
+                                   ('condition', 'i.condition', False), ('category', 'i.category', False),
+                                   ('city', 'o.city', False), ('model', 'i.model', True)):
+                v = params.get(key, [None])[0]
+                if v and v != 'all':
+                    if like:
+                        conds.append("%s LIKE ?" % col); args.append('%' + v + '%')
+                    else:
+                        conds.append("LOWER(%s)=?" % col); args.append(v.lower())
+            price = "COALESCE(NULLIF(i.wholesale_price,0), i.price)"
+            q = ("SELECT i.brand, i.model, i.storage, i.condition, i.region, "
+                 "COALESCE(i.category,'phone') AS category, COUNT(*) AS qty, "
+                 "SUM(CASE WHEN COALESCE(i.org_id,1)=? THEN 1 ELSE 0 END) AS own_qty, "
+                 "MIN(%s) AS min_price, MAX(%s) AS max_price, "
+                 "MAX(i.color) AS color, MAX(i.color_en) AS color_en, "
+                 "COUNT(DISTINCT COALESCE(i.org_id,1)) AS sources "
+                 "FROM inventory i JOIN orgs o ON o.id=COALESCE(i.org_id,1) "
+                 "WHERE " + " AND ".join(conds) +
+                 " GROUP BY i.brand, i.model, i.storage, i.condition, i.region, COALESCE(i.category,'phone')") % (price, price)
+            sort = params.get('sort', ['qty'])[0]
+            order = ' ORDER BY min_price ASC' if sort == 'price_asc' else \
+                    ' ORDER BY min_price DESC' if sort == 'price_desc' else ' ORDER BY qty DESC'
+            rows = conn.execute(q + order + ' LIMIT 500', args).fetchall()
+            out = []
+            for r in rows:
+                own_qty = r['own_qty'] or 0
+                out.append({
+                    'brand': r['brand'], 'model': r['model'], 'storage': r['storage'],
+                    'condition': r['condition'], 'region': r['region'], 'category': r['category'],
+                    'qty': r['qty'], 'minPrice': r['min_price'], 'maxPrice': r['max_price'],
+                    'color': r['color'], 'colorEn': r['color_en'],
+                    'sources': r['sources'], 'ownQty': own_qty, 'dealerQty': (r['qty'] - own_qty),
+                })
+            return json_response(self, {'models': out, 'total': len(out)})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
+
+    def get_catalog_detail(self, params):
+        """Drill-down for one model spec: which sources have it in stock.
+        The caller's OWN org is broken down BY STORE (for internal 调货); every OTHER
+        org is a single org-level source (we never expose another org's store structure).
+        Seller org name is revealed only to certified buyers; otherwise city-only."""
+        conn = None
+        try:
+            conn = get_db()
+            ctx = self._auth_ctx(conn)
+            if not ctx:
+                return json_response(self, {'error': 'unauthorized'}, 401)
+            own = ctx['org_id']
+            certified = self._is_certified(conn, own)
+            conds = ["i.status='available'", "o.status='active'",
+                     "(COALESCE(i.org_id,1)=? OR i.wholesale_price>0)"]
+            args = [own]
+            # Exact match on the group spec fields (empty string matches NULL/'').
+            for key, col in (('brand', 'i.brand'), ('model', 'i.model'), ('storage', 'i.storage'),
+                             ('condition', 'i.condition'), ('region', 'i.region'), ('category', 'i.category')):
+                if key not in params:
+                    continue
+                v = params.get(key, [''])[0] or ''
+                if key == 'category':
+                    conds.append("COALESCE(NULLIF(%s,''),'phone')=?" % col); args.append(v or 'phone')
+                else:
+                    conds.append("IFNULL(%s,'')=?" % col); args.append(v)
+            price = "COALESCE(NULLIF(i.wholesale_price,0), i.price)"
+            q = ("SELECT i.id, i.store, i.color, i.color_en, i.battery_health, "
+                 "COALESCE(i.org_id,1) AS oid, o.name AS org_name, o.city AS org_city, "
+                 "%s AS unit_price "
+                 "FROM inventory i JOIN orgs o ON o.id=COALESCE(i.org_id,1) "
+                 "WHERE " + " AND ".join(conds)) % price
+            rows = conn.execute(q, args).fetchall()
+            internal = {}   # store -> {qty, minPrice, listingIds}
+            external = {}   # oid -> {orgName, city, qty, minPrice, listingIds}
+            for r in rows:
+                p = r['unit_price'] or 0
+                if r['oid'] == own:
+                    store = r['store'] or '未分配 Unassigned'
+                    g = internal.setdefault(store, {'store': store, 'qty': 0, 'minPrice': None, 'listingIds': []})
+                    g['qty'] += 1
+                    g['listingIds'].append(r['id'])
+                    if p and (g['minPrice'] is None or p < g['minPrice']):
+                        g['minPrice'] = p
+                else:
+                    g = external.setdefault(r['oid'], {'orgId': r['oid'],
+                        'orgName': (r['org_name'] if certified else None),
+                        'city': r['org_city'] or '', 'qty': 0, 'minPrice': None, 'listingIds': []})
+                    g['qty'] += 1
+                    g['listingIds'].append(r['id'])
+                    if p and (g['minPrice'] is None or p < g['minPrice']):
+                        g['minPrice'] = p
+            internal_list = sorted(internal.values(), key=lambda x: -x['qty'])
+            external_list = sorted(external.values(), key=lambda x: -x['qty'])
+            return json_response(self, {
+                'internal': internal_list, 'external': external_list,
+                'certified': certified, 'ownOrg': own,
+            })
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
+
+    def get_my_stores(self, params):
+        """Store names for the caller's org — the union of its registered org_stores
+        (active) and any store names present in its inventory. Used for the dashboard
+        store grid and internal-transfer destinations."""
+        conn = None
+        try:
+            conn = get_db()
+            ctx = self._auth_ctx(conn)
+            if not ctx:
+                return json_response(self, {'error': 'unauthorized'}, 401)
+            names, seen = [], set()
+
+            def _add(nm):
+                if nm and nm not in seen:
+                    seen.add(nm); names.append(nm)
+
+            # 1) registered stores (active) — includes empty branches
+            try:
+                for r in conn.execute("SELECT name FROM org_stores WHERE org_id=? AND COALESCE(active,1)=1 "
+                                      "ORDER BY name", (ctx['org_id'],)).fetchall():
+                    _add(r['name'])
+            except Exception:
+                pass
+            # 2) any store names present in inventory (in case a store isn't registered yet)
+            for r in conn.execute("SELECT DISTINCT store FROM inventory WHERE COALESCE(org_id,1)=? "
+                                  "AND store IS NOT NULL AND store!='' ORDER BY store", (ctx['org_id'],)).fetchall():
+                _add(r['store'])
+            # 3) org #1 canonical fallback
+            if ctx['org_id'] == 1:
+                for nm in STORE_KEY_TO_NAME.values():
+                    _add(nm)
+            return json_response(self, {'stores': names})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
+
+    def catalog_transfer(self):
+        """Catalog-driven internal 调货: move N available units of a model spec from one
+        of the caller's own stores to another. Picks the units server-side, creates one
+        internal transfer per unit (reusing the existing transfer state machine) and locks
+        them to 'transit'. Own-org only — never touches another org's inventory."""
+        try:
+            data = self.read_body()
+            from_store = (data.get('fromStore') or '').strip()
+            to_store = (data.get('toStore') or '').strip()
+            try:
+                qty = max(1, int(data.get('qty') or 1))
+            except (TypeError, ValueError):
+                qty = 1
+            if not from_store or not to_store:
+                return json_response(self, {'error': '缺少门店 / Missing store'}, 400)
+            if from_store == to_store:
+                return json_response(self, {'error': '调出与调入门店不能相同 / Same store'}, 400)
+            with db_lock:
+                conn = get_db()
+                try:
+                    ctx = self._auth_ctx(conn)
+                    if not ctx:
+                        return json_response(self, {'error': 'unauthorized'}, 401)
+                    if not ctx.get('can_transfer'):
+                        return json_response(self, {'error': '无调货权限 / No transfer permission'}, 403)
+                    own = ctx['org_id']
+                    conds = ["status='available'", "COALESCE(org_id,1)=?", "store=?"]
+                    args = [own, from_store]
+                    for key, col in (('brand', 'brand'), ('model', 'model'), ('storage', 'storage'),
+                                     ('condition', 'condition'), ('region', 'region')):
+                        if key in data and data.get(key) is not None:
+                            conds.append("IFNULL(%s,'')=?" % col); args.append(data.get(key) or '')
+                    cat = data.get('category')
+                    if cat:
+                        conds.append("COALESCE(NULLIF(category,''),'phone')=?"); args.append(cat)
+                    units = conn.execute(
+                        "SELECT imei, brand, model, storage FROM inventory WHERE " + " AND ".join(conds) +
+                        " LIMIT ?", args + [qty]).fetchall()
+                    if not units:
+                        return json_response(self, {'error': '该门店暂无可调库存 / No available units at source'}, 409)
+                    now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+                    who = ctx.get('name') or getattr(self, '_auth_email', '') or ''
+                    created = 0
+                    for u in units:
+                        tid = 'CT' + secrets.token_hex(6)
+                        phone_name = ' '.join(x for x in [u['brand'], u['model'], u['storage']] if x)
+                        conn.execute(
+                            "INSERT INTO transfers (id, imei, phone_name, from_store, to_store, "
+                            "requested_by, status, notes, created_at, updated_at, org_id, kind) "
+                            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                            (tid, u['imei'], phone_name, from_store, to_store, who, 'pending',
+                             '目录调货 / catalog transfer', now, now, own, 'internal'))
+                        conn.execute("UPDATE inventory SET status='transit' WHERE imei=? AND status='available'", (u['imei'],))
+                        created += 1
+                    conn.commit()
+                    return json_response(self, {'ok': True, 'created': created, 'requested': qty})
+                finally:
+                    conn.close()
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
 
     def create_order(self):
         """Buyer org places a marketplace order on a listing (listingId = inventory id).
@@ -3329,6 +3932,28 @@ class APIHandler(BaseHTTPRequestHandler):
     def get_user_pins(self):
         """Retired: PINs are never broadcast anymore (login moved server-side)."""
         return json_response(self, {'error': 'gone'}, 410)
+
+    def update_account_profile(self):
+        """Update the authenticated user's own display name (self-service account settings)."""
+        conn = None
+        try:
+            data = self.read_body()
+            name = (data.get('name') or '').strip()
+            conn = get_db()
+            ctx = self._auth_ctx(conn)
+            if not ctx:
+                return json_response(self, {'error': 'unauthorized'}, 401)
+            if not name:
+                return json_response(self, {'error': '姓名不能为空 / Name required'}, 400)
+            with db_lock:
+                conn.execute("UPDATE users SET name=? WHERE email=?", (name, ctx['email']))
+                conn.commit()
+            return json_response(self, {'ok': True, 'name': name})
+        except Exception as e:
+            return json_response(self, {'error': str(e)}, 500)
+        finally:
+            if conn is not None:
+                conn.close()
 
     def change_pin(self):
         """Change own PIN — requires valid token + correct current PIN."""
