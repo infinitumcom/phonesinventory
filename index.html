@@ -13616,7 +13616,9 @@ function openReportModal(btn) {
   const fullName = specText ? productName + ' · ' + specText : productName;
 
   const imeiEl = row.querySelector('.inv-imei');
-  const imei = imeiEl ? imeiEl.innerText.trim() : '';
+  // Read the full IMEI from the data attribute — the visible text is masked
+  // (e.g. "355348··· ····7738"), which would fail the backend exact-match.
+  const imei = imeiEl ? ((imeiEl.dataset.imei || imeiEl.innerText) || '').trim() : '';
 
   const storeEl = row.querySelector('.inv-store');
   let storeName = '';
@@ -13984,7 +13986,7 @@ function renderInventory() {
         '</div>' +
       '</div>' +
       '<div class="inv-color"><span class="swatch" style="background:' + p.colorHex + '"></span><span>' + (isZh ? p.color : p.colorEn) + '</span></div>' +
-      '<div class="inv-imei">' + imeiShort + '<button class="imei-edit-btn" onclick="event.stopPropagation();editIMEI(\'' + p.imei + '\',' + phoneIdx + ')" title="修改 IMEI / Edit IMEI">✏️</button></div>' +
+      '<div class="inv-imei" data-imei="' + p.imei + '">' + imeiShort + '<button class="imei-edit-btn" onclick="event.stopPropagation();editIMEI(\'' + p.imei + '\',' + phoneIdx + ')" title="修改 IMEI / Edit IMEI">✏️</button></div>' +
       '<div class="inv-store">' + p.storeName + '<span class="shelf">' + p.shelf + '</span></div>' +
       '<div class="inv-age ' + ageClass + '">' + ageDays + 'd</div>' +
       '<div class="inv-price-block">' +
