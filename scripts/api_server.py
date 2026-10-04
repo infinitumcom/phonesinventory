@@ -3408,9 +3408,20 @@ class APIHandler(BaseHTTPRequestHandler):
 
 
 def main():
-    init_api_tables()
-    server = ThreadingHTTPServer((API_HOST, API_PORT), APIHandler)
+    # Claim the port FIRST, before the (slower) table/index init. This closes the
+    # deploy-vs-watchdog restart race two ways: (1) the port is held during init, so
+    # a racing launch's bind fails instead of both initializing then fighting to bind;
+    # (2) a duplicate launch (whatever triggered it) exits cleanly here instead of
+    # lingering as a confusing second process. SO_REUSEADDR still can't make two live
+    # listeners share a port, so the loser gets EADDRINUSE and bows out.
+    try:
+        server = ThreadingHTTPServer((API_HOST, API_PORT), APIHandler)
+    except OSError as e:
+        print(f"Cannot bind {API_HOST}:{API_PORT} ({e}); another instance is already "
+              f"running. Exiting without starting a duplicate.")
+        return
     server.daemon_threads = True
+    init_api_tables()
     print(f"API Server running on port {API_PORT} (threaded)")
     print(f"Database: {DB_PATH}")
     try:
