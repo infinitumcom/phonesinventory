@@ -1164,7 +1164,9 @@ class APIHandler(BaseHTTPRequestHandler):
         want_all = bool(params) and params.get('all', [None])[0] in ('1', 'true')
         if ctx and ctx['is_platform_admin'] and want_all:
             return ('1=1', [])
-        return ('%s = ?' % col, [org_id])
+        # COALESCE so legacy/bot-written rows with a NULL org_id are scoped to org #1
+        # instead of vanishing from every list (matches _may_mutate's COALESCE).
+        return ('COALESCE(%s,1) = ?' % col, [org_id])
 
     def _may_mutate(self, conn, table, id_col, id_val):
         """True if the caller may mutate this row: same org, or platform admin.

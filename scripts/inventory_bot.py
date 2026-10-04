@@ -162,19 +162,22 @@ def init_db():
 
 def save_entry(entry, raw_ocr="", scanned_by=""):
     conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA busy_timeout=15000")  # avoid 'database is locked' vs API/other writers
     now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
+    # org_id MUST be written — the website lists filter by org, and rows with a
+    # NULL org_id are hidden from every store. The bot only serves iFixForU (org #1).
     conn.execute("""INSERT INTO inventory
         (imei, imei2, serial, brand, model, storage, color, color_en,
          condition, battery_health, region, store, cost, price, status,
-         scanned_by, scanned_at, raw_ocr, notes)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+         scanned_by, scanned_at, raw_ocr, notes, org_id)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (entry.get("imei",""), entry.get("imei2",""), entry.get("serial",""),
          entry.get("brand",""), entry.get("model",""), entry.get("storage",""),
          entry.get("color",""), entry.get("color_en",""),
          entry.get("condition","new"), entry.get("battery",""),
          entry.get("region","us"), entry.get("store",""),
          entry.get("cost",0), entry.get("price",0), "available",
-         scanned_by, now, raw_ocr, entry.get("notes","")))
+         scanned_by, now, raw_ocr, entry.get("notes",""), 1))
     conn.commit()
     rid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
     conn.close()
