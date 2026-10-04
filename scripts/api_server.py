@@ -198,6 +198,7 @@ def hash_api_key(raw):
 _rate_lock = threading.Lock()
 _login_fails = {}   # "email|ip" -> [timestamps]
 _reset_sends = {}   # email -> [timestamps]
+_imei_lookups = {}  # email -> [timestamps]  (caps paid GSX lookups per staffer)
 
 
 def _too_many(bucket, key, limit, window):
@@ -331,7 +332,11 @@ def get_user(conn, email):
         "SELECT email, name, role, store, "
         "COALESCE(org_id,1) AS org_id, COALESCE(is_platform_admin,0) AS is_platform_admin, "
         "COALESCE(is_manager,0) AS is_manager "
-        "FROM users WHERE email = ?", (email,)
+        # COALESCE(active,1): legacy rows with NULL active stay valid; only a user
+        # explicitly set active=0 is rejected. This makes deactivation revoke a
+        # leaked/departed-employee token immediately (every request goes through here),
+        # instead of the token staying good until its 30-day expiry.
+        "FROM users WHERE email = ? AND COALESCE(active,1) != 0", (email,)
     ).fetchone()
 
 
@@ -738,6 +743,18 @@ class APIHandler(BaseHTTPRequestHandler):
         if not email:
             json_response(self, {'error': 'unauthorized'}, 401)
             return None
+        # The token is a stateless HMAC valid until its 30-day expiry, so the signature
+        # passing is not enough — confirm the account still exists and is active in the
+        # DB on every request. This is the single gate that makes deactivating a user
+        # (or revoking a leaked token) take effect immediately, including on read
+        # endpoints that otherwise fall back to org #1 when _auth_ctx is None.
+        conn = get_db()
+        try:
+            if get_user(conn, email) is None:
+                json_response(self, {'error': 'unauthorized'}, 401)
+                return None
+        finally:
+            conn.close()
         self._auth_email = email
         return email
 
@@ -1113,10 +1130,17 @@ class APIHandler(BaseHTTPRequestHandler):
                 return json_response(self, {'error': 'Invalid srv'}, 400)
             if not IMEI_API_KEY:
                 return json_response(self, {'error': 'IMEI API key not configured'}, 503)
+            # Each lookup costs money upstream. Cap a single staffer to 30/min so a
+            # runaway client loop (or a scripted key) can't rack up the GSX bill.
+            rl_key = getattr(self, '_auth_email', None) or self.client_address[0]
+            if _too_many(_imei_lookups, rl_key, 30, 60):
+                return json_response(self, {'error': '查询过于频繁，请稍后再试 / Too many lookups, slow down'}, 429)
+            _record(_imei_lookups, rl_key)
             url = (f"https://us.gsxunlocking.com/api/uapi?format=json"
                    f"&key={quote(IMEI_API_KEY)}&srv={srv}&imei={digits}")
             req = urllib.request.Request(url, headers={'User-Agent': 'PhonesInventory/1.0'})
-            with urllib.request.urlopen(req, timeout=120) as resp:
+            # 20s, not 120s: a hung upstream shouldn't pin a server thread for 2 minutes.
+            with urllib.request.urlopen(req, timeout=20) as resp:
                 body = resp.read().decode('utf-8', 'replace')
             try:
                 return json_response(self, json.loads(body))

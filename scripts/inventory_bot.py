@@ -22,6 +22,7 @@ import urllib.request
 import urllib.parse
 import traceback
 import threading
+import subprocess
 from datetime import datetime, timezone, timedelta
 
 # ─── Config (credentials from .env via env_loader — no defaults in code) ───
@@ -663,8 +664,13 @@ def handle_command(msg, is_group=False):
         send_msg(chat_id, "📊 正在生成日报...", reply_to=msg_id)
         try:
             report_script = os.path.join(DEPLOY_DIR, "scripts", "daily_report.py")
-            os.system(f"python3 {report_script}")
+            # subprocess.run (not os.system) so a hung report can't block forever;
+            # the whole command already runs in its own thread (see main()), so this
+            # wait never stalls the Telegram polling loop.
+            subprocess.run(["python3", report_script], timeout=120, check=True)
             send_msg(chat_id, "✅ 日报已发送", reply_to=msg_id)
+        except subprocess.TimeoutExpired:
+            send_msg(chat_id, "❌ 日报超时（>120s），请稍后重试", reply_to=msg_id)
         except Exception as e:
             send_msg(chat_id, f"❌ 日报发送失败: {e}", reply_to=msg_id)
 
@@ -807,9 +813,15 @@ def main():
                 if "photo" in msg:
                     t = threading.Thread(target=handle_photo, args=(msg,), daemon=True)
                     t.start()
-                # Text commands
+                # Text commands — threaded too, so a slow command (/report runs a
+                # subprocess) can't block the polling loop and stall other stores.
                 elif "text" in msg:
-                    handle_command(msg, is_group=(chat_type in ("group", "supergroup")))
+                    threading.Thread(
+                        target=handle_command,
+                        args=(msg,),
+                        kwargs={"is_group": chat_type in ("group", "supergroup")},
+                        daemon=True,
+                    ).start()
 
         except KeyboardInterrupt:
             print("\n🛑 Bot stopped.")
