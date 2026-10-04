@@ -20,6 +20,26 @@ DEPLOY_DIR = env_loader.DEPLOY_DIR
 DB_PATH = os.path.join(DEPLOY_DIR, "data", "inventory.db")
 BOT_TOKEN = env_loader.require_env("BOT_TOKEN")
 ADMIN_CHAT = env_loader.require_env("REPORT_CHAT_ID")
+# Remembers which issues were already alerted, so the hourly run only notifies on
+# NEW problems (and a 'resolved' note) instead of re-spamming the same unfixed row
+# every hour (one 14-digit IMEI had fired 60+ identical alerts).
+STATE_PATH = os.path.join(DEPLOY_DIR, "data", ".audit_state.json")
+
+
+def load_alerted():
+    try:
+        with open(STATE_PATH) as f:
+            return set(json.load(f))
+    except Exception:
+        return set()
+
+
+def save_alerted(issues):
+    try:
+        with open(STATE_PATH, "w") as f:
+            json.dump(sorted(issues), f, ensure_ascii=False)
+    except Exception as e:
+        print(f"Failed to save audit state: {e}")
 
 PST = timezone(timedelta(hours=-7))
 
@@ -119,6 +139,7 @@ def run_audit():
     # 7. Sales-inventory sync
     c.execute("""SELECT s.imei, s.id, i.status FROM sales s
                  LEFT JOIN inventory i ON s.imei = i.imei
+                     AND COALESCE(i.org_id,1) = COALESCE(s.org_id,1)
                  WHERE s.status='completed' AND (i.status IS NULL OR i.status != 'sold')""")
     for r in c.fetchall():
         # Auto-fix: mark as sold in inventory
@@ -153,20 +174,35 @@ def run_audit():
         for f in auto_fixed:
             print(f"  ✅ {f}")
 
-    if issues:
+    # ── Dedup: only alert on NEW issues; note resolved ones; never re-spam ──
+    prev = load_alerted()
+    cur = set(issues)
+    new_issues = [i for i in issues if i not in prev]  # preserve order
+    resolved = prev - cur
+
+    if new_issues:
         msg = f"⚠️ *数据质量告警* ({now} PST)\n\n"
-        msg += f"发现 {len(issues)} 个问题:\n"
-        for i, issue in enumerate(issues[:10], 1):
+        msg += f"新增 {len(new_issues)} 个问题"
+        if len(cur) > len(new_issues):
+            msg += f"（另有 {len(cur)-len(new_issues)} 个待处理）"
+        msg += ":\n"
+        for i, issue in enumerate(new_issues[:10], 1):
             msg += f"{i}. {issue}\n"
-        if len(issues) > 10:
-            msg += f"\n...还有 {len(issues)-10} 个问题"
+        if len(new_issues) > 10:
+            msg += f"\n...还有 {len(new_issues)-10} 个新问题"
         msg += f"\n📊 库存: {total}总 | {avail}可售 | {sold}已售"
         send_alert(msg)
-        print(f"ALERT: {len(issues)} issues found, notification sent")
-        for issue in issues:
-            print(f"  - {issue}")
+        print(f"ALERT: {len(new_issues)} NEW issues ( {len(cur)} open total ), notification sent")
     else:
-        print(f"OK: {now} — {total} total, {avail} available, {sold} sold — no issues")
+        print(f"OK: {now} — {len(cur)} open issues, none new — no notification")
+
+    if resolved:
+        send_alert(f"✅ *已恢复* ({now} PST) — {len(resolved)} 个问题已解决，剩 {len(cur)} 个待处理")
+        print(f"RESOLVED: {len(resolved)} issues")
+
+    save_alerted(cur)
+    for issue in issues:
+        print(f"  - {issue}")
 
 
 if __name__ == "__main__":

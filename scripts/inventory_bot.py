@@ -453,8 +453,15 @@ def handle_photo(msg):
                     detected = MODEL_REGION_MAP.get(raw_match.group(1))
             if detected:
                 entry["region"] = detected
-            elif not entry.get("region"):
-                entry["region"] = "us"  # default
+            elif entry.get("region") in ("cn", "hk"):
+                # Trust Claude only when it positively identified a non-US region
+                # (e.g. Simplified/Traditional Chinese on the label).
+                pass
+            else:
+                # No staff-set region and no model-number suffix to read. Do NOT
+                # guess 'us' — boxless/handwritten 国行 phones were silently
+                # mislabeled 美版. Flag as unknown so staff confirm the region.
+                entry["region"] = "unknown"
 
         # Parse store from caption if not set by context
         if not entry.get("store") and caption:
@@ -550,7 +557,10 @@ def handle_photo(msg):
             part += f"\n│ 序列号: `{entry['serial']}`"
         if entry.get("battery"):
             part += f"\n│ 电池: {entry['battery']}"
-        part += f"\n│ {cond_label} · {region_flag} {entry.get('region', 'US').upper()}"
+        if entry.get("region") == "unknown":
+            part += f"\n│ {cond_label} · ⚠️ 地区未识别 — 请回复「国行 / 港版 / 美版」更正"
+        else:
+            part += f"\n│ {cond_label} · {region_flag} {entry.get('region', 'US').upper()}"
         part += f"\n└ 📍 {entry.get('store', '待分配')}"
         reply_parts.append(part)
 
