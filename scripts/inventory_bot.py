@@ -166,7 +166,9 @@ def save_entry(entry, raw_ocr="", scanned_by=""):
     now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
     # org_id MUST be written — the website lists filter by org, and rows with a
     # NULL org_id are hidden from every store. The bot only serves iFixForU (org #1).
-    conn.execute("""INSERT INTO inventory
+    # INSERT OR IGNORE + unique(imei) index = race-safe dedup across bot threads
+    # and the API process (the pre-check SELECT alone is not concurrency-safe).
+    cur = conn.execute("""INSERT OR IGNORE INTO inventory
         (imei, imei2, serial, brand, model, storage, color, color_en,
          condition, battery_health, region, store, cost, price, status,
          scanned_by, scanned_at, raw_ocr, notes, org_id)
@@ -179,7 +181,10 @@ def save_entry(entry, raw_ocr="", scanned_by=""):
          entry.get("cost",0), entry.get("price",0), "available",
          scanned_by, now, raw_ocr, entry.get("notes",""), 1))
     conn.commit()
-    rid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    if cur.rowcount == 0:
+        conn.close()
+        return None  # duplicate IMEI rejected by the unique index
+    rid = cur.lastrowid
     conn.close()
     return rid
 
@@ -504,8 +509,20 @@ def handle_photo(msg):
         if color_en and not color:
             entry["color"] = color_en
 
-        # Save to DB
+        # Save to DB (INSERT OR IGNORE; None = raced against another insert of same IMEI)
         rid = save_entry(entry, raw_ocr=raw, scanned_by=username)
+        if rid is None:
+            existing = None
+            try:
+                c2 = sqlite3.connect(DB_PATH); c2.execute("PRAGMA busy_timeout=15000")
+                existing = c2.execute("SELECT id, model, scanned_at FROM inventory WHERE imei=?", (imei,)).fetchone()
+                c2.close()
+            except Exception:
+                pass
+            skipped.append({"entry": entry, "dup_id": existing[0] if existing else None,
+                            "dup_model": existing[1] if existing else None,
+                            "dup_time": existing[2] if existing else None})
+            continue
         saved.append({"entry": entry, "id": rid})
 
     # Format response

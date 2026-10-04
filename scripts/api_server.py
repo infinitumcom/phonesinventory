@@ -594,6 +594,13 @@ def init_api_tables():
         conn.execute("UPDATE inventory SET org_id=1 WHERE org_id IS NULL")
         conn.execute("UPDATE inventory SET category='phone' WHERE category IS NULL OR category=''")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_inv_org_status ON inventory(org_id, status)")
+        # Enforce physical-device uniqueness: one row per real IMEI. Partial index so
+        # multiple blank-IMEI rows (non-phones / unread labels) are still allowed.
+        # Makes every intake path's INSERT OR IGNORE actually dedup under concurrency.
+        try:
+            conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_inv_imei_uniq ON inventory(imei) WHERE imei IS NOT NULL AND imei!=''")
+        except Exception as _e:
+            print(f"[init] WARN: could not create unique imei index (duplicates present?): {_e}")
     except Exception:
         pass
     # orgs: city (for local/same-city search) + certification (dealers must be certified
@@ -1661,7 +1668,7 @@ class APIHandler(BaseHTTPRequestHandler):
                             r_color = (row.get('color') or '').strip()
                             r_store = store if role == 'hk' else normalize_store_name(row.get('store') or store)
                             conn.execute("""
-                                INSERT INTO inventory
+                                INSERT OR IGNORE INTO inventory
                                 (imei,imei2,serial,brand,model,storage,color,color_en,
                                  condition,battery_health,region,store,
                                  cost,price,status,scanned_by,scanned_at,raw_ocr,notes,org_id,category)
@@ -1713,7 +1720,7 @@ class APIHandler(BaseHTTPRequestHandler):
                             skipped.append({'imei': imei, 'reason': '已存在 / Duplicate'}); continue
                         seen.add(imei)
                         conn.execute("""
-                            INSERT INTO inventory
+                            INSERT OR IGNORE INTO inventory
                             (imei,imei2,serial,brand,model,storage,color,color_en,
                              condition,battery_health,region,store,
                              cost,price,status,scanned_by,scanned_at,raw_ocr,notes,org_id)
@@ -2864,7 +2871,7 @@ class APIHandler(BaseHTTPRequestHandler):
                           (data.get('sellerSource') or '').strip(), store, who, 'acquired', now, _oid))
                     # Land the unit in inventory as used stock; cost = buy price.
                     conn.execute("""
-                        INSERT INTO inventory
+                        INSERT OR IGNORE INTO inventory
                         (imei,imei2,serial,brand,model,storage,color,color_en,condition,battery_health,
                          region,store,cost,price,status,scanned_by,scanned_at,raw_ocr,notes,org_id)
                         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
