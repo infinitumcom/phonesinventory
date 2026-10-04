@@ -1554,7 +1554,8 @@ class APIHandler(BaseHTTPRequestHandler):
         conn = None
         try:
             conn = get_db()
-            rows = conn.execute("SELECT imei FROM sales WHERE status = 'completed'").fetchall()
+            oc, oa = self._org_filter(conn)  # scope to caller's org — don't leak other orgs' sold IMEIs
+            rows = conn.execute("SELECT imei FROM sales WHERE status = 'completed' AND %s" % oc, oa).fetchall()
             return json_response(self, {'imeis': [r['imei'] for r in rows]})
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
@@ -3080,7 +3081,7 @@ class APIHandler(BaseHTTPRequestHandler):
                             (data.get('approvedBy', ''), now, transfer_id)
                         )
                         target_store = normalize_store_name(row['to_store'])
-                        conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=?",
+                        conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=? AND status != 'sold'",
                                      (target_store, row['imei']))
 
                     elif new_status == 'rejected':
@@ -3099,7 +3100,7 @@ class APIHandler(BaseHTTPRequestHandler):
                             (now, transfer_id)
                         )
                         target_store = normalize_store_name(row['to_store'])
-                        conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=?",
+                        conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=? AND status != 'sold'",
                                      (target_store, row['imei']))
 
                     elif new_status == 'cancelled':
@@ -3117,7 +3118,7 @@ class APIHandler(BaseHTTPRequestHandler):
                             "UPDATE transfers SET status='returned', updated_at=? WHERE id=?",
                             (now, transfer_id)
                         )
-                        conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=?",
+                        conn.execute("UPDATE inventory SET store=?, status='available' WHERE imei=? AND status != 'sold'",
                                      (original_store, row['imei']))
 
                     conn.commit()
@@ -3162,55 +3163,53 @@ class APIHandler(BaseHTTPRequestHandler):
             action = data.get('action', '')
             now = datetime.now(PST).strftime("%Y-%m-%d %H:%M:%S")
 
-            if action == 'create':
-                sr_id = 'SR-' + datetime.now(PST).strftime('%Y%m%d%H%M%S')
-                with db_lock:
-                    conn = get_db()
-                    try:
+            with db_lock:
+                conn = get_db()
+                try:
+                    ctx = self._auth_ctx(conn)
+                    if not ctx:
+                        return json_response(self, {'error': 'unauthorized'}, 401)
+
+                    if action == 'create':
+                        # requested_by/org are taken from the authenticated user, never the body.
+                        sr_id = 'SR-' + datetime.now(PST).strftime('%Y%m%d%H%M%S')
                         conn.execute("""
                             INSERT INTO stock_requests (id, requested_by, store, model, items, qty, note, status, created_at, updated_at, org_id)
                             VALUES (?,?,?,?,?,?,?,'pending',?,?,?)
                         """, (
-                            sr_id, data.get('requestedBy', ''), data.get('store', ''),
+                            sr_id, ctx['name'], (data.get('store') or ctx.get('store') or ''),
                             data.get('model', ''), json.dumps(data.get('items', [])),
-                            data.get('qty', 1), data.get('note', ''), now, now,
-                            (self._auth_ctx(conn) or {}).get('org_id', 1)
+                            data.get('qty', 1), data.get('note', ''), now, now, ctx['org_id']
                         ))
                         conn.commit()
-                    finally:
-                        conn.close()
-                return json_response(self, {'ok': True, 'data': {'id': sr_id}})
+                        return json_response(self, {'ok': True, 'data': {'id': sr_id}})
 
-            elif action in ('approve', 'reject', 'fulfill'):
-                sr_id = data.get('id', '')
-                by = data.get('by', '')
-                status_map = {'approve': 'approved', 'reject': 'rejected', 'fulfill': 'fulfilled'}
-                new_status = status_map[action]
-                with db_lock:
-                    conn = get_db()
-                    try:
-                        if action == 'approve':
-                            conn.execute(
-                                "UPDATE stock_requests SET status=?, approved_by=?, updated_at=? WHERE id=?",
-                                (new_status, by, now, sr_id)
-                            )
-                        elif action == 'reject':
-                            conn.execute(
-                                "UPDATE stock_requests SET status=?, approved_by=?, updated_at=? WHERE id=?",
-                                (new_status, by, now, sr_id)
-                            )
-                        elif action == 'fulfill':
-                            conn.execute(
-                                "UPDATE stock_requests SET status=?, fulfilled_by=?, updated_at=? WHERE id=?",
-                                (new_status, by, now, sr_id)
-                            )
+                    elif action in ('approve', 'reject', 'fulfill'):
+                        sr_id = data.get('id', '')
+                        # Only org admins / managers may act on requests.
+                        if not (ctx['role'] == 'admin' or ctx['is_manager'] or ctx['is_platform_admin']):
+                            return json_response(self, {'error': '仅管理员/店长可操作 / Admin or manager only'}, 403)
+                        # Ownership: request must belong to the caller's org.
+                        if not self._may_mutate(conn, 'stock_requests', 'id', sr_id):
+                            return json_response(self, {'error': '无权操作此申请 / Not allowed'}, 403)
+                        row = conn.execute("SELECT status FROM stock_requests WHERE id=?", (sr_id,)).fetchone()
+                        if not row:
+                            return json_response(self, {'error': '申请不存在 / Not found'}, 404)
+                        new_status = {'approve': 'approved', 'reject': 'rejected', 'fulfill': 'fulfilled'}[action]
+                        by = ctx['name']  # signed by the authenticated user, not the body
+                        if action == 'fulfill':
+                            conn.execute("UPDATE stock_requests SET status=?, fulfilled_by=?, updated_at=? WHERE id=?",
+                                         (new_status, by, now, sr_id))
+                        else:
+                            conn.execute("UPDATE stock_requests SET status=?, approved_by=?, updated_at=? WHERE id=?",
+                                         (new_status, by, now, sr_id))
                         conn.commit()
-                    finally:
-                        conn.close()
-                return json_response(self, {'ok': True})
+                        return json_response(self, {'ok': True})
 
-            else:
-                return json_response(self, {'error': 'Unknown action'}, 400)
+                    else:
+                        return json_response(self, {'error': 'Unknown action'}, 400)
+                finally:
+                    conn.close()
         except Exception as e:
             return json_response(self, {'error': str(e)}, 500)
 
