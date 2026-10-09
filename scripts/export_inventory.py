@@ -121,6 +121,8 @@ def build_phones(rows):
             "price": row["price"] or 0,
             "status": row["status"] or "available",
             "notes": row["notes"] or "",
+            "category": (row["category"] if "category" in row.keys() else "phone") or "phone",
+            "specs": (row["specs"] if "specs" in row.keys() else "") or "",
         }
         phones.append(phone)
     return phones
