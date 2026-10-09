@@ -1,8 +1,14 @@
 # Environment
 .env
 
-# Database (generated on server)
+# Database + all runtime DB artifacts (server-side only, never tracked)
 data/inventory.db
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/*.bak
+data/*.pre-import.bak
+data/export.json
 
 # Generated data (server-side Python exports every 2 min from SQLite)
 data/phones.js
