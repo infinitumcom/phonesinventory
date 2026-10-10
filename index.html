@@ -5738,7 +5738,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     // Land on the storefront homepage (marketplace), not the internal console.
     document.body.classList.remove('mode-console'); document.body.classList.add('mode-store');
     try { if (window.syncUserMenu) window.syncUserMenu(); } catch(e){}
-    try { if (window.navByName) window.navByName('marketplace'); } catch(e){}
+    try { if (window.setWorkspace) window.setWorkspace('market'); else if (window.navByName) window.navByName('marketplace'); } catch(e){}
     if (resp.mustChangePin) showChangePinOverlay();
     else { try { if (window.maybeShowAgingAlert) window.maybeShowAgingAlert(); } catch(e){} }
   }
@@ -5841,9 +5841,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
             try {
               var lastPage = sessionStorage.getItem('pi_current_page');
               if (lastPage && document.getElementById('page-' + lastPage)) {
+                try { if (window.markWorkspace) window.markWorkspace(window.workspaceForPage(lastPage)); } catch(e){}
                 var navEl = document.querySelector('.nav-item[onclick*="' + lastPage + '"]');
                 if (navEl) { navTo(navEl, lastPage); }
-              } else { document.body.classList.remove('mode-console'); document.body.classList.add('mode-store'); if (window.navByName) window.navByName('marketplace'); }
+              } else { try { if (window.setWorkspace) window.setWorkspace('market'); else if (window.navByName) window.navByName('marketplace'); } catch(e){} }
               if (window.syncUserMenu) window.syncUserMenu();
             } catch(e){}
             // Force change PIN if still default (server told us at login)
@@ -6000,6 +6001,19 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
 })();
 </script>
 
+<style>
+/* ===== Workspace switcher (slice ①: market / enterprise / platform) ===== */
+.ws-switch{display:flex;gap:3px;margin:12px 14px 2px;background:#eef2f7;border-radius:10px;padding:3px;}
+.ws-switch button{flex:1;border:0;background:transparent;border-radius:8px;padding:7px 4px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;white-space:nowrap;transition:background .12s,color .12s;}
+.ws-switch button:hover{color:#334155;}
+.ws-switch button.active{background:#fff;color:#1e293b;box-shadow:0 1px 3px rgba(15,23,42,.12);}
+.ws-switch .ws-plat-btn{display:none;}
+body[data-platform="1"] .ws-switch .ws-plat-btn{display:block;}
+/* Per-workspace section visibility. If no data-workspace is set, nothing is hidden (safe fallback). */
+body[data-workspace="market"]   .sidebar-section[data-ws]:not([data-ws~="market"]){display:none;}
+body[data-workspace="erp"]      .sidebar-section[data-ws]:not([data-ws~="erp"]){display:none;}
+body[data-workspace="platform"] .sidebar-section[data-ws]:not([data-ws~="platform"]){display:none;}
+</style>
 <div class="app" style="display:none;" id="mainApp">
 
   <!-- ============= SIDEBAR ============= -->
@@ -6019,20 +6033,27 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       </div>
     </div>
 
+    <!-- Workspace switcher (slice ①): market / enterprise / platform -->
+    <div class="ws-switch" role="tablist">
+      <button type="button" class="ws-market-btn active" onclick="setWorkspace('market')"><span class="zh">市场</span><span class="en">Market</span></button>
+      <button type="button" class="ws-erp-btn" onclick="setWorkspace('erp')"><span class="zh">企业工作台</span><span class="en">Workspace</span></button>
+      <button type="button" class="ws-plat-btn" onclick="setWorkspace('platform')"><span class="zh">平台</span><span class="en">Platform</span></button>
+    </div>
+
     <!-- Home = marketplace (first item, everyone) -->
-    <div class="sidebar-section">
+    <div class="sidebar-section" data-ws="market">
       <div class="nav-item active" onclick="navTo(this, 'marketplace')">
         <div class="nav-icon-wrap icon-blue">
           <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">
             <path d="M2 7l6-5 6 5"/><path d="M4 6.6V14h8V6.6"/>
           </svg>
         </div>
-        <span class="nav-text"><span class="zh">主页</span><span class="en">Home</span></span>
+        <span class="nav-text"><span class="zh">市场首页</span><span class="en">Marketplace</span></span>
       </div>
     </div>
 
     <!-- Admin only: Dashboard -->
-    <div class="sidebar-section admin-only">
+    <div class="sidebar-section admin-only" data-ws="erp">
       <div class="sidebar-label">
         <span class="zh">管理</span><span class="en">Management</span>
       </div>
@@ -6050,7 +6071,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     </div>
 
     <!-- Staff only: Personal account on top -->
-    <div class="sidebar-section staff-only">
+    <div class="sidebar-section staff-only" data-ws="erp">
       <div class="points-card">
         <div class="points-card-label">
           <span class="zh">◆ 我的积分</span>
@@ -6073,7 +6094,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     </div>
 
     <!-- Operations - visible to ALL -->
-    <div class="sidebar-section">
+    <div class="sidebar-section" data-ws="erp">
       <div class="sidebar-label">
         <span class="zh">日常操作</span><span class="en">Operations</span>
       </div>
@@ -6152,10 +6173,10 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
       </div>
     </div>
 
-    <!-- Marketplace (B2B peer trading) — visible to all orgs -->
-    <div class="sidebar-section">
+    <!-- Marketplace (B2B peer trading) — market workspace -->
+    <div class="sidebar-section" data-ws="market">
       <div class="sidebar-label">
-        <span class="zh">同行市场</span><span class="en">Marketplace</span>
+        <span class="zh">交易</span><span class="en">Trading</span>
       </div>
       <div class="nav-item" onclick="navTo(this, 'orders')">
         <div class="nav-icon-wrap icon-blue">
@@ -6165,6 +6186,13 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
         </div>
         <span class="nav-text"><span class="zh">采购订单</span><span class="en">Orders</span></span>
         <span class="nav-badge warn" id="navBadgeOrders" style="display:none;">0</span>
+      </div>
+    </div>
+
+    <!-- Platform governance workspace (platform admin only) -->
+    <div class="sidebar-section platform-only" data-ws="platform">
+      <div class="sidebar-label">
+        <span class="zh">平台管理</span><span class="en">Platform</span>
       </div>
       <div class="nav-item platform-only" onclick="navTo(this, 'orgs')">
         <div class="nav-icon-wrap icon-purple">
@@ -6194,7 +6222,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     </div>
 
     <!-- Admin only: Analytics & Staff -->
-    <div class="sidebar-section admin-only">
+    <div class="sidebar-section admin-only" data-ws="erp">
       <div class="sidebar-label">
         <span class="zh">分析</span><span class="en">Analytics</span>
       </div>
@@ -6226,7 +6254,7 @@ body[data-inv-region="cn"] .inv-row[data-region="hk"] { display: none; }
     </div>
 
     <!-- Admin only: self-service org management (stores / team / permissions) -->
-    <div class="sidebar-section admin-only">
+    <div class="sidebar-section admin-only" data-ws="erp">
       <div class="sidebar-label">
         <span class="zh">组织设置</span><span class="en">Organization</span>
       </div>
@@ -16363,6 +16391,29 @@ renderInventory();
 
 // ===== Role setup (based on login) =====
 // Swap iFixForU-specific branding for the logged-in org (dealers see their own name).
+// ===== Workspace switcher (slice ①) =====
+// Three workspaces share one shell but only one is shown at a time, so an external
+// dealer (or a platform admin who's shopping) sees a clean market, not the ERP.
+var WS_OF_PAGE = { marketplace:'market', orders:'market', orgs:'platform', commissions:'platform', partnerapi:'platform' };
+function workspaceForPage(p){ return WS_OF_PAGE[p] || 'erp'; }
+function markWorkspace(ws){
+  if (ws === 'platform' && document.body.getAttribute('data-platform') !== '1') ws = 'market';
+  document.body.setAttribute('data-workspace', ws);
+  try { localStorage.setItem('pi_workspace', ws); } catch(e){}
+  var btns = document.querySelectorAll('.ws-switch button');
+  for (var i=0;i<btns.length;i++) btns[i].classList.remove('active');
+  var sel = ws==='market' ? '.ws-market-btn' : ws==='platform' ? '.ws-plat-btn' : '.ws-erp-btn';
+  var b = document.querySelector('.ws-switch ' + sel); if (b) b.classList.add('active');
+}
+function setWorkspace(ws){
+  var isPlat = document.body.getAttribute('data-platform') === '1';
+  if (ws === 'platform' && !isPlat) ws = 'market';
+  markWorkspace(ws);
+  var home = ws==='market' ? 'marketplace' : ws==='platform' ? 'orgs' : (isPlat ? 'dashboard' : 'inventory');
+  try { if (window.navByName) window.navByName(home); } catch(e){}
+}
+window.setWorkspace = setWorkspace; window.markWorkspace = markWorkspace; window.workspaceForPage = workspaceForPage;
+
 function applyOrgBranding(acct) {
   var isDealer = acct.orgId && acct.orgId !== 1;
   var org = acct.orgName || 'iFixForU';
@@ -16371,11 +16422,11 @@ function applyOrgBranding(acct) {
   if (sub) {
     var zh = sub.querySelector('.zh'), en = sub.querySelector('.en');
     if (isDealer) {
-      if (zh) zh.textContent = '总控台 · ' + org;
-      if (en) en.textContent = 'Console · ' + org;
+      if (zh) zh.textContent = org + ' · 认证商家';
+      if (en) en.textContent = org + ' · Verified dealer';
     } else {
-      if (zh) zh.textContent = '总控台 · iFixForU · 9 店';
-      if (en) en.textContent = 'Admin Console · 9 stores';
+      if (zh) zh.textContent = org + ' · 平台方';
+      if (en) en.textContent = org + ' · Platform';
     }
   }
   // Store-status section title: "N 店实时状况"
