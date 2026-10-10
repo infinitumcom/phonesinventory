@@ -115,16 +115,16 @@ body {
    ============================================================ */
 .mkt-wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px 40px; }
 /* Hero band */
-.mkt-hero { position: relative; overflow: hidden; border-radius: 16px; margin: 16px 0 14px;
+.mkt-hero { position: relative; overflow: hidden; border-radius: 14px; margin: 14px 0 12px;
   background: linear-gradient(120deg, #1e3a8a 0%, #2563eb 55%, #3b82f6 100%);
-  color: #fff; padding: 20px 26px 18px; box-shadow: 0 8px 24px rgba(37,99,235,.20);
+  color: #fff; padding: 13px 20px; box-shadow: 0 6px 18px rgba(37,99,235,.16);
   display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center; }
 .mkt-hero::after { content: ""; position: absolute; right: -60px; top: -80px; width: 240px; height: 240px;
   background: radial-gradient(circle, rgba(255,255,255,.14), transparent 65%); pointer-events: none; }
 .mkt-hero .mh-left { min-width: 0; }
-.mkt-hero h1 { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
-.mkt-hero p { margin: 4px 0 0; font-size: 12.5px; color: rgba(255,255,255,.80); max-width: 520px; }
-.mkt-hero-search { margin-top: 13px; display: flex; gap: 10px; max-width: 560px; flex-wrap: wrap; }
+.mkt-hero h1 { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+.mkt-hero p { display: none; }
+.mkt-hero-search { margin-top: 9px; display: flex; gap: 10px; max-width: 620px; flex-wrap: wrap; }
 .mkt-hero-search .hs-box { flex: 1; min-width: 240px; position: relative; display: flex; align-items: center;
   background: #fff; border-radius: 11px; padding: 0 14px; box-shadow: 0 6px 18px rgba(15,23,42,.14); }
 .mkt-hero-search .hs-box svg { color: var(--text-faint); flex-shrink: 0; }
@@ -8920,7 +8920,7 @@ body[data-workspace="platform"] .sidebar-section[data-ws]:not([data-ws~="platfor
     <!-- Hero -->
     <div class="mkt-hero">
       <div class="mh-left">
-        <h1><span class="zh">全网库存市场</span><span class="en">Live Inventory Marketplace</span></h1>
+        <h1><span class="zh">库存市场</span><span class="en">Inventory Market</span></h1>
         <p><span class="zh">搜索型号，一眼看到全网在售、哪家门店与同行有货，直接发起调货或采购。</span><span class="en">See live stock across our stores and every dealer — transfer or order in one tap.</span></p>
         <div class="mkt-hero-search">
           <div class="hs-box">
@@ -14695,7 +14695,7 @@ function _mktPrice(x, small) {
     var lo = Math.round(x.minPrice), hi = Math.round(x.maxPrice||x.minPrice);
     return '<span class="cur">$</span>' + lo.toLocaleString() + (hi > lo ? '<span style="font-size:' + (small?11:12) + 'px;font-weight:600;color:var(--text-muted);"> – $' + hi.toLocaleString() + '</span>' : '');
   }
-  return '<span style="font-size:13px;color:var(--text-faint);"><span class="zh">待报价</span><span class="en">Ask</span></span>';
+  return '<span style="font-size:13px;color:var(--text-faint);"><span class="zh">询价</span><span class="en">Ask</span></span>';
 }
 function _mktCard(x, i, isHot) {
   var flag = _mktFlag(x.region);
@@ -14781,9 +14781,10 @@ function _renderMktStats(list) {
   var units = 0, ownU = 0, maxSrc = 0;
   list.forEach(function(x){ units += (x.qty||0); ownU += (x.ownQty||0); if ((x.sources||0) > maxSrc) maxSrc = x.sources; });
   var stat = function(v, zh, en){ return '<div class="st"><div class="v">' + v + '</div><div class="l"><span class="zh">' + zh + '</span><span class="en">' + en + '</span></div></div>'; };
+  // Decision (2026-10-09): platform & dealers on equal footing — no prominent "自营"
+  // headline stat. Keep buyer-useful totals only (they also move with the filters).
   el.innerHTML = stat(units.toLocaleString(), '台在售', 'units live') +
-    stat(list.length.toLocaleString(), '个型号', 'models') +
-    stat(ownU.toLocaleString(), '台自营', 'own units');
+    stat(list.length.toLocaleString(), '个型号', 'models');
 }
 
 // Drill-down modal: which stores (ours, internal 调货) and dealers (采购) have this model.
@@ -14830,7 +14831,7 @@ function renderModelDetailBody(res) {
     if (prices.length) {
       var lo = Math.min.apply(null, prices), hi = Math.max.apply(null, prices);
       rangeEl.innerHTML = '<span class="rl"><span class="zh">价格区间</span><span class="en">Range</span></span><span class="r">$' + Math.round(lo).toLocaleString() + (hi > lo ? ' – $' + Math.round(hi).toLocaleString() : '') + '</span>';
-    } else { rangeEl.innerHTML = '<span class="rl"><span class="zh">待报价</span><span class="en">Ask for quote</span></span>'; }
+    } else { rangeEl.innerHTML = '<span class="rl"><span class="zh">询价</span><span class="en">Ask for quote</span></span>'; }
   }
   var html = '';
   // Category-specific specs (drone / camera etc.), shown above the sources.
