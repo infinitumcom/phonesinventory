@@ -160,9 +160,9 @@ body {
   overflow: hidden; cursor: pointer; transition: transform .14s, box-shadow .14s, border-color .14s;
   box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
 .mkt-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: var(--brand-soft); }
-.mc-visual { position: relative; height: 158px; display: flex; align-items: center; justify-content: center;
+.mc-visual { position: relative; height: 102px; display: flex; align-items: center; justify-content: center;
   background: radial-gradient(120% 90% at 50% 30%, #ffffff, #eef2f7 90%); border-bottom: 1px solid var(--border-soft); }
-.mc-visual svg.dev { width: 118px; height: 118px; filter: drop-shadow(0 6px 10px rgba(15,23,42,.12)); }
+.mc-visual svg.dev { width: 74px; height: 74px; filter: drop-shadow(0 5px 8px rgba(15,23,42,.12)); }
 .mc-visual .mc-flag { position: absolute; top: 10px; right: 12px; font-size: 15px; }
 .mc-visual .mc-cond { position: absolute; top: 10px; left: 10px; font-size: 9px; font-weight: 800; letter-spacing: .04em;
   padding: 3px 7px; border-radius: 6px; }
@@ -14714,7 +14714,8 @@ function _mktCard(x, i, isHot) {
       '<div class="mc-title">' + escHtml(x.model||'') + '</div>' +
       '<div class="mc-sub">' + escHtml(x.storage||'') + (x.storage ? ' · ' : '') + '<span class="zh">' + catZh + '</span><span class="en">' + catEn + '</span>' + _mktColorTag(x) + '</div>' +
       '<div class="mc-badges">' + _mktBadges(x) + '</div>' +
-      '<div class="mc-stock"><span class="pill in"><span class="dot"></span><span class="zh">在售 </span>' + x.qty + '<span class="zh"> 台</span><span class="en"> in stock</span></span></div>' +
+      '<div class="mc-stock"><span class="pill in"><span class="dot"></span><span class="zh">在售 </span>' + x.qty + '<span class="zh"> 台</span><span class="en"> in stock</span></span>' +
+        (x.sources > 1 ? '<span class="src">· ' + x.sources + '<span class="zh"> 家货源</span><span class="en"> sellers</span></span>' : '') + '</div>' +
       '<div class="mc-foot">' +
         '<div class="mc-price"><div class="lab"><span class="zh">价格</span><span class="en">Price</span></div><div class="val">' + _mktPrice(x) + '</div></div>' +
         '<span class="mc-cta"><span class="zh">看货源</span><span class="en">Sources</span> →</span>' +
